@@ -1,6 +1,7 @@
-'use client'
+"use client"
 
 import { useRef, useState } from 'react'
+
 export default function HomePage() {
   const [selectedImage, setSelectedImage] = useState(null)
   const [imagePreview, setImagePreview] = useState(null)
@@ -8,6 +9,7 @@ export default function HomePage() {
   const [results, setResults] = useState(null)
   const [error, setError] = useState(null)
   const [isDragging, setIsDragging] = useState(false)
+  const [showOcrText, setShowOcrText] = useState(false)
 
   const inputRef = useRef(null)
 
@@ -57,13 +59,27 @@ export default function HomePage() {
     setError(null)
 
     try {
-      const formData = new FormData()
-      formData.append('image', selectedImage)
+      // Prefer sending a JSON payload with a base64 data URL (more reliable than multipart/form-data)
+      let response
+      if (imagePreview) {
+        response = await fetch('/api/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: imagePreview })
+        })
+      } else {
+        // Fallback: send FormData if preview isn't available yet
+        const formData = new FormData()
+        formData.append('image', selectedImage)
+        response = await fetch('/api/analyze', { method: 'POST', body: formData })
+      }
 
-      const response = await fetch('/api/analyze', { method: 'POST', body: formData })
-      const data = await response.json()
+      // Provide richer error info for debugging
+      const text = await response.text()
+      let data
+      try { data = JSON.parse(text) } catch (e) { data = { raw: text } }
 
-      if (!response.ok) throw new Error(data.error || 'Failed to analyze image')
+      if (!response.ok) throw new Error(data.error || data.raw || `Request failed: ${response.status}`)
 
       setResults(data)
     } catch (err) {
@@ -92,6 +108,7 @@ export default function HomePage() {
             id="image-upload"
             type="file"
             accept="image/*"
+            capture="environment"
             onChange={handleFileChange}
             style={{ display: 'none' }}
           />
@@ -128,19 +145,59 @@ export default function HomePage() {
       {results && (
         <div className="card">
           <h2 className="results-title">📋 Analysis Results</h2>
-          
-          {results.processedImageSize && (
+          {(results.originalImageSize || results.processedImageSize) && (
             <p style={{ fontSize: '14px', color: '#666', marginBottom: '15px' }}>
-              Processed image: {results.processedImageSize}
+              {results.originalImageSize && results.processedImageSize ? (
+                <>
+                  Image: {Math.round(results.originalImageSize / 1024)}KB → {Math.round(results.processedImageSize / (1024 * 1.33))}KB
+                  {results.debug?.compressionRatio && ` (${results.debug.compressionRatio}% compressed)`}
+                </>
+              ) : (
+                `Processed image: ${results.processedImageSize}`
+              )}
             </p>
+          )}
+
+          {/* Always show OCR text button first */}
+          {results.text && (
+            <div style={{ marginBottom: '20px' }}>
+              <button 
+                onClick={() => setShowOcrText(!showOcrText)}
+                style={{ 
+                  cursor: 'pointer', 
+                  color: '#007bff', 
+                  background: 'none', 
+                  border: '1px solid #007bff', 
+                  padding: '8px 16px',
+                  borderRadius: '4px',
+                  fontSize: '14px' 
+                }}
+              >
+                {showOcrText ? 'Hide' : 'Show'} Raw OCR Text
+              </button>
+              {showOcrText && (
+                <div className="raw-text" style={{ 
+                  marginTop: '10px', 
+                  padding: '10px', 
+                  background: '#f5f5f5', 
+                  border: '1px solid #ddd', 
+                  borderRadius: '4px',
+                  fontSize: '12px',
+                  fontFamily: 'monospace',
+                  whiteSpace: 'pre-wrap',
+                  maxHeight: '300px',
+                  overflow: 'auto'
+                }}>
+                  {results.text}
+                </div>
+              )}
+            </div>
           )}
 
           {results.items && results.items.length > 0 ? (
             <div>
               <div style={{ marginBottom: '20px' }}>
-                <h3 style={{ fontSize: '18px', marginBottom: '10px' }}>
-                  � Items ({results.itemCount})
-                </h3>
+                <h3 style={{ fontSize: '18px', marginBottom: '10px' }}>Items ({results.itemCount})</h3>
                 {results.items.map((item, index) => (
                   <div key={index} className="item">
                     <span className="item-name">{item.name}</span>
@@ -155,25 +212,32 @@ export default function HomePage() {
                   <span>€{results.total.toFixed(2)}</span>
                 </div>
               )}
-              
-              {results.text && (
-                <details style={{ marginTop: '15px' }}>
-                  <summary style={{ cursor: 'pointer', color: '#007bff' }}>View raw OCR text</summary>
-                  <div className="raw-text">{results.text}</div>
-                </details>
-              )}
             </div>
           ) : (
             <div>
-              <p>🤔 No items detected clearly.</p>
-              {results.text && (
-                <details style={{ marginTop: '15px' }}>
-                  <summary style={{ cursor: 'pointer', color: '#007bff' }}>View raw OCR text</summary>
-                  <div className="raw-text">{results.text}</div>
-                </details>
+              <p>❌ No items detected clearly.</p>
+              <p style={{ fontSize: '14px', color: '#666', marginTop: '10px' }}>
+                This might happen if the image quality is poor or the receipt format is unusual.
+              </p>
+              {!results.text && (
+                <p style={{ fontSize: '14px', color: '#red', marginTop: '10px' }}>
+                  ⚠️ No OCR text was returned from the API. Check your OCR_SPACE_API_KEY.
+                </p>
               )}
             </div>
           )}
+
+          {/* Debug info */}
+          <details style={{ marginTop: '15px', fontSize: '12px', color: '#666' }}>
+            <summary style={{ cursor: 'pointer' }}>Debug Info</summary>
+            <div style={{ marginTop: '5px', fontFamily: 'monospace' }}>
+              <p>OCR Engine: {results.debug?.ocrEngine || 'Unknown'}</p>
+              <p>OCR Exit Code: {results.debug?.ocrExitCode || 'Unknown'}</p>
+              <p>Processing Time: {results.ocrRaw?.ProcessingTimeInMilliseconds || 'Unknown'}ms</p>
+              <p>Text Length: {results.text?.length || 0} characters</p>
+              <p>Items Found: {results.items?.length || 0}</p>
+            </div>
+          </details>
         </div>
       )}
     </div>

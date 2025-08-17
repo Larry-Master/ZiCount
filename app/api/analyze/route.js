@@ -1,181 +1,212 @@
-import { NextResponse } from 'next/server'
+import { parseGermanReceipt } from './ocrParser'
 import sharp from 'sharp'
-import { parseGermanReceipt } from './ocrParser.js'
 
-const OCR_SPACE_API_KEY = process.env.OCR_SPACE_API_KEY
-const MAX_FILE_SIZE = 1024 * 1024 // 1MB in bytes
-const OCR_SPACE_URL = 'https://api.ocr.space/parse/image'
+// Function to compress and optimize image for OCR
+async function compressImageForOCR(buffer, originalMimeType) {
+	try {
+		// Get image metadata
+		const metadata = await sharp(buffer).metadata()
+		console.log('Original image:', { 
+			width: metadata.width, 
+			height: metadata.height, 
+			format: metadata.format,
+			size: buffer.length 
+		})
 
-// OCR.space API call function - optimized for receipt text extraction
-async function callOCRSpace(imageBuffer) {
-  try {
-    const formData = new FormData()
-    const blob = new Blob([imageBuffer], { type: 'image/png' })
-    
-    formData.append('file', blob, 'receipt.png')
-    formData.append('apikey', OCR_SPACE_API_KEY)
-    formData.append('language', 'ger') // German language
-    formData.append('isOverlayRequired', 'false')
-    formData.append('detectOrientation', 'true') // Auto-rotate if needed
-    formData.append('isTable', 'true') // Optimized for table/receipt structure
-    formData.append('scale', 'true') // Internal upscaling for better results
-    formData.append('OCREngine', '2') // Engine 2 for better German text recognition
-    formData.append('filetype', 'PNG')
+		// Start with the original buffer
+		let processedBuffer = buffer
+		let quality = 85 // Start with high quality
+		const maxSizeBytes = 1024 * 1024 // 1MB limit for OCR.space free tier
 
-    console.log('Calling OCR.space API with optimized settings...')
+		// Convert to JPEG if it's not already (better compression and OCR compatibility)
+		let sharpInstance = sharp(buffer)
+			.jpeg({ quality, mozjpeg: true }) // Use mozjpeg for better compression
+			.flatten({ background: { r: 255, g: 255, b: 255 } }) // White background for transparency
 
-    const response = await fetch(OCR_SPACE_URL, {
-      method: 'POST',
-      body: formData
-    })
+		// Optimize for OCR: enhance contrast and sharpness
+		sharpInstance = sharpInstance
+			.normalize() // Normalize contrast
+			.sharpen({ sigma: 1, m1: 1, m2: 2 }) // Sharpen for better text recognition
 
-    if (!response.ok) {
-      throw new Error(`OCR API request failed: ${response.status} ${response.statusText}`)
-    }
+		// If image is too large, resize it while maintaining aspect ratio
+		if (metadata.width > 2048 || metadata.height > 2048) {
+			sharpInstance = sharpInstance.resize(2048, 2048, { 
+				fit: 'inside',
+				withoutEnlargement: true
+			})
+		}
 
-    const result = await response.json()
-    
-    if (result.IsErroredOnProcessing) {
-      throw new Error(result.ErrorMessage || 'OCR processing failed')
-    }
+		// Process the image
+		processedBuffer = await sharpInstance.toBuffer()
 
-    const parsedText = result.ParsedResults?.[0]?.ParsedText || ''
-    console.log('OCR result length:', parsedText.length)
-    console.log('OCR confidence/orientation:', result.ParsedResults?.[0]?.TextOrientation || 'unknown')
-    
-    // Log first 200 chars of OCR result for debugging
-    console.log('OCR preview:', parsedText.substring(0, 200) + '...')
-    
-    return {
-      text: parsedText,
-      confidence: result.ParsedResults?.[0]?.TextOrientation || 0
-    }
-  } catch (error) {
-    console.error('OCR.space API error:', error)
-    throw error
-  }
+		// If still too large, reduce quality iteratively
+		while (processedBuffer.length > maxSizeBytes && quality > 20) {
+			quality -= 10
+			console.log(`Image still too large (${Math.round(processedBuffer.length / 1024)}KB), reducing quality to ${quality}%`)
+			
+			processedBuffer = await sharp(buffer)
+				.jpeg({ quality, mozjpeg: true })
+				.flatten({ background: { r: 255, g: 255, b: 255 } })
+				.normalize()
+				.sharpen({ sigma: 1, m1: 1, m2: 2 })
+				.resize(2048, 2048, { 
+					fit: 'inside',
+					withoutEnlargement: true
+				})
+				.toBuffer()
+		}
+
+		// If still too large, resize more aggressively
+		if (processedBuffer.length > maxSizeBytes) {
+			let maxDimension = 1536
+			while (processedBuffer.length > maxSizeBytes && maxDimension > 512) {
+				maxDimension -= 256
+				console.log(`Still too large, resizing to max ${maxDimension}px`)
+				
+				processedBuffer = await sharp(buffer)
+					.jpeg({ quality: Math.max(quality, 30), mozjpeg: true })
+					.flatten({ background: { r: 255, g: 255, b: 255 } })
+					.normalize()
+					.sharpen({ sigma: 1, m1: 1, m2: 2 })
+					.resize(maxDimension, maxDimension, { 
+						fit: 'inside',
+						withoutEnlargement: true
+					})
+					.toBuffer()
+			}
+		}
+
+		const finalSize = Math.round(processedBuffer.length / 1024)
+		console.log(`Image compressed: ${Math.round(buffer.length / 1024)}KB → ${finalSize}KB (quality: ${quality}%)`)
+
+		// Convert to base64 data URL
+		const base64 = processedBuffer.toString('base64')
+		return `data:image/jpeg;base64,${base64}`
+
+	} catch (error) {
+		console.error('Image compression failed:', error)
+		// Fallback: return original image as base64
+		const base64 = buffer.toString('base64')
+		const mimeType = originalMimeType || 'image/jpeg'
+		return `data:${mimeType};base64,${base64}`
+	}
 }
 
-export async function POST(request) {
-  try {
-    const formData = await request.formData()
-    const imageFile = formData.get('image')
+// Simple Next.js route to proxy an image to OCR.space and parse German receipts
+export async function POST(req) {
+	try {
+		const apiKey = process.env.OCR_SPACE_API_KEY
+		if (!apiKey) {
+			return new Response(JSON.stringify({ error: 'OCR_SPACE_API_KEY is not set in environment' }), { status: 500, headers: { 'Content-Type': 'application/json' } })
+		}
 
-    if (!imageFile) {
-      return NextResponse.json({ error: 'No image file provided' }, { status: 400 })
-    }
+		const contentType = (req.headers.get('content-type') || '').toLowerCase()
 
-    console.log('Processing image:', imageFile.name, imageFile.type, `${(imageFile.size / 1024).toFixed(1)}KB`)
+		let imageBuffer = null
+		let originalMimeType = 'image/jpeg'
 
-    // Convert file to buffer
-    const imageBuffer = Buffer.from(await imageFile.arrayBuffer())
+		if (contentType.includes('application/json')) {
+			const body = await req.json()
+			if (!body.image) throw new Error('No image field in JSON body')
+			
+			// Extract base64 data from data URL
+			const match = body.image.match(/^data:([^;]+);base64,(.+)$/)
+			if (!match) throw new Error('Invalid data URL format')
+			
+			originalMimeType = match[1]
+			imageBuffer = Buffer.from(match[2], 'base64')
+		} else if (contentType.includes('multipart/form-data')) {
+			const form = await req.formData()
+			const file = form.get('image')
+			if (!file) throw new Error('No file field named "image" found in form data')
 
-    // Enhanced image preprocessing for better OCR accuracy
-    let processedImageBuffer = imageBuffer
-    
-    if (imageBuffer.length > MAX_FILE_SIZE) {
-      console.log('Image too large, compressing with quality optimization...')
-      
-      // Multi-step compression approach
-      const compressionRatio = MAX_FILE_SIZE / imageBuffer.length
-      let targetQuality = Math.max(70, Math.min(95, compressionRatio * 120))
-      
-      processedImageBuffer = await sharp(imageBuffer)
-        .resize(2800, null, { 
-          withoutEnlargement: true,
-          kernel: sharp.kernel.lanczos3 // Better quality scaling
-        })
-        .grayscale()
-        .normalize()
-        .sharpen({ sigma: 1.0, m1: 1.0, m2: 2.0 }) // Enhanced sharpening
-        .linear(1.2, -(128 * 1.2) + 128) // Increase contrast
-        .png({ 
-          quality: Math.round(targetQuality), 
-          compressionLevel: 9, 
-          progressive: true,
-          palette: true
-        })
-        .toBuffer()
-        
-      // If still too large, use JPEG with aggressive compression
-      if (processedImageBuffer.length > MAX_FILE_SIZE) {
-        console.log('Still too large, using JPEG compression...')
-        targetQuality = 65
-        processedImageBuffer = await sharp(imageBuffer)
-          .resize(2400, null, { withoutEnlargement: true })
-          .grayscale()
-          .normalize()
-          .sharpen()
-          .linear(1.3, -(128 * 1.3) + 128)
-          .jpeg({ 
-            quality: targetQuality, 
-            progressive: true,
-            mozjpeg: true
-          })
-          .toBuffer()
-      }
-        
-      console.log(`Compressed from ${(imageBuffer.length / 1024).toFixed(1)}KB to ${(processedImageBuffer.length / 1024).toFixed(1)}KB`)
-    } else {
-      // Optimal preprocessing for images under size limit
-      processedImageBuffer = await sharp(imageBuffer)
-        .resize(3200, null, { 
-          withoutEnlargement: true,
-          kernel: sharp.kernel.lanczos3
-        })
-        .grayscale()
-        .normalize()
-        .sharpen({ sigma: 1.0, m1: 1.0, m2: 2.0 })
-        .linear(1.1, -(128 * 1.1) + 128) // Slight contrast boost
-        .png({ compressionLevel: 6 })
-        .toBuffer()
-        
-      // If preprocessing made it too large, compress it down
-      if (processedImageBuffer.length > MAX_FILE_SIZE * 0.9) {
-        const targetSize = Math.floor(MAX_FILE_SIZE * 0.85)
-        const ratio = targetSize / processedImageBuffer.length
-        const quality = Math.max(70, Math.min(90, ratio * 100))
-        
-        processedImageBuffer = await sharp(processedImageBuffer)
-          .png({ quality: Math.round(quality), compressionLevel: 9 })
-          .toBuffer()
-      }
-        
-      console.log(`Preprocessed image: ${(processedImageBuffer.length / 1024).toFixed(1)}KB`)
-    }
+			imageBuffer = Buffer.from(await file.arrayBuffer())
+			originalMimeType = file.type || 'image/jpeg'
+		} else {
+			// try to parse text body as JSON
+			const text = await req.text()
+			try {
+				const j = JSON.parse(text)
+				if (!j.image) throw new Error('No image field in JSON body')
+				
+				const match = j.image.match(/^data:([^;]+);base64,(.+)$/)
+				if (!match) throw new Error('Invalid data URL format')
+				
+				originalMimeType = match[1]
+				imageBuffer = Buffer.from(match[2], 'base64')
+			} catch (e) {
+				throw new Error('Could not parse request body as JSON or extract image data')
+			}
+		}
 
-    // Perform OCR
-    console.log('Running OCR analysis...')
-    const ocrResult = await callOCRSpace(processedImageBuffer)
+		if (!imageBuffer) {
+			return new Response(JSON.stringify({ error: 'No image provided. Send JSON { image: dataUrl } or multipart/form-data with field "image".' }), { status: 400, headers: { 'Content-Type': 'application/json' } })
+		}
 
-    if (!ocrResult?.text) {
-      throw new Error('OCR failed to extract text from image')
-    }
+		// Compress and optimize the image for OCR
+		console.log('Compressing image for OCR...')
+		const base64Image = await compressImageForOCR(imageBuffer, originalMimeType)
 
-    // Parse the receipt with enhanced parser
-    console.log('Parsing receipt data...')
-    const parsed = parseGermanReceipt(ocrResult.text)
-    
-    console.log('Final parsing results:', {
-      itemCount: parsed.itemCount,
-      total: parsed.total,
-      sampleItems: parsed.items.slice(0, 3).map(item => `${item.name}: €${item.price}`)
-    })
+		// Prepare form data for OCR.space
+		const fd = new FormData()
+		fd.append('apikey', apiKey)
+		fd.append('language', 'ger')
+		fd.append('isOverlayRequired', 'false')
+		fd.append('OCREngine', '2')
+		fd.append('base64Image', base64Image)
 
-    return NextResponse.json({
-      success: true,
-      text: ocrResult.text,
-      confidence: ocrResult.confidence,
-      items: parsed.items,
-      total: parsed.total,
-      itemCount: parsed.itemCount,
-      processedImageSize: `${(processedImageBuffer.length / 1024).toFixed(0)}KB`
-    })
+		const ocrResp = await fetch('https://api.ocr.space/parse/image', { method: 'POST', body: fd })
+		const ocrJson = await ocrResp.json()
 
-  } catch (error) {
-    console.error('Receipt analysis error:', error)
-    return NextResponse.json({ 
-      error: 'Failed to analyze receipt: ' + error.message 
-    }, { status: 500 })
-  }
+		if (!ocrJson) throw new Error('Empty response from OCR provider')
+
+		// Check for OCR errors
+		if (ocrJson.OCRExitCode > 1) {
+			throw new Error(`OCR failed: ${ocrJson.ErrorMessage || 'Unknown OCR error'}`)
+		}
+
+		const parsedText = (ocrJson.ParsedResults || []).map(p => p.ParsedText || '').join('\n')
+
+		// Log the OCR text for debugging
+		console.log('OCR Text extracted:', parsedText.substring(0, 200) + '...')
+
+		// Clean OCR text to remove common OCR spacing/line-break artifacts
+		function cleanOcrText(text) {
+			if (!text) return ''
+			// Normalize line endings and trim whitespace
+			let t = text.replace(/\r/g, '')
+			// Replace common OCR-inserted spaces inside numbers (e.g. "4, 69" → "4,69" or "1 234" → "1234")
+			t = t.replace(/(\d)\s+([,.])\s*(\d)/g, '$1$2$3')
+			t = t.replace(/(\d)\s+(?=\d{3}(\D|$))/g, '')
+			// Collapse multiple spaces into single space, but keep line breaks for parser heuristics
+			t = t.split('\n').map(line => line.replace(/\s{2,}/g, ' ').trim()).filter(Boolean).join('\n')
+			// Remove weird non-printable characters
+			t = t.replace(/[\u200B-\u200F\uFEFF]/g, '')
+			return t
+		}
+
+		const cleanedText = cleanOcrText(parsedText || '')
+
+		// Run local German receipt parsing on cleaned text
+		const parsed = parseGermanReceipt(cleanedText)
+
+		const result = {
+			...parsed,
+			text: parsedText,
+			ocrRaw: ocrJson,
+			originalImageSize: imageBuffer.length,
+			processedImageSize: base64Image.length,
+			debug: {
+				ocrEngine: '2', // We explicitly use engine 2
+				ocrExitCode: ocrJson.OCRExitCode,
+				textLength: parsedText.length,
+				hasText: parsedText.length > 0,
+				compressionRatio: Math.round((1 - base64Image.length / imageBuffer.length) * 100)
+			}
+		}
+
+		return new Response(JSON.stringify(result), { status: 200, headers: { 'Content-Type': 'application/json' } })
+	} catch (err) {
+		return new Response(JSON.stringify({ error: err.message || String(err) }), { status: 500, headers: { 'Content-Type': 'application/json' } })
+	}
 }
