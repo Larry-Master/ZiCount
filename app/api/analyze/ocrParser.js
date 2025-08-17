@@ -35,8 +35,12 @@ export function parseGermanReceipt(text, options = {}) {
   const items = []
   let lastName = null
   let pendingItem = null // store pending item object when we have name but no price yet
+  const pendingNames = [] // collect names awaiting prices when OCR separates names and prices
+  const priceBuffer = [] // collect consecutive price-only lines to assign later
+  let sawEURMarker = false
   let sum = null
   let sumStr = null
+  let sumFoundIndex = -1
 
   const metaSkip = /handeingabe|e-bon|kundenbeleg|kassenbeleg|datum|uhrzeit|uhr|telefon|tel\b|rechnung|mwst|uid\b/i
 
@@ -72,15 +76,17 @@ export function parseGermanReceipt(text, options = {}) {
     const line = rawLines[i]
     if (!line) continue
 
-    // Try to capture the SUMME/total first
+    // Try to capture the SUMME/total first — don't break immediately, price may be on next line(s)
     if (/\bSUMME\b|\bSUM\b|\bGes\.|\bGes\b/i.test(line)) {
       const prices = findPrices(line)
       if (prices.length) {
         sumStr = prices[prices.length - 1]
         sum = parsePrice(sumStr)
       }
+      sumFoundIndex = i
       diagnostics.push({ index: i, line, action: 'found-sum', prices, sumStr })
-      break // typically sum is at end; we can stop parsing items
+      // continue parsing to allow lookahead price assignment
+      continue
     }
 
     // Skip known meta lines
@@ -122,30 +128,74 @@ export function parseGermanReceipt(text, options = {}) {
       // otherwise treat as a generic line and continue
     }
 
-    // If the line is essentially a price-only line (maybe with EUR or €), assign to previous pending item
-    const priceOnly = line.replace(/[€\s]/g, '').match(/^\d+[.,]\d{2}$/)
-    if (priceOnly && (pendingItem || lastName)) {
-      const priceStr = priceOnly[0]
-      const price = parsePrice(priceStr)
-      const name = pendingItem?.name || lastName
-      if (price != null) {
-        items.push({ name: name || '<unknown>', price, priceStr, tag: null })
-        diagnostics.push({ index: i, line, action: 'price-only-assigned', priceStr, name })
-      } else {
-        diagnostics.push({ index: i, line, action: 'price-only-parse-failed', priceOnly: priceOnly[0] })
-      }
-      lastName = null
-      pendingItem = null
+    // Detect an isolated price-only line (maybe with EUR or € or trailing tag). We'll buffer these and
+    // assign them later if the receipt shows a price block at the end.
+    const priceOnlyMatch = line.replace(/€/g, '').trim().match(/^\d+[.,]\d{2}(?:\s*[A-C])?$/)
+    if (priceOnlyMatch) {
+      const rawPrice = priceOnlyMatch[0].trim()
+      priceBuffer.push({ raw: rawPrice, line, index: i })
+      diagnostics.push({ index: i, line, action: 'price-buffered', rawPrice })
+      // do not assign immediately; wait for potential block assignment
       continue
+    }
+
+    // If we hit the 'EUR' marker which often precedes a block of prices, mark it
+    if (/^EUR$/i.test(line)) {
+      sawEURMarker = true
+      diagnostics.push({ index: i, line, action: 'saw-eur-marker' })
+      continue
+    }
+
+    // If we reach a non-price line but have a buffered price block, attempt assignment now.
+    if (priceBuffer.length > 0) {
+      // Build price strings from buffer
+      const bufferedPrices = priceBuffer.map(p => {
+        // strip trailing tag letters if present
+        const m = p.raw.match(/^(\d+[.,]\d{2})/)
+        return m ? m[1] : p.raw
+      })
+
+      // Assign buffered prices to pending names (in FIFO order)
+      let assigned = 0
+      while (bufferedPrices.length > 0 && pendingNames.length > 0) {
+        const priceStr = bufferedPrices.shift()
+        const name = pendingNames.shift()
+        const price = parsePrice(priceStr)
+        if (price != null) {
+          items.push({ name: name || '<unknown>', price, priceStr, tag: null })
+          diagnostics.push({ action: 'buffer-assigned', name, price, priceStr })
+          assigned++
+        } else {
+          diagnostics.push({ action: 'buffer-assign-failed', name, priceStr })
+        }
+      }
+
+      // If there are leftover buffered prices but no pending names, try to append them as unnamed items
+      while (bufferedPrices.length > 0) {
+        const priceStr = bufferedPrices.shift()
+        const price = parsePrice(priceStr)
+        if (price != null) {
+          items.push({ name: '<unknown>', price, priceStr, tag: null })
+          diagnostics.push({ action: 'buffer-assigned-unnamed', price, priceStr })
+        }
+      }
+
+      priceBuffer.length = 0
+      sawEURMarker = false
     }
 
     const prices = findPrices(line)
 
     // If no price on this line, treat it as an item name candidate
     if (prices.length === 0) {
-      if (line.length > 1 && !/^[\d\-]+$/.test(line)) {
+      // accept as name candidate only if it contains at least one letter and not a colon or mostly numeric
+      const hasLetter = /[A-Za-zÄÖÜäöüß]/.test(line)
+      const looksNumeric = /^\s*[\d\W]+\s*$/.test(line)
+      const hasColon = /:/.test(line)
+      if (hasLetter && !looksNumeric && !hasColon && line.length >= 3) {
         lastName = line
         pendingItem = { name: line }
+        pendingNames.push(line)
         diagnostics.push({ index: i, line, action: 'name-candidate', name: line })
       } else {
         diagnostics.push({ index: i, line, action: 'skip-nonitem' })

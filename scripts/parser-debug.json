@@ -1,416 +1,900 @@
 {
-  "originalText": "REWE\nGlashuttenstr. 7\n93055 Regensburg\nUID Nr.: DE812706034\nSUESSKARTOFFEL 1,238 kg x 3,79 EUR/kg 4,69 A\nRISPENTOMATE 0,714 kg x 2,49 EUR/kg 1,78 B\nBANANE CHIQUITA 0,958 kg x 1,59 EUR/kg 1,52 B\nBANANE CHIQUITA 1,168 kg x 1,59 EUR/kg 1,86 B\nSUPPENFLEISCH MK 6,71 B\nHAND EINGABE E-Bon\nSW-FILET 0,790 kg 4,27 B\nHACKFLEISCH 0,540 kg 2,55 B\nITAL.MORTAD.CAST 0,202 kg 3,21 B\nSALAMI PIK.TUSK 2,59 B\nKRUSTENBRATEN 0,150 kg 2,39 B\nDOMSCHINKEN 0,148 kg 2,35 B\nBAUCHSP.PANCETTA 4,52 B\nMINISALAMI 2,99 B\nOLD AMSTERDAM 3,79 B\nPAST.FILAT.ALPIJ 2,18 B\nGEFLUEGELROLLE 0,90 B\nDONUT EINZELN 0,69 B\nU. PURES KAROTTE 2,49 B\nBIO MAISWAFFEL 0,99 B\nORANGEN RIESEN 2,89 B\nBLUTORANGE BIO 0,99 B\nLIMETTE 0,59 B\nERDBEERE 5,99 B\nTRAUBE KERNL.HEL 2,58 B\nPAKCHOU MINI 1,99 B\nSTAUDENSEL.BIO 1,99 B\nROMARIS PENTOM. 3,29 B\nPAPRIKA MI. BIO 1,89 B\nZUCCHINI BIO 1,79 B\nSPEISEQUARK MAG. 1,50 B\nJA! SCHLAGSAHNE 1,26 B\nMILCHSCHNITTE 1,79 B\nPOPCORN MAIS 1,29 B\nACETO BALSAMICO 3,19 B\nBALSAMICO CREME 4,39 B\nNUSS COCKTAIL 0,99 B\nLEIBN. BUTTERK. 3,98 B\nTOERTCHEN KAKAO 1,99 B\nGOOGLEPLAY25 V231 25,00 C\nSUMME EUR 130,18\nGeg. EC-Cash EUR 130,18\nDatum: 24.03.2021\nUhrzeit: 18:32:34",
-  "normalizedText": "REWE\nGlashuttenstr. 7\n93055 Regensburg\nUID Nr.: DE812706034\nSUESSKARTOFFEL 1,238 kg x 3,79 EUR/kg 4,69 A\nRISPENTOMATE 0,714 kg x 2,49 EUR/kg 1,78 B\nBANANE CHIQUITA 0,958 kg x 1,59 EUR/kg 1,52 B\nBANANE CHIQUITA 1,168 kg x 1,59 EUR/kg 1,86 B\nSUPPENFLEISCH MK 6,71 B\nHAND EINGABE E-Bon\nSW-FILET 0,790 kg 4,27 B\nHACKFLEISCH 0,540 kg 2,55 B\nITAL.MORTAD.CAST 0,202 kg 3,21 B\nSALAMI PIK.TUSK 2,59 B\nKRUSTENBRATEN 0,150 kg 2,39 B\nDOMSCHINKEN 0,148 kg 2,35 B\nBAUCHSP.PANCETTA 4,52 B\nMINISALAMI 2,99 B\nOLD AMSTERDAM 3,79 B\nPAST.FILAT.ALPIJ 2,18 B\nGEFLUEGELROLLE 0,90 B\nDONUT EINZELN 0,69 B\nU. PURES KAROTTE 2,49 B\nBIO MAISWAFFEL 0,99 B\nORANGEN RIESEN 2,89 B\nBLUTORANGE BIO 0,99 B\nLIMETTE 0,59 B\nERDBEERE 5,99 B\nTRAUBE KERNL.HEL 2,58 B\nPAKCHOU MINI 1,99 B\nSTAUDENSEL.BIO 1,99 B\nROMARIS PENTOM. 3,29 B\nPAPRIKA MI. BIO 1,89 B\nZUCCHINI BIO 1,79 B\nSPEISEQUARK MAG. 1,50 B\nJA! SCHLAGSAHNE 1,26 B\nMILCHSCHNITTE 1,79 B\nPOPCORN MAIS 1,29 B\nACETO BALSAMICO 3,19 B\nBALSAMICO CREME 4,39 B\nNUSS COCKTAIL 0,99 B\nLEIBN. BUTTERK. 3,98 B\nTOERTCHEN KAKAO 1,99 B\nGOOGLEPLAY25 V231 25,00 C\nSUMME EUR 130,18\nGeg. EC-Cash EUR 130,18\nDatum: 24,03.2021\nUhrzeit: 18:32:34",
+  "originalText": "REWE\nGlashüttenstr. 7\n93055 Regensburg\nUID Nr. : DE812706034\nSUESSKARTOFFEL\n1, 238 kg x\n3, 79 EUR/kg\nRISPENTOMATE\n0, 714 kg x\n2, 49 EUR/kg\nBANANE CHIQUITA\n0, 958 kg x\n1,59 EUR/kg\nBANANE CHIQUITA\n1, 168 kg x\n1,59 EUR/kg\nSUPPENFLEISCH MK\nHandeingabe E-Bon\n0, 790 kg\nSW-FILET\nHandeingabe E-Bon\n0, 540 kg\nHACKFLEISCH GEM\n1HAL MORTADE CAS Bon\n0, 522 kg\nSALAMI\nHande ingabe Tosk\nE-Bon\n0, 202 kg\nPIK.\nKRUSTENBRATEN\nHande ingabe E-Bon\n0, 150 kg\nDOMSCHINKEN\nHandeingabe E-Bon\n0, 148 kg\nBAUCHSP. PANCETTA\nMINISALAMI\nOLD AMSTERDAM\nPAST. FILAT. ALPIJ\nGEFLUEGELROLLE\n2 Stk x\n1,09\nDONUT EINZELN\nU. PURES KAROTTE\nBIO MAISWAFFEL\nORANGEN RIESEN\nBLUTORANGE BIO\nLIMETTE\nERDBEERE\nTRAUBE KERNL. HEL\n2 Stk x\n1,29\nPAKCHOI MINI\nSTAUDENSEL. BIO\nROMARISPENTOM.\nPAPRIKA MI. BIO\nZUCCHINI BIO\nSPEISEQUARK MAG.\n2 Stk x\n0.75\nJA! SCHLAGSAHNE\n2 Stk x\n0, 63\nMILCHSCHNITTE\nPOPCORN MAIS\nACETO BALSAMICO\nBALSAMICO CREME\nNUSS COCKTAIL\nLEIBN. BUTTERK.\nTOERTCHEN KAKAO\n2 Stk x\n1, 99\nGOOGLEPLAY25\nV231\n6338719635590701\nEUR\n4,69 A\n1, 78 B\n1,52 B\n1,86 B\n6, 71 B\n4,27 B\n2, 55 B\n3, 21 B\n2: 38\n2, 35 B\n52\n99\n2, 18\n0,\n89\n1,99\n1,\n99\n1, 89\n1,79\n1, 50 B\n1, 26 B\n1, 79\n1, 29\n1,79 B\n3, 19 B\n0, 99 B\n3, 98\n25, 00 C *\nSUMME\nGeg. EC-Cash\nEUR\nEUR\n* * Kundenbeleg\nDatum:\nUhrzeit:\n130, 18\n130, 18\n* *\n24.\n03. 2021\n19:32:34\nUhr\n7636",
+  "normalizedText": "REWE\nGlashüttenstr. 7\n93055 Regensburg\nUID Nr. : DE812706034\nSUESSKARTOFFEL\n1,238 kg x\n3,79 EUR/kg\nRISPENTOMATE\n0,714 kg x\n2,49 EUR/kg\nBANANE CHIQUITA\n0,958 kg x\n1,59 EUR/kg\nBANANE CHIQUITA\n1,168 kg x\n1,59 EUR/kg\nSUPPENFLEISCH MK\nHandeingabe E-Bon\n0,790 kg\nSW-FILET\nHandeingabe E-Bon\n0,540 kg\nHACKFLEISCH GEM\n1HAL MORTADE CAS Bon\n0,522 kg\nSALAMI\nHande ingabe Tosk\nE-Bon\n0,202 kg\nPIK.\nKRUSTENBRATEN\nHande ingabe E-Bon\n0,150 kg\nDOMSCHINKEN\nHandeingabe E-Bon\n0,148 kg\nBAUCHSP. PANCETTA\nMINISALAMI\nOLD AMSTERDAM\nPAST. FILAT. ALPIJ\nGEFLUEGELROLLE\n2 Stk x\n1,09\nDONUT EINZELN\nU. PURES KAROTTE\nBIO MAISWAFFEL\nORANGEN RIESEN\nBLUTORANGE BIO\nLIMETTE\nERDBEERE\nTRAUBE KERNL. HEL\n2 Stk x\n1,29\nPAKCHOI MINI\nSTAUDENSEL. BIO\nROMARISPENTOM.\nPAPRIKA MI. BIO\nZUCCHINI BIO\nSPEISEQUARK MAG.\n2 Stk x\n0,75\nJA! SCHLAGSAHNE\n2 Stk x\n0,63\nMILCHSCHNITTE\nPOPCORN MAIS\nACETO BALSAMICO\nBALSAMICO CREME\nNUSS COCKTAIL\nLEIBN. BUTTERK.\nTOERTCHEN KAKAO\n2 Stk x\n1,99\nGOOGLEPLAY25\nV231\n6338719635590701\nEUR\n4,69 A\n1,78 B\n1,52 B\n1,86 B\n6,71 B\n4,27 B\n2,55 B\n3,21 B\n2: 38\n2,35 B\n52\n99\n2,18\n0,89\n1,99\n1,99\n1,89\n1,79\n1,50 B\n1,26 B\n1,79\n1,29\n1,79 B\n3,19 B\n0,99 B\n3,98\n25,00 C *\nSUMME\nGeg. EC-Cash\nEUR\nEUR\n* * Kundenbeleg\nDatum:\nUhrzeit:\n130,18130,18\n* *\n24,03. 2021\n19:32:34\nUhr\n7636",
   "rawLines": [
     "REWE",
-    "Glashuttenstr. 7",
+    "Glashüttenstr. 7",
     "93055 Regensburg",
-    "UID Nr.: DE812706034",
-    "SUESSKARTOFFEL 1,238 kg x 3,79 EUR/kg 4,69 A",
-    "RISPENTOMATE 0,714 kg x 2,49 EUR/kg 1,78 B",
-    "BANANE CHIQUITA 0,958 kg x 1,59 EUR/kg 1,52 B",
-    "BANANE CHIQUITA 1,168 kg x 1,59 EUR/kg 1,86 B",
-    "SUPPENFLEISCH MK 6,71 B",
-    "HAND EINGABE E-Bon",
-    "SW-FILET 0,790 kg 4,27 B",
-    "HACKFLEISCH 0,540 kg 2,55 B",
-    "ITAL.MORTAD.CAST 0,202 kg 3,21 B",
-    "SALAMI PIK.TUSK 2,59 B",
-    "KRUSTENBRATEN 0,150 kg 2,39 B",
-    "DOMSCHINKEN 0,148 kg 2,35 B",
-    "BAUCHSP.PANCETTA 4,52 B",
-    "MINISALAMI 2,99 B",
-    "OLD AMSTERDAM 3,79 B",
-    "PAST.FILAT.ALPIJ 2,18 B",
-    "GEFLUEGELROLLE 0,90 B",
-    "DONUT EINZELN 0,69 B",
-    "U. PURES KAROTTE 2,49 B",
-    "BIO MAISWAFFEL 0,99 B",
-    "ORANGEN RIESEN 2,89 B",
-    "BLUTORANGE BIO 0,99 B",
-    "LIMETTE 0,59 B",
-    "ERDBEERE 5,99 B",
-    "TRAUBE KERNL.HEL 2,58 B",
-    "PAKCHOU MINI 1,99 B",
-    "STAUDENSEL.BIO 1,99 B",
-    "ROMARIS PENTOM. 3,29 B",
-    "PAPRIKA MI. BIO 1,89 B",
-    "ZUCCHINI BIO 1,79 B",
-    "SPEISEQUARK MAG. 1,50 B",
-    "JA! SCHLAGSAHNE 1,26 B",
-    "MILCHSCHNITTE 1,79 B",
-    "POPCORN MAIS 1,29 B",
-    "ACETO BALSAMICO 3,19 B",
-    "BALSAMICO CREME 4,39 B",
-    "NUSS COCKTAIL 0,99 B",
-    "LEIBN. BUTTERK. 3,98 B",
-    "TOERTCHEN KAKAO 1,99 B",
-    "GOOGLEPLAY25 V231 25,00 C",
-    "SUMME EUR 130,18",
-    "Geg. EC-Cash EUR 130,18",
-    "Datum: 24,03.2021",
-    "Uhrzeit: 18:32:34"
+    "UID Nr. : DE812706034",
+    "SUESSKARTOFFEL",
+    "1,238 kg x",
+    "3,79 EUR/kg",
+    "RISPENTOMATE",
+    "0,714 kg x",
+    "2,49 EUR/kg",
+    "BANANE CHIQUITA",
+    "0,958 kg x",
+    "1,59 EUR/kg",
+    "BANANE CHIQUITA",
+    "1,168 kg x",
+    "1,59 EUR/kg",
+    "SUPPENFLEISCH MK",
+    "Handeingabe E-Bon",
+    "0,790 kg",
+    "SW-FILET",
+    "Handeingabe E-Bon",
+    "0,540 kg",
+    "HACKFLEISCH GEM",
+    "1HAL MORTADE CAS Bon",
+    "0,522 kg",
+    "SALAMI",
+    "Hande ingabe Tosk",
+    "E-Bon",
+    "0,202 kg",
+    "PIK.",
+    "KRUSTENBRATEN",
+    "Hande ingabe E-Bon",
+    "0,150 kg",
+    "DOMSCHINKEN",
+    "Handeingabe E-Bon",
+    "0,148 kg",
+    "BAUCHSP. PANCETTA",
+    "MINISALAMI",
+    "OLD AMSTERDAM",
+    "PAST. FILAT. ALPIJ",
+    "GEFLUEGELROLLE",
+    "2 Stk x",
+    "1,09",
+    "DONUT EINZELN",
+    "U. PURES KAROTTE",
+    "BIO MAISWAFFEL",
+    "ORANGEN RIESEN",
+    "BLUTORANGE BIO",
+    "LIMETTE",
+    "ERDBEERE",
+    "TRAUBE KERNL. HEL",
+    "2 Stk x",
+    "1,29",
+    "PAKCHOI MINI",
+    "STAUDENSEL. BIO",
+    "ROMARISPENTOM.",
+    "PAPRIKA MI. BIO",
+    "ZUCCHINI BIO",
+    "SPEISEQUARK MAG.",
+    "2 Stk x",
+    "0,75",
+    "JA! SCHLAGSAHNE",
+    "2 Stk x",
+    "0,63",
+    "MILCHSCHNITTE",
+    "POPCORN MAIS",
+    "ACETO BALSAMICO",
+    "BALSAMICO CREME",
+    "NUSS COCKTAIL",
+    "LEIBN. BUTTERK.",
+    "TOERTCHEN KAKAO",
+    "2 Stk x",
+    "1,99",
+    "GOOGLEPLAY25",
+    "V231",
+    "6338719635590701",
+    "EUR",
+    "4,69 A",
+    "1,78 B",
+    "1,52 B",
+    "1,86 B",
+    "6,71 B",
+    "4,27 B",
+    "2,55 B",
+    "3,21 B",
+    "2: 38",
+    "2,35 B",
+    "52",
+    "99",
+    "2,18",
+    "0,89",
+    "1,99",
+    "1,99",
+    "1,89",
+    "1,79",
+    "1,50 B",
+    "1,26 B",
+    "1,79",
+    "1,29",
+    "1,79 B",
+    "3,19 B",
+    "0,99 B",
+    "3,98",
+    "25,00 C *",
+    "SUMME",
+    "Geg. EC-Cash",
+    "EUR",
+    "EUR",
+    "* * Kundenbeleg",
+    "Datum:",
+    "Uhrzeit:",
+    "130,18130,18",
+    "* *",
+    "24,03. 2021",
+    "19:32:34",
+    "Uhr",
+    "7636"
   ],
   "diagnostics": [
     {
       "index": 4,
-      "line": "SUESSKARTOFFEL 1,238 kg x 3,79 EUR/kg 4,69 A",
-      "action": "item-pushed",
-      "name": "SUESSKARTOFFEL",
-      "price": 4.69,
-      "priceStr": "4,69",
-      "tag": "A"
+      "line": "SUESSKARTOFFEL",
+      "action": "name-candidate",
+      "name": "SUESSKARTOFFEL"
     },
     {
       "index": 5,
-      "line": "RISPENTOMATE 0,714 kg x 2,49 EUR/kg 1,78 B",
-      "action": "item-pushed",
-      "name": "RISPENTOMATE",
-      "price": 1.78,
-      "priceStr": "1,78",
-      "tag": "B"
+      "line": "1,238 kg x",
+      "action": "skip-kg-unit",
+      "prices": [
+        "1,23"
+      ]
     },
     {
       "index": 6,
-      "line": "BANANE CHIQUITA 0,958 kg x 1,59 EUR/kg 1,52 B",
-      "action": "item-pushed",
-      "name": "BANANE CHIQUITA",
-      "price": 1.52,
-      "priceStr": "1,52",
-      "tag": "B"
+      "line": "3,79 EUR/kg",
+      "action": "skip-kg-unit",
+      "prices": [
+        "3,79"
+      ]
     },
     {
       "index": 7,
-      "line": "BANANE CHIQUITA 1,168 kg x 1,59 EUR/kg 1,86 B",
-      "action": "item-pushed",
-      "name": "BANANE CHIQUITA",
-      "price": 1.86,
-      "priceStr": "1,86",
-      "tag": "B"
+      "line": "RISPENTOMATE",
+      "action": "name-candidate",
+      "name": "RISPENTOMATE"
     },
     {
       "index": 8,
-      "line": "SUPPENFLEISCH MK 6,71 B",
-      "action": "item-pushed",
-      "name": "SUPPENFLEISCH MK",
-      "price": 6.71,
-      "priceStr": "6,71",
-      "tag": "B"
+      "line": "0,714 kg x",
+      "action": "skip-kg-unit",
+      "prices": [
+        "0,71"
+      ]
+    },
+    {
+      "index": 9,
+      "line": "2,49 EUR/kg",
+      "action": "skip-kg-unit",
+      "prices": [
+        "2,49"
+      ]
     },
     {
       "index": 10,
-      "line": "SW-FILET 0,790 kg 4,27 B",
-      "action": "item-pushed",
-      "name": "SW-FILET",
-      "price": 4.27,
-      "priceStr": "4,27",
-      "tag": "B"
+      "line": "BANANE CHIQUITA",
+      "action": "name-candidate",
+      "name": "BANANE CHIQUITA"
     },
     {
       "index": 11,
-      "line": "HACKFLEISCH 0,540 kg 2,55 B",
-      "action": "item-pushed",
-      "name": "HACKFLEISCH",
-      "price": 2.55,
-      "priceStr": "2,55",
-      "tag": "B"
+      "line": "0,958 kg x",
+      "action": "skip-kg-unit",
+      "prices": [
+        "0,95"
+      ]
     },
     {
       "index": 12,
-      "line": "ITAL.MORTAD.CAST 0,202 kg 3,21 B",
-      "action": "item-pushed",
-      "name": "ITAL.MORTAD.CAST",
-      "price": 3.21,
-      "priceStr": "3,21",
-      "tag": "B"
+      "line": "1,59 EUR/kg",
+      "action": "skip-kg-unit",
+      "prices": [
+        "1,59"
+      ]
     },
     {
       "index": 13,
-      "line": "SALAMI PIK.TUSK 2,59 B",
-      "action": "item-pushed",
-      "name": "SALAMI PIK.TUSK",
-      "price": 2.59,
-      "priceStr": "2,59",
-      "tag": "B"
+      "line": "BANANE CHIQUITA",
+      "action": "name-candidate",
+      "name": "BANANE CHIQUITA"
     },
     {
       "index": 14,
-      "line": "KRUSTENBRATEN 0,150 kg 2,39 B",
-      "action": "item-pushed",
-      "name": "KRUSTENBRATEN",
-      "price": 2.39,
-      "priceStr": "2,39",
-      "tag": "B"
+      "line": "1,168 kg x",
+      "action": "skip-kg-unit",
+      "prices": [
+        "1,16"
+      ]
     },
     {
       "index": 15,
-      "line": "DOMSCHINKEN 0,148 kg 2,35 B",
-      "action": "item-pushed",
-      "name": "DOMSCHINKEN",
-      "price": 2.35,
-      "priceStr": "2,35",
-      "tag": "B"
+      "line": "1,59 EUR/kg",
+      "action": "skip-kg-unit",
+      "prices": [
+        "1,59"
+      ]
     },
     {
       "index": 16,
-      "line": "BAUCHSP.PANCETTA 4,52 B",
-      "action": "item-pushed",
-      "name": "BAUCHSP.PANCETTA",
-      "price": 4.52,
-      "priceStr": "4,52",
-      "tag": "B"
-    },
-    {
-      "index": 17,
-      "line": "MINISALAMI 2,99 B",
-      "action": "item-pushed",
-      "name": "MINISALAMI",
-      "price": 2.99,
-      "priceStr": "2,99",
-      "tag": "B"
+      "line": "SUPPENFLEISCH MK",
+      "action": "name-candidate",
+      "name": "SUPPENFLEISCH MK"
     },
     {
       "index": 18,
-      "line": "OLD AMSTERDAM 3,79 B",
-      "action": "item-pushed",
-      "name": "OLD AMSTERDAM",
-      "price": 3.79,
-      "priceStr": "3,79",
-      "tag": "B"
+      "line": "0,790 kg",
+      "action": "skip-kg-unit",
+      "prices": [
+        "0,79"
+      ]
     },
     {
       "index": 19,
-      "line": "PAST.FILAT.ALPIJ 2,18 B",
-      "action": "item-pushed",
-      "name": "PAST.FILAT.ALPIJ",
-      "price": 2.18,
-      "priceStr": "2,18",
-      "tag": "B"
-    },
-    {
-      "index": 20,
-      "line": "GEFLUEGELROLLE 0,90 B",
-      "action": "item-pushed",
-      "name": "GEFLUEGELROLLE",
-      "price": 0.9,
-      "priceStr": "0,90",
-      "tag": "B"
+      "line": "SW-FILET",
+      "action": "name-candidate",
+      "name": "SW-FILET"
     },
     {
       "index": 21,
-      "line": "DONUT EINZELN 0,69 B",
-      "action": "item-pushed",
-      "name": "DONUT EINZELN",
-      "price": 0.69,
-      "priceStr": "0,69",
-      "tag": "B"
+      "line": "0,540 kg",
+      "action": "skip-kg-unit",
+      "prices": [
+        "0,54"
+      ]
     },
     {
       "index": 22,
-      "line": "U. PURES KAROTTE 2,49 B",
-      "action": "item-pushed",
-      "name": "U. PURES KAROTTE",
-      "price": 2.49,
-      "priceStr": "2,49",
-      "tag": "B"
+      "line": "HACKFLEISCH GEM",
+      "action": "name-candidate",
+      "name": "HACKFLEISCH GEM"
     },
     {
       "index": 23,
-      "line": "BIO MAISWAFFEL 0,99 B",
-      "action": "item-pushed",
-      "name": "BIO MAISWAFFEL",
-      "price": 0.99,
-      "priceStr": "0,99",
-      "tag": "B"
+      "line": "1HAL MORTADE CAS Bon",
+      "action": "name-candidate",
+      "name": "1HAL MORTADE CAS Bon"
     },
     {
       "index": 24,
-      "line": "ORANGEN RIESEN 2,89 B",
-      "action": "item-pushed",
-      "name": "ORANGEN RIESEN",
-      "price": 2.89,
-      "priceStr": "2,89",
-      "tag": "B"
+      "line": "0,522 kg",
+      "action": "skip-kg-unit",
+      "prices": [
+        "0,52"
+      ]
     },
     {
       "index": 25,
-      "line": "BLUTORANGE BIO 0,99 B",
-      "action": "item-pushed",
-      "name": "BLUTORANGE BIO",
-      "price": 0.99,
-      "priceStr": "0,99",
-      "tag": "B"
+      "line": "SALAMI",
+      "action": "name-candidate",
+      "name": "SALAMI"
     },
     {
       "index": 26,
-      "line": "LIMETTE 0,59 B",
-      "action": "item-pushed",
-      "name": "LIMETTE",
-      "price": 0.59,
-      "priceStr": "0,59",
-      "tag": "B"
-    },
-    {
-      "index": 27,
-      "line": "ERDBEERE 5,99 B",
-      "action": "item-pushed",
-      "name": "ERDBEERE",
-      "price": 5.99,
-      "priceStr": "5,99",
-      "tag": "B"
+      "line": "Hande ingabe Tosk",
+      "action": "name-candidate",
+      "name": "Hande ingabe Tosk"
     },
     {
       "index": 28,
-      "line": "TRAUBE KERNL.HEL 2,58 B",
-      "action": "item-pushed",
-      "name": "TRAUBE KERNL.HEL",
-      "price": 2.58,
-      "priceStr": "2,58",
-      "tag": "B"
+      "line": "0,202 kg",
+      "action": "skip-kg-unit",
+      "prices": [
+        "0,20"
+      ]
     },
     {
       "index": 29,
-      "line": "PAKCHOU MINI 1,99 B",
-      "action": "item-pushed",
-      "name": "PAKCHOU MINI",
-      "price": 1.99,
-      "priceStr": "1,99",
-      "tag": "B"
+      "line": "PIK.",
+      "action": "name-candidate",
+      "name": "PIK."
     },
     {
       "index": 30,
-      "line": "STAUDENSEL.BIO 1,99 B",
-      "action": "item-pushed",
-      "name": "STAUDENSEL.BIO",
-      "price": 1.99,
-      "priceStr": "1,99",
-      "tag": "B"
-    },
-    {
-      "index": 31,
-      "line": "ROMARIS PENTOM. 3,29 B",
-      "action": "item-pushed",
-      "name": "ROMARIS PENTOM.",
-      "price": 3.29,
-      "priceStr": "3,29",
-      "tag": "B"
+      "line": "KRUSTENBRATEN",
+      "action": "name-candidate",
+      "name": "KRUSTENBRATEN"
     },
     {
       "index": 32,
-      "line": "PAPRIKA MI. BIO 1,89 B",
-      "action": "item-pushed",
-      "name": "PAPRIKA MI. BIO",
-      "price": 1.89,
-      "priceStr": "1,89",
-      "tag": "B"
+      "line": "0,150 kg",
+      "action": "skip-kg-unit",
+      "prices": [
+        "0,15"
+      ]
     },
     {
       "index": 33,
-      "line": "ZUCCHINI BIO 1,79 B",
-      "action": "item-pushed",
-      "name": "ZUCCHINI BIO",
-      "price": 1.79,
-      "priceStr": "1,79",
-      "tag": "B"
-    },
-    {
-      "index": 34,
-      "line": "SPEISEQUARK MAG. 1,50 B",
-      "action": "item-pushed",
-      "name": "SPEISEQUARK MAG.",
-      "price": 1.5,
-      "priceStr": "1,50",
-      "tag": "B"
+      "line": "DOMSCHINKEN",
+      "action": "name-candidate",
+      "name": "DOMSCHINKEN"
     },
     {
       "index": 35,
-      "line": "JA! SCHLAGSAHNE 1,26 B",
-      "action": "item-pushed",
-      "name": "JA! SCHLAGSAHNE",
-      "price": 1.26,
-      "priceStr": "1,26",
-      "tag": "B"
+      "line": "0,148 kg",
+      "action": "skip-kg-unit",
+      "prices": [
+        "0,14"
+      ]
     },
     {
       "index": 36,
-      "line": "MILCHSCHNITTE 1,79 B",
-      "action": "item-pushed",
-      "name": "MILCHSCHNITTE",
-      "price": 1.79,
-      "priceStr": "1,79",
-      "tag": "B"
+      "line": "BAUCHSP. PANCETTA",
+      "action": "name-candidate",
+      "name": "BAUCHSP. PANCETTA"
     },
     {
       "index": 37,
-      "line": "POPCORN MAIS 1,29 B",
-      "action": "item-pushed",
-      "name": "POPCORN MAIS",
-      "price": 1.29,
-      "priceStr": "1,29",
-      "tag": "B"
+      "line": "MINISALAMI",
+      "action": "name-candidate",
+      "name": "MINISALAMI"
     },
     {
       "index": 38,
-      "line": "ACETO BALSAMICO 3,19 B",
-      "action": "item-pushed",
-      "name": "ACETO BALSAMICO",
-      "price": 3.19,
-      "priceStr": "3,19",
-      "tag": "B"
+      "line": "OLD AMSTERDAM",
+      "action": "name-candidate",
+      "name": "OLD AMSTERDAM"
     },
     {
       "index": 39,
-      "line": "BALSAMICO CREME 4,39 B",
-      "action": "item-pushed",
-      "name": "BALSAMICO CREME",
-      "price": 4.39,
-      "priceStr": "4,39",
-      "tag": "B"
+      "line": "PAST. FILAT. ALPIJ",
+      "action": "name-candidate",
+      "name": "PAST. FILAT. ALPIJ"
     },
     {
       "index": 40,
-      "line": "NUSS COCKTAIL 0,99 B",
-      "action": "item-pushed",
-      "name": "NUSS COCKTAIL",
-      "price": 0.99,
-      "priceStr": "0,99",
-      "tag": "B"
-    },
-    {
-      "index": 41,
-      "line": "LEIBN. BUTTERK. 3,98 B",
-      "action": "item-pushed",
-      "name": "LEIBN. BUTTERK.",
-      "price": 3.98,
-      "priceStr": "3,98",
-      "tag": "B"
+      "line": "GEFLUEGELROLLE",
+      "action": "name-candidate",
+      "name": "GEFLUEGELROLLE"
     },
     {
       "index": 42,
-      "line": "TOERTCHEN KAKAO 1,99 B",
-      "action": "item-pushed",
-      "name": "TOERTCHEN KAKAO",
-      "price": 1.99,
-      "priceStr": "1,99",
-      "tag": "B"
+      "line": "2 Stk x",
+      "action": "qty-assigned",
+      "qty": 2,
+      "unitPriceStr": "1,09",
+      "total": 2.18,
+      "name": "GEFLUEGELROLLE"
     },
     {
       "index": 43,
-      "line": "GOOGLEPLAY25 V231 25,00 C",
+      "line": "DONUT EINZELN",
+      "action": "name-candidate",
+      "name": "DONUT EINZELN"
+    },
+    {
+      "index": 44,
+      "line": "U. PURES KAROTTE",
+      "action": "name-candidate",
+      "name": "U. PURES KAROTTE"
+    },
+    {
+      "index": 45,
+      "line": "BIO MAISWAFFEL",
+      "action": "name-candidate",
+      "name": "BIO MAISWAFFEL"
+    },
+    {
+      "index": 46,
+      "line": "ORANGEN RIESEN",
+      "action": "name-candidate",
+      "name": "ORANGEN RIESEN"
+    },
+    {
+      "index": 47,
+      "line": "BLUTORANGE BIO",
+      "action": "name-candidate",
+      "name": "BLUTORANGE BIO"
+    },
+    {
+      "index": 48,
+      "line": "LIMETTE",
+      "action": "name-candidate",
+      "name": "LIMETTE"
+    },
+    {
+      "index": 49,
+      "line": "ERDBEERE",
+      "action": "name-candidate",
+      "name": "ERDBEERE"
+    },
+    {
+      "index": 50,
+      "line": "TRAUBE KERNL. HEL",
+      "action": "name-candidate",
+      "name": "TRAUBE KERNL. HEL"
+    },
+    {
+      "index": 52,
+      "line": "2 Stk x",
+      "action": "qty-assigned",
+      "qty": 2,
+      "unitPriceStr": "1,29",
+      "total": 2.58,
+      "name": "TRAUBE KERNL. HEL"
+    },
+    {
+      "index": 53,
+      "line": "PAKCHOI MINI",
+      "action": "name-candidate",
+      "name": "PAKCHOI MINI"
+    },
+    {
+      "index": 54,
+      "line": "STAUDENSEL. BIO",
+      "action": "name-candidate",
+      "name": "STAUDENSEL. BIO"
+    },
+    {
+      "index": 55,
+      "line": "ROMARISPENTOM.",
+      "action": "name-candidate",
+      "name": "ROMARISPENTOM."
+    },
+    {
+      "index": 56,
+      "line": "PAPRIKA MI. BIO",
+      "action": "name-candidate",
+      "name": "PAPRIKA MI. BIO"
+    },
+    {
+      "index": 57,
+      "line": "ZUCCHINI BIO",
+      "action": "name-candidate",
+      "name": "ZUCCHINI BIO"
+    },
+    {
+      "index": 58,
+      "line": "SPEISEQUARK MAG.",
+      "action": "name-candidate",
+      "name": "SPEISEQUARK MAG."
+    },
+    {
+      "index": 60,
+      "line": "2 Stk x",
+      "action": "qty-assigned",
+      "qty": 2,
+      "unitPriceStr": "0,75",
+      "total": 1.5,
+      "name": "SPEISEQUARK MAG."
+    },
+    {
+      "index": 61,
+      "line": "JA! SCHLAGSAHNE",
+      "action": "name-candidate",
+      "name": "JA! SCHLAGSAHNE"
+    },
+    {
+      "index": 63,
+      "line": "2 Stk x",
+      "action": "qty-assigned",
+      "qty": 2,
+      "unitPriceStr": "0,63",
+      "total": 1.26,
+      "name": "JA! SCHLAGSAHNE"
+    },
+    {
+      "index": 64,
+      "line": "MILCHSCHNITTE",
+      "action": "name-candidate",
+      "name": "MILCHSCHNITTE"
+    },
+    {
+      "index": 65,
+      "line": "POPCORN MAIS",
+      "action": "name-candidate",
+      "name": "POPCORN MAIS"
+    },
+    {
+      "index": 66,
+      "line": "ACETO BALSAMICO",
+      "action": "name-candidate",
+      "name": "ACETO BALSAMICO"
+    },
+    {
+      "index": 67,
+      "line": "BALSAMICO CREME",
+      "action": "name-candidate",
+      "name": "BALSAMICO CREME"
+    },
+    {
+      "index": 68,
+      "line": "NUSS COCKTAIL",
+      "action": "name-candidate",
+      "name": "NUSS COCKTAIL"
+    },
+    {
+      "index": 69,
+      "line": "LEIBN. BUTTERK.",
+      "action": "name-candidate",
+      "name": "LEIBN. BUTTERK."
+    },
+    {
+      "index": 70,
+      "line": "TOERTCHEN KAKAO",
+      "action": "name-candidate",
+      "name": "TOERTCHEN KAKAO"
+    },
+    {
+      "index": 72,
+      "line": "2 Stk x",
+      "action": "qty-assigned",
+      "qty": 2,
+      "unitPriceStr": "1,99",
+      "total": 3.98,
+      "name": "TOERTCHEN KAKAO"
+    },
+    {
+      "index": 73,
+      "line": "GOOGLEPLAY25",
+      "action": "name-candidate",
+      "name": "GOOGLEPLAY25"
+    },
+    {
+      "index": 74,
+      "line": "V231",
+      "action": "name-candidate",
+      "name": "V231"
+    },
+    {
+      "index": 75,
+      "line": "6338719635590701",
+      "action": "skip-nonitem"
+    },
+    {
+      "index": 76,
+      "line": "EUR",
+      "action": "saw-eur-marker"
+    },
+    {
+      "index": 77,
+      "line": "4,69 A",
+      "action": "price-buffered",
+      "rawPrice": "4,69 A"
+    },
+    {
+      "index": 78,
+      "line": "1,78 B",
+      "action": "price-buffered",
+      "rawPrice": "1,78 B"
+    },
+    {
+      "index": 79,
+      "line": "1,52 B",
+      "action": "price-buffered",
+      "rawPrice": "1,52 B"
+    },
+    {
+      "index": 80,
+      "line": "1,86 B",
+      "action": "price-buffered",
+      "rawPrice": "1,86 B"
+    },
+    {
+      "index": 81,
+      "line": "6,71 B",
+      "action": "price-buffered",
+      "rawPrice": "6,71 B"
+    },
+    {
+      "index": 82,
+      "line": "4,27 B",
+      "action": "price-buffered",
+      "rawPrice": "4,27 B"
+    },
+    {
+      "index": 83,
+      "line": "2,55 B",
+      "action": "price-buffered",
+      "rawPrice": "2,55 B"
+    },
+    {
+      "index": 84,
+      "line": "3,21 B",
+      "action": "price-buffered",
+      "rawPrice": "3,21 B"
+    },
+    {
+      "action": "buffer-assigned",
+      "name": "SUESSKARTOFFEL",
+      "price": 4.69,
+      "priceStr": "4,69"
+    },
+    {
+      "action": "buffer-assigned",
+      "name": "RISPENTOMATE",
+      "price": 1.78,
+      "priceStr": "1,78"
+    },
+    {
+      "action": "buffer-assigned",
+      "name": "BANANE CHIQUITA",
+      "price": 1.52,
+      "priceStr": "1,52"
+    },
+    {
+      "action": "buffer-assigned",
+      "name": "BANANE CHIQUITA",
+      "price": 1.86,
+      "priceStr": "1,86"
+    },
+    {
+      "action": "buffer-assigned",
+      "name": "SUPPENFLEISCH MK",
+      "price": 6.71,
+      "priceStr": "6,71"
+    },
+    {
+      "action": "buffer-assigned",
+      "name": "SW-FILET",
+      "price": 4.27,
+      "priceStr": "4,27"
+    },
+    {
+      "action": "buffer-assigned",
+      "name": "HACKFLEISCH GEM",
+      "price": 2.55,
+      "priceStr": "2,55"
+    },
+    {
+      "action": "buffer-assigned",
+      "name": "1HAL MORTADE CAS Bon",
+      "price": 3.21,
+      "priceStr": "3,21"
+    },
+    {
+      "index": 85,
+      "line": "2: 38",
+      "action": "skip-nonitem"
+    },
+    {
+      "index": 86,
+      "line": "2,35 B",
+      "action": "price-buffered",
+      "rawPrice": "2,35 B"
+    },
+    {
+      "action": "buffer-assigned",
+      "name": "SALAMI",
+      "price": 2.35,
+      "priceStr": "2,35"
+    },
+    {
+      "index": 87,
+      "line": "52",
+      "action": "skip-nonitem"
+    },
+    {
+      "index": 88,
+      "line": "99",
+      "action": "skip-nonitem"
+    },
+    {
+      "index": 89,
+      "line": "2,18",
+      "action": "price-buffered",
+      "rawPrice": "2,18"
+    },
+    {
+      "index": 90,
+      "line": "0,89",
+      "action": "price-buffered",
+      "rawPrice": "0,89"
+    },
+    {
+      "index": 91,
+      "line": "1,99",
+      "action": "price-buffered",
+      "rawPrice": "1,99"
+    },
+    {
+      "index": 92,
+      "line": "1,99",
+      "action": "price-buffered",
+      "rawPrice": "1,99"
+    },
+    {
+      "index": 93,
+      "line": "1,89",
+      "action": "price-buffered",
+      "rawPrice": "1,89"
+    },
+    {
+      "index": 94,
+      "line": "1,79",
+      "action": "price-buffered",
+      "rawPrice": "1,79"
+    },
+    {
+      "index": 95,
+      "line": "1,50 B",
+      "action": "price-buffered",
+      "rawPrice": "1,50 B"
+    },
+    {
+      "index": 96,
+      "line": "1,26 B",
+      "action": "price-buffered",
+      "rawPrice": "1,26 B"
+    },
+    {
+      "index": 97,
+      "line": "1,79",
+      "action": "price-buffered",
+      "rawPrice": "1,79"
+    },
+    {
+      "index": 98,
+      "line": "1,29",
+      "action": "price-buffered",
+      "rawPrice": "1,29"
+    },
+    {
+      "index": 99,
+      "line": "1,79 B",
+      "action": "price-buffered",
+      "rawPrice": "1,79 B"
+    },
+    {
+      "index": 100,
+      "line": "3,19 B",
+      "action": "price-buffered",
+      "rawPrice": "3,19 B"
+    },
+    {
+      "index": 101,
+      "line": "0,99 B",
+      "action": "price-buffered",
+      "rawPrice": "0,99 B"
+    },
+    {
+      "index": 102,
+      "line": "3,98",
+      "action": "price-buffered",
+      "rawPrice": "3,98"
+    },
+    {
+      "action": "buffer-assigned",
+      "name": "Hande ingabe Tosk",
+      "price": 2.18,
+      "priceStr": "2,18"
+    },
+    {
+      "action": "buffer-assigned",
+      "name": "PIK.",
+      "price": 0.89,
+      "priceStr": "0,89"
+    },
+    {
+      "action": "buffer-assigned",
+      "name": "KRUSTENBRATEN",
+      "price": 1.99,
+      "priceStr": "1,99"
+    },
+    {
+      "action": "buffer-assigned",
+      "name": "DOMSCHINKEN",
+      "price": 1.99,
+      "priceStr": "1,99"
+    },
+    {
+      "action": "buffer-assigned",
+      "name": "BAUCHSP. PANCETTA",
+      "price": 1.89,
+      "priceStr": "1,89"
+    },
+    {
+      "action": "buffer-assigned",
+      "name": "MINISALAMI",
+      "price": 1.79,
+      "priceStr": "1,79"
+    },
+    {
+      "action": "buffer-assigned",
+      "name": "OLD AMSTERDAM",
+      "price": 1.5,
+      "priceStr": "1,50"
+    },
+    {
+      "action": "buffer-assigned",
+      "name": "PAST. FILAT. ALPIJ",
+      "price": 1.26,
+      "priceStr": "1,26"
+    },
+    {
+      "action": "buffer-assigned",
+      "name": "GEFLUEGELROLLE",
+      "price": 1.79,
+      "priceStr": "1,79"
+    },
+    {
+      "action": "buffer-assigned",
+      "name": "DONUT EINZELN",
+      "price": 1.29,
+      "priceStr": "1,29"
+    },
+    {
+      "action": "buffer-assigned",
+      "name": "U. PURES KAROTTE",
+      "price": 1.79,
+      "priceStr": "1,79"
+    },
+    {
+      "action": "buffer-assigned",
+      "name": "BIO MAISWAFFEL",
+      "price": 3.19,
+      "priceStr": "3,19"
+    },
+    {
+      "action": "buffer-assigned",
+      "name": "ORANGEN RIESEN",
+      "price": 0.99,
+      "priceStr": "0,99"
+    },
+    {
+      "action": "buffer-assigned",
+      "name": "BLUTORANGE BIO",
+      "price": 3.98,
+      "priceStr": "3,98"
+    },
+    {
+      "index": 103,
+      "line": "25,00 C *",
       "action": "item-pushed",
-      "name": "GOOGLEPLAY25 V231",
+      "name": "V231",
       "price": 25,
       "priceStr": "25,00",
       "tag": "C"
     },
     {
-      "index": 44,
-      "line": "SUMME EUR 130,18",
+      "index": 104,
+      "line": "SUMME",
       "action": "found-sum",
-      "prices": [
-        "130,18"
-      ],
-      "sumStr": "130,18"
+      "prices": [],
+      "sumStr": null
+    },
+    {
+      "index": 105,
+      "line": "Geg. EC-Cash",
+      "action": "name-candidate",
+      "name": "Geg. EC-Cash"
+    },
+    {
+      "index": 106,
+      "line": "EUR",
+      "action": "saw-eur-marker"
+    },
+    {
+      "index": 107,
+      "line": "EUR",
+      "action": "saw-eur-marker"
+    },
+    {
+      "index": 111,
+      "line": "130,18130,18",
+      "action": "item-pushed",
+      "name": "Geg. EC-Cash",
+      "price": 130.18,
+      "priceStr": "130,18",
+      "tag": null
+    },
+    {
+      "index": 112,
+      "line": "* *",
+      "action": "skip-nonitem"
+    },
+    {
+      "index": 113,
+      "line": "24,03. 2021",
+      "action": "item-pushed",
+      "name": "24,03. 2021",
+      "price": 24.03,
+      "priceStr": "24,03",
+      "tag": null
+    },
+    {
+      "index": 114,
+      "line": "19:32:34",
+      "action": "skip-nonitem"
+    },
+    {
+      "index": 116,
+      "line": "7636",
+      "action": "skip-nonitem"
     }
   ]
 }
