@@ -1,0 +1,240 @@
+{
+  "items": [
+    {
+      "name": "SUESSKARTOFFEL",
+      "price": 4.69,
+      "priceStr": "4,69",
+      "tag": "A"
+    },
+    {
+      "name": "RISPENTOMATE",
+      "price": 1.78,
+      "priceStr": "1,78",
+      "tag": "B"
+    },
+    {
+      "name": "BANANE CHIQUITA",
+      "price": 1.52,
+      "priceStr": "1,52",
+      "tag": "B"
+    },
+    {
+      "name": "BANANE CHIQUITA",
+      "price": 1.86,
+      "priceStr": "1,86",
+      "tag": "B"
+    },
+    {
+      "name": "SUPPENFLEISCH MK",
+      "price": 6.71,
+      "priceStr": "6,71",
+      "tag": "B"
+    },
+    {
+      "name": "SW-FILET",
+      "price": 4.27,
+      "priceStr": "4,27",
+      "tag": "B"
+    },
+    {
+      "name": "HACKFLEISCH",
+      "price": 2.55,
+      "priceStr": "2,55",
+      "tag": "B"
+    },
+    {
+      "name": "ITAL.MORTAD.CAST",
+      "price": 3.21,
+      "priceStr": "3,21",
+      "tag": "B"
+    },
+    {
+      "name": "SALAMI PIK.TUSK",
+      "price": 2.59,
+      "priceStr": "2,59",
+      "tag": "B"
+    },
+    {
+      "name": "KRUSTENBRATEN",
+      "price": 2.39,
+      "priceStr": "2,39",
+      "tag": "B"
+    },
+    {
+      "name": "DOMSCHINKEN",
+      "price": 2.35,
+      "priceStr": "2,35",
+      "tag": "B"
+    },
+    {
+      "name": "BAUCHSP.PANCETTA",
+      "price": 4.52,
+      "priceStr": "4,52",
+      "tag": "B"
+    },
+    {
+      "name": "MINISALAMI",
+      "price": 2.99,
+      "priceStr": "2,99",
+      "tag": "B"
+    },
+    {
+      "name": "OLD AMSTERDAM",
+      "price": 3.79,
+      "priceStr": "3,79",
+      "tag": "B"
+    },
+    {
+      "name": "PAST.FILAT.ALPIJ",
+      "price": 2.18,
+      "priceStr": "2,18",
+      "tag": "B"
+    },
+    {
+      "name": "GEFLUEGELROLLE",
+      "price": 0.9,
+      "priceStr": "0,90",
+      "tag": "B"
+    },
+    {
+      "name": "DONUT EINZELN",
+      "price": 0.69,
+      "priceStr": "0,69",
+      "tag": "B"
+    },
+    {
+      "name": "U. PURES KAROTTE",
+      "price": 2.49,
+      "priceStr": "2,49",
+      "tag": "B"
+    },
+    {
+      "name": "BIO MAISWAFFEL",
+      "price": 0.99,
+      "priceStr": "0,99",
+      "tag": "B"
+    },
+    {
+      "name": "ORANGEN RIESEN",
+      "price": 2.89,
+      "priceStr": "2,89",
+      "tag": "B"
+    },
+    {
+      "name": "BLUTORANGE BIO",
+      "price": 0.99,
+      "priceStr": "0,99",
+      "tag": "B"
+    },
+    {
+      "name": "LIMETTE",
+      "price": 0.59,
+      "priceStr": "0,59",
+      "tag": "B"
+    },
+    {
+      "name": "ERDBEERE",
+      "price": 5.99,
+      "priceStr": "5,99",
+      "tag": "B"
+    },
+    {
+      "name": "TRAUBE KERNL.HEL",
+      "price": 2.58,
+      "priceStr": "2,58",
+      "tag": "B"
+    },
+    {
+      "name": "PAKCHOU MINI",
+      "price": 1.99,
+      "priceStr": "1,99",
+      "tag": "B"
+    },
+    {
+      "name": "STAUDENSEL.BIO",
+      "price": 1.99,
+      "priceStr": "1,99",
+      "tag": "B"
+    },
+    {
+      "name": "ROMARIS PENTOM.",
+      "price": 3.29,
+      "priceStr": "3,29",
+      "tag": "B"
+    },
+    {
+      "name": "PAPRIKA MI. BIO",
+      "price": 1.89,
+      "priceStr": "1,89",
+      "tag": "B"
+    },
+    {
+      "name": "ZUCCHINI BIO",
+      "price": 1.79,
+      "priceStr": "1,79",
+      "tag": "B"
+    },
+    {
+      "name": "SPEISEQUARK MAG.",
+      "price": 1.5,
+      "priceStr": "1,50",
+      "tag": "B"
+    },
+    {
+      "name": "JA! SCHLAGSAHNE",
+      "price": 1.26,
+      "priceStr": "1,26",
+      "tag": "B"
+    },
+    {
+      "name": "MILCHSCHNITTE",
+      "price": 1.79,
+      "priceStr": "1,79",
+      "tag": "B"
+    },
+    {
+      "name": "POPCORN MAIS",
+      "price": 1.29,
+      "priceStr": "1,29",
+      "tag": "B"
+    },
+    {
+      "name": "ACETO BALSAMICO",
+      "price": 3.19,
+      "priceStr": "3,19",
+      "tag": "B"
+    },
+    {
+      "name": "BALSAMICO CREME",
+      "price": 4.39,
+      "priceStr": "4,39",
+      "tag": "B"
+    },
+    {
+      "name": "NUSS COCKTAIL",
+      "price": 0.99,
+      "priceStr": "0,99",
+      "tag": "B"
+    },
+    {
+      "name": "LEIBN. BUTTERK.",
+      "price": 3.98,
+      "priceStr": "3,98",
+      "tag": "B"
+    },
+    {
+      "name": "TOERTCHEN KAKAO",
+      "price": 1.99,
+      "priceStr": "1,99",
+      "tag": "B"
+    },
+    {
+      "name": "GOOGLEPLAY25 V231",
+      "price": 25,
+      "priceStr": "25,00",
+      "tag": "C"
+    }
+  ],
+  "sum": 130.18,
+  "sumStr": "130,18"
+}

@@ -1,132 +1,210 @@
-// Enhanced German receipt parser for OCR.space returns text
-export function parseGermanReceipt(text) {
-  text = text || ''
-  const items = []
-  let total = null
+// Lightweight German receipt parser used by the /api/analyze route.
+// It looks for the UID (or similar) header and starts parsing afterwards.
+// It extracts items with their correct total price (skips per-kg unit prices)
+// and finds the SUMME (total) at the end.
 
-  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean)
-  
-  // First, look for the SUMME total
-  for (const line of lines) {
-    const summeMatch = line.match(/SUMME\s+EUR\s+([\d,.]+)/i)
-    if (summeMatch) {
-      total = parseFloat(summeMatch[1].replace(',', '.'))
+// Exported function: parseGermanReceipt(text) -> { items: [{name, price: number, priceStr, tag}], sum: number|null, sumStr }
+export function parseGermanReceipt(text, options = {}) {
+  const debugMode = options.debug === true
+  if (!text || typeof text !== 'string') return debugMode ? { items: [], sum: null, sumStr: null, debug: { originalText: text } } : { items: [], sum: null, sumStr: null }
+
+  // Normalize and split into lines
+  // First, normalize common OCR spacing issues inside numbers (e.g. "1, 78" -> "1,78")
+  let norm = text.replace(/[\u00A0]/g, ' ')
+  // collapse repeated spaces
+  norm = norm.replace(/\s{2,}/g, ' ')
+  norm = norm.replace(/\r/g, '')
+  // fix spaced decimals like "1, 78" or "1 ,78" or "1 , 78"
+  norm = norm.replace(/(\d)\s*[,.]\s*(\d{2})/g, '$1,$2')
+  // fix stray spaces inside thousands like "1 234" -> "1234"
+  norm = norm.replace(/(\d)\s+(?=\d{3}(\D|$))/g, '$1')
+
+  const rawLines = norm.split('\n').map(l => l.trim()).filter(Boolean)
+
+  const diagnostics = [] // per-line diagnostics for debug
+
+  // Find start index after UID (common: "UID", "UID Nr" etc). If not found, start at 0
+  let startIndex = 0
+  for (let i = 0; i < rawLines.length; i++) {
+    if (/\bUID\b|\bUID\s*Nr\b|\bUID\s*Nr\.|\bUID[:]/i.test(rawLines[i])) {
+      startIndex = i + 1
       break
     }
   }
 
-  // Parse REWE-style receipt: look for patterns with prices and tax classes
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]
-    
-    // Pattern 1: Item name followed by price and tax class on same line
-    // Example: "SUESSKARTOFFEL 4,69 A" or "GEFLUEGELROLLE 2, 18"
-    const sameLinePattern = line.match(/^([A-ZÄÖÜ][A-ZÄÖÜ\s\.\-\d]{2,}?)\s+([\d,]+\.?\d{0,2})\s*[ABC]?\s*$/i)
-    if (sameLinePattern) {
-      const name = sameLinePattern[1].trim()
-      const priceStr = sameLinePattern[2].replace(/\s/g, '').replace(',', '.')
-      const price = parseFloat(priceStr)
-      
-      if (name && !Number.isNaN(price) && price > 0 && price < 100) {
-        // Skip weight/quantity lines
-        if (!name.match(/^\d+[,.]?\d*\s*(kg|x|Stk)/i)) {
-          items.push({ name, price })
-        }
-        continue
+  const items = []
+  let lastName = null
+  let pendingItem = null // store pending item object when we have name but no price yet
+  let sum = null
+  let sumStr = null
+
+  const metaSkip = /handeingabe|e-bon|kundenbeleg|kassenbeleg|datum|uhrzeit|uhr|telefon|tel\b|rechnung|mwst|uid\b/i
+
+  // Helper to find all price-like tokens (e.g. 4,69 or 130.18)
+  const findPrices = (line) => {
+    if (!line) return []
+    // match numbers like 130,18 or 1.234,56 or 25,00
+    const m = line.match(/\d{1,3}(?:[\.\s]\d{3})*[.,]\d{2}|\d+[.,]\d{2}/g)
+    return m || []
+  }
+
+  // Helper to parse German price string to float
+  const parsePrice = (s) => {
+    if (typeof s !== 'string') return null
+    const sanitized = s.replace(/\./g, '').replace(/,/g, '.')
+    const n = Number(sanitized)
+    return Number.isFinite(n) ? n : null
+  }
+
+  // Clean name: remove trailing price tokens, trailing letters A/B/C and stray markers
+  const cleanName = (line) => {
+    if (!line) return ''
+    // remove trailing price-like parts and ending category letters and stars
+    let t = line.replace(/\*+$/g, '')
+    t = t.replace(/\s+[A-C]$/i, '')
+    t = t.replace(/\s*\d+[.,]\d{2}\s*$/g, '')
+    // remove stray currency markers
+    t = t.replace(/\bEUR\b|\bEur\b|€/g, '')
+    return t.trim()
+  }
+
+  for (let i = startIndex; i < rawLines.length; i++) {
+    const line = rawLines[i]
+    if (!line) continue
+
+    // Try to capture the SUMME/total first
+    if (/\bSUMME\b|\bSUM\b|\bGes\.|\bGes\b/i.test(line)) {
+      const prices = findPrices(line)
+      if (prices.length) {
+        sumStr = prices[prices.length - 1]
+        sum = parsePrice(sumStr)
       }
+      diagnostics.push({ index: i, line, action: 'found-sum', prices, sumStr })
+      break // typically sum is at end; we can stop parsing items
     }
-    
-    // Pattern 2: Item name on one line, price on next line(s)
-    // Look for standalone prices that might belong to previous item names
-    const priceMatch = line.match(/^([\d,]+\.?\d{0,2})\s*[ABC]?\s*$/i)
-    if (priceMatch && i > 0) {
-      const priceStr = priceMatch[1].replace(/\s/g, '').replace(',', '.')
-      const price = parseFloat(priceStr)
-      
-      if (!Number.isNaN(price) && price > 0 && price < 100) {
-        // Look back for item name in previous lines
-        for (let j = i - 1; j >= Math.max(0, i - 3); j--) {
-          const prevLine = lines[j]
-          
-          // Check if previous line looks like an item name
-          if (prevLine.match(/^[A-ZÄÖÜ][A-ZÄÖÜ\s\.\-\d]{2,}$/i) && 
-              !prevLine.match(/^\d+[,.]?\d*\s*(kg|x|Stk|EUR)/i) &&
-              !prevLine.match(/^(REWE|Glashüttenstr|UID|Datum|Uhrzeit|SUMME)/i)) {
-            
-            // Check if we haven't already used this price
-            const existingItem = items.find(item => Math.abs(item.price - price) < 0.01)
-            if (!existingItem) {
-              items.push({ name: prevLine.trim(), price })
-              break
-            }
+
+    // Skip known meta lines
+    if (metaSkip.test(line)) continue
+
+    // Handle quantity lines like "2 Stk x" optionally followed by a price on the same or next line
+    const qtyMatch = line.match(/^(\d+)\s*(?:Stk|Stück|stk|Stk\.)\s*[xX]\s*(.*)$/i)
+  if (qtyMatch) {
+      const qty = parseInt(qtyMatch[1], 10)
+      const rest = qtyMatch[2].trim()
+      // If rest contains a price take it, otherwise try next line
+      let unitPriceStr = null
+      if (rest) {
+        const p = findPrices(rest)
+        if (p.length) unitPriceStr = p[p.length - 1]
+      }
+      if (!unitPriceStr) {
+        // lookahead for a price-only next line
+        const next = rawLines[i + 1]
+        if (next) {
+          const pnext = findPrices(next)
+          if (pnext.length && /^([€€€\s]*\d)/.test(next) || /^\d+[.,]\d{2}$/.test(next)) {
+            unitPriceStr = pnext[pnext.length - 1]
+            // we will advance the index to skip that price-only line
+            i++
           }
         }
       }
-    }
-    
-    // Pattern 3: Multi-word items with quantity and price
-    // Example: "2 Stk x 1,09" or "GEFLUEGELROLLE 2 Stk x 1,09"
-    const quantityPattern = line.match(/^(.+?)\s*(\d+)\s*Stk\s*x\s*([\d,]+\.?\d{0,2})/i)
-    if (quantityPattern) {
-      const name = quantityPattern[1].trim() || 'Item'
-      const quantity = parseInt(quantityPattern[2])
-      const unitPrice = parseFloat(quantityPattern[3].replace(',', '.'))
-      const totalPrice = quantity * unitPrice
-      
-      if (name && !Number.isNaN(totalPrice) && totalPrice > 0) {
-        items.push({ name: `${name} (${quantity}x)`, price: totalPrice })
+      const unitPrice = unitPriceStr ? parsePrice(unitPriceStr) : null
+      if (unitPrice != null && lastName) {
+        const total = Math.round((unitPrice * qty + Number.EPSILON) * 100) / 100
+        items.push({ name: `${lastName} (${qty}x)`, price: total, priceStr: String(total).replace('.', ','), tag: null })
+        diagnostics.push({ index: i, line, action: 'qty-assigned', qty, unitPriceStr, total, name: lastName })
+        lastName = null
+        pendingItem = null
         continue
       }
+      diagnostics.push({ index: i, line, action: 'qty-skip', qty, unitPriceStr: unitPriceStr || null })
+      // otherwise treat as a generic line and continue
     }
-  }
 
-  // Remove duplicates and invalid items
-  const uniqueItems = []
-  for (const item of items) {
-    const isDuplicate = uniqueItems.some(existing => 
-      existing.name.toLowerCase() === item.name.toLowerCase() && 
-      Math.abs(existing.price - item.price) < 0.01
-    )
-    
-    if (!isDuplicate && item.name.length > 1 && item.price > 0) {
-      uniqueItems.push(item)
-    }
-  }
-
-  // If we didn't find many items, try a more aggressive approach
-  if (uniqueItems.length < 5) {
-    const allText = text.replace(/\n/g, ' ')
-    const words = allText.split(/\s+/)
-    
-    for (let i = 0; i < words.length - 1; i++) {
-      const word = words[i]
-      const nextWord = words[i + 1]
-      
-      // Look for word followed by price pattern
-      if (word.length > 2 && nextWord.match(/^\d+[,.]?\d{1,2}$/)) {
-        const name = word.replace(/[^A-Za-zÄÖÜäöüß\- ]/g, '').trim()
-        const price = parseFloat(nextWord.replace(',', '.'))
-        
-        if (name && !Number.isNaN(price) && price > 0 && price < 50) {
-          const isDuplicate = uniqueItems.some(existing => 
-            existing.name.toLowerCase() === name.toLowerCase() && 
-            Math.abs(existing.price - price) < 0.01
-          )
-          
-          if (!isDuplicate) {
-            uniqueItems.push({ name, price })
-          }
-        }
+    // If the line is essentially a price-only line (maybe with EUR or €), assign to previous pending item
+    const priceOnly = line.replace(/[€\s]/g, '').match(/^\d+[.,]\d{2}$/)
+    if (priceOnly && (pendingItem || lastName)) {
+      const priceStr = priceOnly[0]
+      const price = parsePrice(priceStr)
+      const name = pendingItem?.name || lastName
+      if (price != null) {
+        items.push({ name: name || '<unknown>', price, priceStr, tag: null })
+        diagnostics.push({ index: i, line, action: 'price-only-assigned', priceStr, name })
+      } else {
+        diagnostics.push({ index: i, line, action: 'price-only-parse-failed', priceOnly: priceOnly[0] })
       }
+      lastName = null
+      pendingItem = null
+      continue
+    }
+
+    const prices = findPrices(line)
+
+    // If no price on this line, treat it as an item name candidate
+    if (prices.length === 0) {
+      if (line.length > 1 && !/^[\d\-]+$/.test(line)) {
+        lastName = line
+        pendingItem = { name: line }
+        diagnostics.push({ index: i, line, action: 'name-candidate', name: line })
+      } else {
+        diagnostics.push({ index: i, line, action: 'skip-nonitem' })
+      }
+      continue
+    }
+
+    // There is at least one price on the line.
+    // If the line contains per-kg markers and only one price, it's likely a per-kg unit price -> skip only if no additional price
+    const hasKgUnit = /\bkg\b|\/kg|EUR\/kg|EUR\s*\/\s*kg|kg\s*x/i.test(line)
+    if (hasKgUnit && prices.length === 1) {
+      // If we also have a lastName/pendingItem, we don't want to drop the total if a later token gives total;
+      // but common pattern is: weight line with unit price then a total price appears elsewhere; so skip for now
+      // Continue to next line
+      diagnostics.push({ index: i, line, action: 'skip-kg-unit', prices })
+      continue
+    }
+
+    // For lines with multiple prices (e.g. weight/unit/total) we take the last price as total
+    const priceStr = prices[prices.length - 1]
+    const price = parsePrice(priceStr)
+
+    // Determine the item name: prefer lastName (previous line), otherwise derive from current line
+    let name = lastName || ''
+    if (!name) {
+      name = cleanName(line)
+      name = name.replace(/\d+[.,]\d+\s*kg.*$/i, '').replace(/\d+\s*Stk.*$/i, '').trim()
+    }
+
+    if (!name) {
+      name = line.replace(new RegExp(priceStr.replace('.', '\\.'), 'g'), '').replace(/[A-C]$/i, '').trim()
+    }
+
+    name = cleanName(name)
+
+    const tagMatch = line.match(new RegExp(priceStr.replace(',', '\\,') + '\\s*([A-C])', 'i'))
+    const tag = tagMatch ? tagMatch[1] : null
+
+    if (price != null && !isNaN(price)) {
+      items.push({ name: name || '<unknown>', price, priceStr, tag })
+      diagnostics.push({ index: i, line, action: 'item-pushed', name, price, priceStr, tag })
+    } else {
+      diagnostics.push({ index: i, line, action: 'price-parse-failed', prices })
+    }
+
+    lastName = null
+    pendingItem = null
+  }
+
+  const result = { items, sum, sumStr }
+  if (debugMode) {
+    result.debug = {
+      originalText: text,
+      normalizedText: norm,
+      rawLines,
+      diagnostics
     }
   }
 
-  // Sort by price (highest first) and limit results
-  uniqueItems.sort((a, b) => b.price - a.price)
-  
-  return { 
-    items: uniqueItems.slice(0, 25), 
-    total, 
-    itemCount: uniqueItems.length 
-  }
+  return result
 }
+
