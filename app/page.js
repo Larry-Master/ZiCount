@@ -59,34 +59,30 @@ export default function HomePage() {
     setError(null)
 
     try {
-      // Prefer sending a JSON payload with a base64 data URL (more reliable than multipart/form-data)
-      let response
-      if (imagePreview) {
-        response = await fetch('/api/analyze', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: imagePreview })
-        })
-      } else {
-        // Fallback: send FormData if preview isn't available yet
-        const formData = new FormData()
-        formData.append('image', selectedImage)
-        response = await fetch('/api/analyze', { method: 'POST', body: formData })
-      }
+  const formData = new FormData();
+  formData.append('image', selectedImage);
 
-      // Provide richer error info for debugging
-      const text = await response.text()
-      let data
-      try { data = JSON.parse(text) } catch (e) { data = { raw: text } }
+  const response = await fetch('/api/analyze', {
+    method: 'POST',
+    body: formData, // NO Content-Type header!
+  });
 
-      if (!response.ok) throw new Error(data.error || data.raw || `Request failed: ${response.status}`)
+  const text = await response.text();
+  let data;
+  try { 
+    data = JSON.parse(text);
+  } catch (e) { 
+    data = { raw: text };
+  }
 
-      setResults(data)
-    } catch (err) {
-      setError(err.message || 'Unknown error')
-    } finally {
-      setAnalyzing(false)
-    }
+  if (!response.ok) throw new Error(data.error || data.raw || `Request failed: ${response.status}`);
+
+  setResults(data);
+} catch (err) {
+  setError(err.message || 'Unknown error');
+} finally {
+  setAnalyzing(false);
+}
   }
 
   return (
