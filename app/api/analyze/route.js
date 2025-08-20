@@ -1,53 +1,65 @@
-import fs from 'fs/promises';
-import os from 'os';
+import fs from 'fs';
 import path from 'path';
-import { execFile } from 'node:child_process';
+import os from 'os';
+import { NodeSSH } from 'node-ssh';
 
-const pythonPath = '/home/container/ocr-project/ocr-env/bin/python3';
-const scriptPath = '/home/container/ocr-project/scanner.py';
-
-async function runPythonOCR(imagePath) {
-  return new Promise((resolve, reject) => {
-    execFile(pythonPath, [scriptPath, imagePath], (error, stdout, stderr) => {
-      if (error) return reject(error);
-      if (stderr) console.error(stderr); // warnings go here
-      try {
-        const data = JSON.parse(stdout.toString().trim());
-        resolve(data);
-      } catch (e) {
-        console.error("Python output:", stdout.toString());
-        reject(new Error("Failed to parse JSON from Python output: " + e.message));
-      }
-    });
-  });
-}
-
+export const runtime = 'nodejs';
 
 export async function POST(req) {
   try {
-    const body = await req.json();
-    if (!body.image) throw new Error('No image provided');
+    const formData = await req.formData();
+    const file = formData.get('file');
 
-    const match = body.image.match(/^data:([^;]+);base64,(.+)$/);
-    if (!match) throw new Error('Invalid data URL format');
+    if (!file) {
+      return new Response(JSON.stringify({ error: 'No file uploaded' }), { status: 400 });
+    }
 
-    const buffer = Buffer.from(match[2], 'base64');
-    const tmpFile = path.join(os.tmpdir(), `upload_${Date.now()}.jpg`);
-    await fs.writeFile(tmpFile, buffer);
+    // Datei temporär speichern
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const tmpDir = os.tmpdir();
+    const localFilePath = path.join(tmpDir, file.name);
+    await fs.promises.writeFile(localFilePath, buffer);
 
-    // Run Python OCR and get structured JSON
-    const result = await runPythonOCR(tmpFile);
+    // SSH Konfiguration aus Environment Variables
+    const SSH_HOST = process.env.SSH_HOST;
+    const SSH_USER = process.env.SSH_USER || 'root';
+    const SSH_PASSWORD = process.env.SSH_PASSWORD;
+    const SSH_PORT = parseInt(process.env.SSH_PORT) || 2222;
 
-    await fs.unlink(tmpFile); // cleanup
+    if (!SSH_HOST || !SSH_PASSWORD) {
+      return new Response(JSON.stringify({ error: 'SSH_HOST or SSH_PASSWORD not set' }), { status: 500 });
+    }
 
-    return new Response(JSON.stringify(result), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
+    const ssh = new NodeSSH();
+    await ssh.connect({
+      host: SSH_HOST,
+      username: SSH_USER,
+      password: SSH_PASSWORD,
+      port: SSH_PORT
     });
+
+    const remoteBase = `/home/container/ocr-project`;
+    const remoteFile = `${remoteBase}/temp_upload.jpg`;
+    const remoteVenv = `${remoteBase}/ocr-env`;
+    const remoteScript = `${remoteBase}/scanner.py`;
+
+    // Datei hochladen
+    await ssh.putFile(localFilePath, remoteFile);
+
+    // Python-Script remote ausführen
+    const result = await ssh.execCommand(
+      `cd ${remoteBase} && . ${remoteVenv}/bin/activate && python ${remoteScript} ${remoteFile}`
+    );
+
+    if (result.stderr) {
+      console.error('Remote STDERR:', result.stderr);
+      return new Response(JSON.stringify({ error: result.stderr }), { status: 500 });
+    }
+
+    return new Response(JSON.stringify({ result: result.stdout }), { status: 200 });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    console.error(err);
+    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
   }
 }

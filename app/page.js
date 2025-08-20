@@ -60,7 +60,7 @@ export default function HomePage() {
 
     try {
   const formData = new FormData();
-  formData.append('image', selectedImage);
+  formData.append('file', selectedImage);
 
   const response = await fetch('/api/analyze', {
     method: 'POST',
@@ -216,8 +216,8 @@ export default function HomePage() {
                 This might happen if the image quality is poor or the receipt format is unusual.
               </p>
               {!results.text && (
-                <p style={{ fontSize: '14px', color: '#red', marginTop: '10px' }}>
-                  ⚠️ No OCR text was returned from the API. Check your OCR_SPACE_API_KEY.
+                <p style={{ fontSize: '14px', color: '#a33', marginTop: '10px' }}>
+                  ⚠️ No OCR text was returned from the API. Ensure the server's PaddleOCR service is running and reachable.
                 </p>
               )}
             </div>
@@ -226,8 +226,8 @@ export default function HomePage() {
           {/* Debug info */}
           <details style={{ marginTop: '15px', fontSize: '12px', color: '#666' }}>
             <summary style={{ cursor: 'pointer' }}>Debug Info</summary>
-            <div style={{ marginTop: '5px', fontFamily: 'monospace' }}>
-              <p>OCR Engine: {results.debug?.ocrEngine || 'Unknown'}</p>
+              <div style={{ marginTop: '5px', fontFamily: 'monospace' }}>
+              <p>OCR Engine: {results.debug?.ocrEngine || 'PaddleOCR'}</p>
               <p>OCR Exit Code: {results.debug?.ocrExitCode || 'Unknown'}</p>
               <p>Processing Time: {results.ocrRaw?.ProcessingTimeInMilliseconds || 'Unknown'}ms</p>
               <p>Text Length: {results.text?.length || 0} characters</p>
