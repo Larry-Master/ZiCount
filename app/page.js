@@ -18,6 +18,7 @@ export default function HomePage() {
     setSelectedImage(file)
     setResults(null)
     setError(null)
+    setImagePreview(null) // Reset image preview when a new file is selected
 
     const reader = new FileReader()
     reader.onload = (e) => setImagePreview(e.target.result)
@@ -57,32 +58,33 @@ export default function HomePage() {
 
     setAnalyzing(true)
     setError(null)
+    setShowOcrText(false) // Reset the OCR text visibility
 
     try {
-  const formData = new FormData();
-  formData.append('file', selectedImage);
+      const formData = new FormData();
+      formData.append('file', selectedImage);
 
-  const response = await fetch('/api/analyze', {
-    method: 'POST',
-    body: formData, // NO Content-Type header!
-  });
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        body: formData,
+      });
 
-  const text = await response.text();
-  let data;
-  try { 
-    data = JSON.parse(text);
-  } catch (e) { 
-    data = { raw: text };
-  }
+      const text = await response.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        data = { raw: text };
+      }
 
-  if (!response.ok) throw new Error(data.error || data.raw || `Request failed: ${response.status}`);
+      if (!response.ok) throw new Error(data.error || data.raw || `Request failed: ${response.status}`);
 
-  setResults(data);
-} catch (err) {
-  setError(err.message || 'Unknown error');
-} finally {
-  setAnalyzing(false);
-}
+      setResults(data);
+    } catch (err) {
+      setError(err.message || 'Unknown error');
+    } finally {
+      setAnalyzing(false);
+    }
   }
 
   return (
@@ -145,7 +147,7 @@ export default function HomePage() {
             <p style={{ fontSize: '14px', color: '#666', marginBottom: '15px' }}>
               {results.originalImageSize && results.processedImageSize ? (
                 <>
-                  Image: {Math.round(results.originalImageSize / 1024)}KB → {Math.round(results.processedImageSize / (1024 * 1.33))}KB
+                  Image: {Math.round(results.originalImageSize / 1024)}KB → {Math.round(results.processedImageSize / (1024))}KB
                   {results.debug?.compressionRatio && ` (${results.debug.compressionRatio}% compressed)`}
                 </>
               ) : (
@@ -197,15 +199,15 @@ export default function HomePage() {
                 {results.items.map((item, index) => (
                   <div key={index} className="item">
                     <span className="item-name">{item.name}</span>
-                    <span className="item-price">€{item.price.toFixed(2)}</span>
+                    <span className="item-price">€{item.price?.toFixed(2)}</span>
                   </div>
                 ))}
               </div>
 
-              {results.total && (
+              {results.total != null && (
                 <div className="total">
                   <span>Total:</span>
-                  <span>€{results.total.toFixed(2)}</span>
+                  <span>€{results.total?.toFixed(2)}</span>
                 </div>
               )}
             </div>
@@ -229,7 +231,7 @@ export default function HomePage() {
               <div style={{ marginTop: '5px', fontFamily: 'monospace' }}>
               <p>OCR Engine: {results.debug?.ocrEngine || 'PaddleOCR'}</p>
               <p>OCR Exit Code: {results.debug?.ocrExitCode || 'Unknown'}</p>
-              <p>Processing Time: {results.ocrRaw?.ProcessingTimeInMilliseconds || 'Unknown'}ms</p>
+              <p>Processing Time: {results.debug?.processingTimeMs || 'Unknown'}ms</p>
               <p>Text Length: {results.text?.length || 0} characters</p>
               <p>Items Found: {results.items?.length || 0}</p>
             </div>
