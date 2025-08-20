@@ -199,7 +199,7 @@ export default function HomePage() {
                 {results.items.map((item, index) => (
                   <div key={index} className="item">
                     <span className="item-name">{item.name}</span>
-                    <span className="item-price">€{item.price?.toFixed(2)}</span>
+                    <span className="item-price">€{Number(item.price)?.toFixed(2)}</span>
                   </div>
                 ))}
               </div>
