@@ -156,6 +156,53 @@ export default function HomePage() {
             </p>
           )}
 
+          {/* Quick Summary */}
+          {results.items && (
+            <div style={{ 
+              backgroundColor: '#f8f9fa', 
+              padding: '15px', 
+              borderRadius: '8px', 
+              marginBottom: '20px',
+              border: '1px solid #e9ecef'
+            }}>
+              <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', color: '#495057' }}>
+                📊 Quick Summary
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '15px' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#007bff' }}>
+                    {results.items.length}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#6c757d' }}>Items Found</div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#28a745' }}>
+                    {(() => {
+                      const validPrices = results.items
+                        .map(item => typeof item.price === 'object' ? item.price.value : item.price)
+                        .filter(price => price && !isNaN(price) && price > 0);
+                      return validPrices.length;
+                    })()}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#6c757d' }}>Valid Prices</div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#fd7e14' }}>
+                    {(() => {
+                      const confidences = results.items
+                        .map(item => item.confidence)
+                        .filter(conf => conf != null);
+                      if (confidences.length === 0) return 'N/A';
+                      const avgConf = confidences.reduce((sum, conf) => sum + conf, 0) / confidences.length;
+                      return Math.round(avgConf * 100) + '%';
+                    })()}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#6c757d' }}>Avg Confidence</div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Always show OCR text button first */}
           {results.text && (
             <div style={{ marginBottom: '20px' }}>
@@ -196,31 +243,117 @@ export default function HomePage() {
             <div>
               <div style={{ marginBottom: '20px' }}>
                 <h3 style={{ fontSize: '18px', marginBottom: '10px' }}>Items ({results.itemCount})</h3>
-                {results.items.map((item, index) => (
-                  <div key={index} className="item">
-                    <span className="item-name">{item.name}</span>
-                    <span className="item-price">€{Number(item.price)?.toFixed(2)}</span>
-                  </div>
-                ))}
+                {results.items.map((item, index) => {
+                  // Handle both old format (price as number) and new format (price as object)
+                  const price = typeof item.price === 'object' ? item.price.value : item.price;
+                  const currency = typeof item.price === 'object' ? item.price.currency : 'EUR';
+                  const rawPrice = typeof item.price === 'object' ? item.price.raw : item.price;
+                  const confidence = item.confidence;
+
+                  return (
+                    <div key={index} className="item" style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      alignItems: 'center',
+                      padding: '12px 0',
+                      borderBottom: '1px solid #eee'
+                    }}>
+                      <div style={{ flex: 1 }}>
+                        <span className="item-name" style={{ 
+                          fontSize: '16px', 
+                          fontWeight: '500',
+                          display: 'block',
+                          marginBottom: '4px'
+                        }}>
+                          {item.name}
+                        </span>
+                        {confidence && (
+                          <span style={{ 
+                            fontSize: '12px', 
+                            color: '#888',
+                            backgroundColor: confidence > 0.8 ? '#e7f5e7' : confidence > 0.6 ? '#fff3cd' : '#f8d7da',
+                            padding: '2px 6px',
+                            borderRadius: '3px',
+                            marginRight: '8px'
+                          }}>
+                            {Math.round(confidence * 100)}% confidence
+                          </span>
+                        )}
+                        {rawPrice && typeof item.price === 'object' && (
+                          <span style={{ 
+                            fontSize: '12px', 
+                            color: '#666',
+                            fontFamily: 'monospace'
+                          }}>
+                            Raw: "{rawPrice}"
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <span className="item-price" style={{ 
+                          fontSize: '18px', 
+                          fontWeight: 'bold',
+                          color: price && !isNaN(price) ? '#2d5a3d' : '#d32f2f'
+                        }}>
+                          {price && !isNaN(price) ? 
+                            `${currency === 'EUR' ? '€' : currency + ' '}${Number(price).toFixed(2)}` : 
+                            'Invalid Price'
+                          }
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
-              {results.total != null && (
-                <div className="total">
-                  <span>Total:</span>
-                  <span>€{results.total?.toFixed(2)}</span>
-                </div>
-              )}
+              {/* Calculate and show total */}
+              {(() => {
+                const validPrices = results.items
+                  .map(item => typeof item.price === 'object' ? item.price.value : item.price)
+                  .filter(price => price && !isNaN(price) && price > 0);
+                
+                const calculatedTotal = validPrices.reduce((sum, price) => sum + Number(price), 0);
+                
+                return calculatedTotal > 0 && (
+                  <div className="total" style={{ 
+                    borderTop: '2px solid #2d5a3d',
+                    paddingTop: '15px',
+                    marginTop: '15px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    fontSize: '20px',
+                    fontWeight: 'bold',
+                    color: '#2d5a3d'
+                  }}>
+                    <span>Total ({validPrices.length} items):</span>
+                    <span>€{calculatedTotal.toFixed(2)}</span>
+                  </div>
+                );
+              })()}
             </div>
           ) : (
             <div>
               <p>❌ No items detected clearly.</p>
               <p style={{ fontSize: '14px', color: '#666', marginTop: '10px' }}>
-                This might happen if the image quality is poor or the receipt format is unusual.
+                This might happen if the image quality is poor, the receipt format is unusual, or if the text doesn't contain recognizable price patterns.
               </p>
               {!results.text && (
                 <p style={{ fontSize: '14px', color: '#a33', marginTop: '10px' }}>
                   ⚠️ No OCR text was returned from the API. Ensure the server's PaddleOCR service is running and reachable.
                 </p>
+              )}
+              {results.text && (
+                <div style={{ marginTop: '15px' }}>
+                  <p style={{ fontSize: '14px', color: '#666' }}>
+                    <strong>Troubleshooting tips:</strong>
+                  </p>
+                  <ul style={{ fontSize: '13px', color: '#666', marginLeft: '20px', marginTop: '5px' }}>
+                    <li>Ensure the receipt has clear, readable text</li>
+                    <li>Check if prices are in a recognizable format (e.g., "12.34€", "€15.99")</li>
+                    <li>Try a different angle or better lighting</li>
+                    <li>Check the raw OCR text above to see what was detected</li>
+                  </ul>
+                </div>
               )}
             </div>
           )}
@@ -228,12 +361,51 @@ export default function HomePage() {
           {/* Debug info */}
           <details style={{ marginTop: '15px', fontSize: '12px', color: '#666' }}>
             <summary style={{ cursor: 'pointer' }}>Debug Info</summary>
-              <div style={{ marginTop: '5px', fontFamily: 'monospace' }}>
+            <div style={{ marginTop: '5px', fontFamily: 'monospace' }}>
               <p>OCR Engine: {results.debug?.ocrEngine || 'PaddleOCR'}</p>
               <p>OCR Exit Code: {results.debug?.ocrExitCode || 'Unknown'}</p>
               <p>Processing Time: {results.debug?.processingTimeMs || 'Unknown'}ms</p>
               <p>Text Length: {results.text?.length || 0} characters</p>
               <p>Items Found: {results.items?.length || 0}</p>
+              
+              {/* Show item details for debugging */}
+              {results.items && results.items.length > 0 && (
+                <details style={{ marginTop: '10px' }}>
+                  <summary style={{ cursor: 'pointer', color: '#007bff' }}>Item Details</summary>
+                  <div style={{ marginTop: '5px', maxHeight: '200px', overflow: 'auto' }}>
+                    {results.items.map((item, index) => (
+                      <div key={index} style={{ 
+                        marginBottom: '8px', 
+                        padding: '6px', 
+                        backgroundColor: '#f9f9f9', 
+                        borderRadius: '3px',
+                        fontSize: '11px'
+                      }}>
+                        <div><strong>Item {index + 1}:</strong> {item.name}</div>
+                        {item.price && typeof item.price === 'object' && (
+                          <>
+                            <div>Raw Price: "{item.price.raw}"</div>
+                            <div>Parsed Value: {item.price.value}</div>
+                            <div>Currency: {item.price.currency}</div>
+                          </>
+                        )}
+                        {item.confidence && (
+                          <div>Confidence: {(item.confidence * 100).toFixed(1)}%</div>
+                        )}
+                        {item.rowIndex !== undefined && (
+                          <div>Row Index: {item.rowIndex}</div>
+                        )}
+                        {item.nameBox && (
+                          <div>Name Box: [{item.nameBox.map(n => n.toFixed(1)).join(', ')}]</div>
+                        )}
+                        {item.priceBox && (
+                          <div>Price Box: [{item.priceBox.map(n => n.toFixed(1)).join(', ')}]</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              )}
             </div>
           </details>
         </div>
