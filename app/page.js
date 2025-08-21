@@ -143,19 +143,7 @@ export default function HomePage() {
       {results && (
         <div className="card">
           <h2 className="results-title">📋 Analysis Results</h2>
-          {(results.originalImageSize || results.processedImageSize) && (
-            <p style={{ fontSize: '14px', color: '#666', marginBottom: '15px' }}>
-              {results.originalImageSize && results.processedImageSize ? (
-                <>
-                  Image: {Math.round(results.originalImageSize / 1024)}KB → {Math.round(results.processedImageSize / (1024))}KB
-                  {results.debug?.compressionRatio && ` (${results.debug.compressionRatio}% compressed)`}
-                </>
-              ) : (
-                `Processed image: ${results.processedImageSize}`
-              )}
-            </p>
-          )}
-
+  
           {/* Quick Summary */}
           {results.items && (
             <div style={{ 
@@ -166,7 +154,7 @@ export default function HomePage() {
               border: '1px solid #e9ecef'
             }}>
               <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', color: '#495057' }}>
-                📊 Quick Summary
+               Summary
               </h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '15px' }}>
                 <div style={{ textAlign: 'center' }}>

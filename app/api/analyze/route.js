@@ -5,8 +5,16 @@ import { NodeSSH } from 'node-ssh';
 
 export const runtime = 'nodejs';
 
+async function runClean(ssh, cmd, cwd) {
+  // Use absolute /bin/bash and avoid reading profile files
+  const escaped = cmd.replace(/(["\\$`])/g, '\\$1'); // simple escape for special chars
+  const wrapped = `/bin/bash --noprofile --norc -c "${escaped}"`;
+  return ssh.execCommand(wrapped, cwd ? { cwd } : {});
+}
+
 export async function POST(req) {
   let ssh = null;
+  const tmpDir = os.tmpdir();
 
   try {
     // --- Handle uploaded file ---
@@ -19,7 +27,6 @@ export async function POST(req) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    const tmpDir = os.tmpdir();
     const localFilePath = path.join(tmpDir, file.name);
     await fs.writeFile(localFilePath, buffer);
     console.log(`Saved uploaded file to ${localFilePath}`);
@@ -52,66 +59,80 @@ export async function POST(req) {
     const remoteFile = `${remoteUploads}/${file.name}`;
     const remoteVenv = `${remoteBase}/ocr-env`;
     const remoteScript = `${remoteBase}/scanner.py`;
+    const wrapperScript = `${remoteBase}/run_ocr.sh`;
 
     // Ensure remote dirs exist
-    await ssh.execCommand(`/bin/bash -c "mkdir -p '${remoteUploads}' '${remoteOutputDir}'"`, { pty: true });
+    await runClean(ssh, `mkdir -p '${remoteUploads}' '${remoteOutputDir}'`);
     console.log('Ensured remote directories exist.');
 
-    // Upload file
+    // Upload file (SFTP)
     console.log(`Uploading ${localFilePath} -> ${remoteFile}`);
     await ssh.putFile(localFilePath, remoteFile);
     console.log('Upload complete.');
 
-    // --- Remote JSON path ---
+    // Prepare local/remote JSON paths
     const baseName = path.parse(remoteFile).name;
-    let remoteItems = `${remoteOutputDir}/${baseName}_items.json`;
+    // after you've uploaded the file with ssh.putFile(localFilePath, remoteFile)
+    const remoteItems = `${remoteOutputDir}/${baseName}_items.json`;
     const localItems = path.join(tmpDir, `${baseName}_items.json`);
 
-    console.log("🔍 Expecting JSON at:", remoteItems);
-    console.log("📥 Will download to local temp:", localItems);
+async function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
 
-    // --- Check if JSON already exists ---
-const checkRes = await ssh.execCommand(
-  `/bin/bash -c "[ -f '${remoteItems}' ] && echo EXISTS || echo MISSING"`,
-  { pty: true }
-);
-console.log('Check result:', checkRes.stdout.trim());
+// Poll for the file using SFTP (getFile) — avoids execCommand entirely
+async function waitForRemoteFile(getFileFn, remotePath, localPath, {
+  timeoutMs = 120_000,   // total wait time
+  intervalMs = 1500,     // initial interval
+  maxIntervalMs = 10_000 // backoff cap
+} = {}) {
+  const start = Date.now();
+  let interval = intervalMs;
 
-if (checkRes.stdout.trim() === "EXISTS") {
-  console.log(`✅ Found existing JSON at ${remoteItems}, skipping OCR.`);
-} else {
-  console.log("⚡ JSON not found, running OCR...");
-
-  // Execute OCR script safely inside else
-  const command = `'${remoteVenv}/bin/python' '${remoteScript}' '${remoteFile}'`;
-  console.log("Executing remote command:", command);
-
-  const runRes = await ssh.execCommand(
-    `/bin/bash -c "${command}"`,
-    { cwd: remoteBase, pty: true }
-  );
-  console.log("Remote stdout:", runRes.stdout);
-  console.log("Remote stderr:", runRes.stderr);
-
-  // Optional: parse JSON path from Python stdout if different
-  const match = runRes.stdout.match(/Saved .*_items\.json to: (.+)/);
-  if (match?.[1]) {
-    remoteItems = match[1];
-    console.log("🔄 Adjusted remote JSON path from Python stdout:", remoteItems);
+  while (Date.now() - start < timeoutMs) {
+    try {
+      // Try to download. If successful, return (we assume file is ready)
+      await getFileFn(localPath, remotePath);
+      return true;
+    } catch (err) {
+      // Common errors: ENOENT (file not yet created), permission, etc.
+      // Optionally inspect err.message to bail early on non-retryable errors.
+      // exponential backoff with jitter
+      const jitter = Math.floor(Math.random() * 300);
+      await sleep(interval + jitter);
+      interval = Math.min(maxIntervalMs, Math.round(interval * 1.4));
+      continue;
+    }
   }
+  return false;
 }
 
-    // Download the items JSON
-    await ssh.getFile(localItems, remoteItems);
+// usage:
+const got = await waitForRemoteFile(ssh.getFile.bind(ssh), remoteItems, localItems, {
+  timeoutMs: 180_000, intervalMs: 1000, maxIntervalMs: 8000
+});
+if (!got) {
+  // helpful debug: try to read last_run.log if exists
+  try {
+    const remoteLog = `${remoteOutputDir}/last_run.log`;
+    const localLog = path.join(tmpDir, `${baseName}_last_run.log`);
+    await ssh.getFile(localLog, remoteLog);
+    const l = await fs.readFile(localLog, 'utf8');
+    console.warn('Downloaded last_run.log (snippet):', l.slice(0, 4000));
+  } catch (_) { /* ignore */ }
+
+  throw new Error(`Timeout waiting for remote JSON at ${remoteItems}`);
+}
+
+
+    // If we got here, localItems exists — parse it
     const content = await fs.readFile(localItems, 'utf8');
     const itemsJson = JSON.parse(content);
     const statLocal = await fs.stat(localItems);
     const processedSize = statLocal.size;
 
     // --- Cleanup ---
-    try { await ssh.execCommand(`/bin/bash -c "rm -f '${remoteFile}'"`, { pty: true }); } catch (e) { console.warn('Failed to remove remote upload', e.message); }
-    try { await fs.rm(localFilePath, { force: true }); } catch (_) { }
-    try { await fs.rm(localItems, { force: true }); } catch (_) { }
+    try { await runClean(ssh, `rm -f '${remoteFile}'`); } catch (e) { console.warn('Failed to remove remote upload', e.message); }
+    try { await fs.rm(localFilePath, { force: true }); } catch (_) {}
+    try { await fs.rm(localItems, { force: true }); } catch (_) {}
 
     // --- Response ---
     const responsePayload = {
@@ -120,7 +141,7 @@ if (checkRes.stdout.trim() === "EXISTS") {
       text: itemsJson.text || null,
       originalImageSize: buffer.length,
       processedImageSize: processedSize,
-      debug: { ocrEngine: 'paddleocr' }
+      debug: { ocrEngine: 'paddleocr', remoteItems }
     };
 
     return new Response(JSON.stringify(responsePayload), { status: 200 });
@@ -129,6 +150,6 @@ if (checkRes.stdout.trim() === "EXISTS") {
     console.error('Unhandled error:', err);
     return new Response(JSON.stringify({ error: err.message }), { status: 500 });
   } finally {
-    try { if (ssh?.isConnected()) ssh.dispose(); } catch (_) { }
+    try { if (ssh?.isConnected()) ssh.dispose(); } catch (_) {}
   }
 }
