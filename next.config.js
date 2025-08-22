@@ -1,3 +1,4 @@
+import path from 'path';
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Add webpack configuration to handle native modules
@@ -10,6 +11,10 @@ const nextConfig = {
         './crypto/build/Release/sshcrypto.node': 'sshcrypto.node',
       });
     }
+  // Add path alias for '@' to map to project root for cleaner imports
+  config.resolve = config.resolve || {};
+    config.resolve.alias = config.resolve.alias || {};
+    config.resolve.alias['@'] = path.resolve(process.cwd());
     return config;
   },
 
