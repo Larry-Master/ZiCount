@@ -1,12 +1,7 @@
 {
   "version": 2,
   "name": "zicount",
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/"
-    }
-  ],
+  
   "env": {
     "NODE_ENV": "production"
   }
