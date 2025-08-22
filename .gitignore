@@ -87,6 +87,9 @@ web_modules/
 .next
 out
 
+# Local temporary folder used for builds
+.tmp/
+
 # Nuxt.js build / generate output
 .nuxt
 dist
