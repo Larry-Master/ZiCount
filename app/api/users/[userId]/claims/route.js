@@ -1,4 +1,5 @@
 import { connectToDatabase } from '@/lib/db/mongodb';
+import { NextResponse } from 'next/server';
 import { ObjectId } from 'mongodb';
 import { safeObjectId } from '@/lib/db/mongodb';
 
@@ -10,7 +11,7 @@ export async function GET(request, context) {
     
     // Validate that userId exists and is a string
     if (!userId || typeof userId !== 'string' || userId.trim() === '') {
-      return Response.json({ error: 'Invalid user ID' }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid user ID' }, { status: 400 });
     }
     
     const { db } = await connectToDatabase();
@@ -50,9 +51,9 @@ export async function GET(request, context) {
       })
     );
 
-    return Response.json(claimsWithDetails);
+  return NextResponse.json(claimsWithDetails);
   } catch (error) {
     console.error('Get user claims error:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+  return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

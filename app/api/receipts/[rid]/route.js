@@ -1,5 +1,6 @@
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { ObjectId } from 'mongodb';
+import { NextResponse } from 'next/server';
 import { safeObjectId } from '@/lib/db/mongodb';
 
 export async function GET(request, context) {
@@ -10,19 +11,19 @@ export async function GET(request, context) {
     
     // Validate that rid exists and is a string
     if (!rid || typeof rid !== 'string' || rid.trim() === '') {
-      return Response.json({ error: 'Invalid receipt ID' }, { status: 400 });
+  return NextResponse.json({ error: 'Invalid receipt ID' }, { status: 400 });
     }
     
     const { db } = await connectToDatabase();    // Find the receipt in MongoDB
     const objectId = safeObjectId(rid);
     if (!objectId) {
-      return Response.json({ error: 'Invalid receipt ID format' }, { status: 400 });
+  return NextResponse.json({ error: 'Invalid receipt ID format' }, { status: 400 });
     }
 
     const receipt = await db.collection('receipts').findOne({ _id: objectId });
     
     if (!receipt) {
-      return Response.json({ error: 'Receipt not found' }, { status: 404 });
+  return NextResponse.json({ error: 'Receipt not found' }, { status: 404 });
     }
 
     // Get all claims for this receipt
@@ -47,7 +48,7 @@ export async function GET(request, context) {
     });
   } catch (error) {
     console.error('Get receipt error:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -59,18 +60,18 @@ export async function DELETE(request, context) {
     
     // Validate that rid exists and is a string
     if (!rid || typeof rid !== 'string' || rid.trim() === '') {
-      return Response.json({ error: 'Invalid receipt ID' }, { status: 400 });
+  return NextResponse.json({ error: 'Invalid receipt ID' }, { status: 400 });
     }
     
     const { db } = await connectToDatabase();    // Verify receipt exists
     const objectId = safeObjectId(rid);
     if (!objectId) {
-      return Response.json({ error: 'Invalid receipt ID format' }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid receipt ID format' }, { status: 400 });
     }
 
     const receipt = await db.collection('receipts').findOne({ _id: objectId });
     if (!receipt) {
-      return Response.json({ error: 'Receipt not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Receipt not found' }, { status: 404 });
     }
 
     // Delete receipt document
@@ -79,9 +80,9 @@ export async function DELETE(request, context) {
     // Remove any claims associated with this receipt
     await db.collection('claims').deleteMany({ receiptId: rid });
 
-    return Response.json({ success: true });
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Delete receipt error:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

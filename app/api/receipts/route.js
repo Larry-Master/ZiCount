@@ -1,4 +1,5 @@
 import { connectToDatabase } from '@/lib/db/mongodb';
+import { NextResponse } from 'next/server';
 
 export async function GET(request) {
   try {
@@ -31,10 +32,10 @@ export async function GET(request) {
       })
     );
     
-    return Response.json(receiptsWithClaims);
+  return NextResponse.json(receiptsWithClaims);
   } catch (error) {
     console.error('Get receipts error:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+  return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -60,9 +61,9 @@ export async function POST(request) {
       claimedItems: 0
     };
 
-    return Response.json(savedReceipt);
+  return NextResponse.json(savedReceipt);
   } catch (error) {
     console.error('Create receipt error:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+  return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

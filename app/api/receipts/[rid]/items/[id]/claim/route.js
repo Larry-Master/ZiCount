@@ -1,6 +1,7 @@
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { ObjectId } from 'mongodb';
 import { safeObjectId } from '@/lib/db/mongodb';
+import { NextResponse } from 'next/server';
 
 export async function POST(request, context) {
   try {
@@ -10,10 +11,10 @@ export async function POST(request, context) {
     
     // Validate that both rid and id exist and are strings
     if (!rid || typeof rid !== 'string' || rid.trim() === '') {
-      return Response.json({ error: 'Invalid receipt ID' }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid receipt ID' }, { status: 400 });
     }
     if (!id || typeof id !== 'string' || id.trim() === '') {
-      return Response.json({ error: 'Invalid item ID' }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid item ID' }, { status: 400 });
     }
     
     const body = await request.json();
@@ -28,24 +29,24 @@ export async function POST(request, context) {
     });
     
     if (existingClaim) {
-      return Response.json({ error: 'Item already claimed' }, { status: 400 });
+      return NextResponse.json({ error: 'Item already claimed' }, { status: 400 });
     }
 
     // Get item details from receipt
     const receiptObjectId = safeObjectId(rid);
     if (!receiptObjectId) {
-      return Response.json({ error: 'Invalid receipt ID format' }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid receipt ID format' }, { status: 400 });
     }
 
     const receipt = await db.collection('receipts').findOne({ _id: receiptObjectId });
     
     if (!receipt) {
-      return Response.json({ error: 'Receipt not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Receipt not found' }, { status: 404 });
     }
 
     const item = receipt.items?.find(item => item.id === id);
     if (!item) {
-      return Response.json({ error: 'Item not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Item not found' }, { status: 404 });
     }
 
     // Create the claim
@@ -61,7 +62,7 @@ export async function POST(request, context) {
 
     const result = await db.collection('claims').insertOne(claim);
 
-    return Response.json({
+  return NextResponse.json({
       id,
       claimedBy: userId,
       claimedAt: claim.claimedAt.toISOString(),
@@ -70,6 +71,6 @@ export async function POST(request, context) {
     });
   } catch (error) {
     console.error('Claim error:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+  return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
