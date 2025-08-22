@@ -1,11 +1,11 @@
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { ObjectId } from 'mongodb';
 
-export async function POST(request, { params }) {
+export async function POST(request, context) {
   try {
-    // Ensure params is properly resolved and validated
-    const resolvedParams = await Promise.resolve(params || {});
-    const { rid, id } = resolvedParams;
+    // Safely extract params with multiple fallbacks
+    const params = context?.params || {};
+    const { rid, id } = params;
     
     // Validate that both rid and id exist and are strings
     if (!rid || typeof rid !== 'string' || rid.trim() === '') {

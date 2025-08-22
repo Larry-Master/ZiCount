@@ -1,10 +1,10 @@
 import { connectToDatabase } from '@/lib/db/mongodb';
 
-export async function POST(request, { params }) {
+export async function POST(request, context) {
   try {
-    // Ensure params is properly resolved and validated
-    const resolvedParams = await Promise.resolve(params || {});
-    const { id } = resolvedParams;
+    // Safely extract params with multiple fallbacks
+    const params = context?.params || {};
+    const id = params?.id;
     
     // Validate that id exists and is a string
     if (!id || typeof id !== 'string' || id.trim() === '') {

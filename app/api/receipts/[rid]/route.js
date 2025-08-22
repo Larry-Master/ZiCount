@@ -1,11 +1,11 @@
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { ObjectId } from 'mongodb';
 
-export async function GET(request, { params }) {
+export async function GET(request, context) {
   try {
-    // Ensure params is properly resolved and validated
-    const resolvedParams = await Promise.resolve(params || {});
-    const { rid } = resolvedParams;
+    // Safely extract params with multiple fallbacks
+    const params = context?.params || {};
+    const rid = params?.rid;
     
     // Validate that rid exists and is a string
     if (!rid || typeof rid !== 'string' || rid.trim() === '') {
@@ -54,11 +54,11 @@ export async function GET(request, { params }) {
   }
 }
 
-export async function DELETE(request, { params }) {
+export async function DELETE(request, context) {
   try {
-    // Ensure params is properly resolved and validated
-    const resolvedParams = await Promise.resolve(params || {});
-    const { rid } = resolvedParams;
+    // Safely extract params with multiple fallbacks
+    const params = context?.params || {};
+    const rid = params?.rid;
     
     // Validate that rid exists and is a string
     if (!rid || typeof rid !== 'string' || rid.trim() === '') {
