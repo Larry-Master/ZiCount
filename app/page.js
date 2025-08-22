@@ -6,6 +6,7 @@ import ReceiptList from '@/components/ReceiptList'
 import MyClaims from '@/components/MyClaims'
 import PeopleManager from '@/components/PeopleManager'
 import { useReceipts } from '@/lib/hooks/useReceipts'
+import { apiClient } from '@/lib/api/client'
 
 export default function HomePage() {
   const [selectedImage, setSelectedImage] = useState(null)
@@ -20,6 +21,20 @@ export default function HomePage() {
   const [selectedReceiptId, setSelectedReceiptId] = useState(null)
 
   const { receipts, loading: receiptsLoading, refetch: refetchReceipts } = useReceipts()
+
+  const handleDeleteReceipt = async (receiptId) => {
+    if (!receiptId) return;
+    try {
+      if (!confirm('Delete this receipt? This will remove the receipt and all associated claims.')) return;
+      await apiClient.deleteReceipt(receiptId);
+      // Refresh list and navigate back to receipts
+      refetchReceipts();
+      setSelectedReceiptId(null);
+      setCurrentView('receipts');
+    } catch (err) {
+      setError(err.message || 'Delete failed');
+    }
+  }
 
   const inputRef = useRef(null)
 
@@ -212,6 +227,7 @@ export default function HomePage() {
           currentUserId={currentUserId}
           onBack={() => setCurrentView('receipts')}
           onClaimsUpdated={() => refetchReceipts()}
+          onDelete={() => handleDeleteReceipt(selectedReceiptId)}
         />
       )}
 
@@ -300,6 +316,7 @@ export default function HomePage() {
               items: prev.items.map(it => it.id === itemId ? { ...it, claimedBy: null, claimedAt: null } : it)
             }));
           }}
+          onDelete={() => handleDeleteReceipt(results.id)}
         />
       )}
 

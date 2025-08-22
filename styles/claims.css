@@ -745,6 +745,22 @@
   cursor: not-allowed;
 }
 
+/* Delete button - styled similarly to primary destructive actions */
+.delete-button {
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-radius: 6px;
+  background: #dc3545; /* bootstrap danger */
+  color: white;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.delete-button:disabled {
+  background: #e99aa0;
+  cursor: not-allowed;
+}
+
 .grace-window {
   margin-top: 0.5rem;
   font-size: 0.8rem;

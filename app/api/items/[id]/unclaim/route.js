@@ -2,7 +2,7 @@ import { connectToDatabase } from '@/lib/db/mongodb';
 
 export async function POST(request, { params }) {
   try {
-    const { id } = await params;
+  const { id } = params;
 
     const { db } = await connectToDatabase();
 

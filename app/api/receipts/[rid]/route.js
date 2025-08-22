@@ -40,3 +40,27 @@ export async function GET(request, { params }) {
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+export async function DELETE(request, { params }) {
+  try {
+    const { rid } = await params;
+    const { db } = await connectToDatabase();
+
+    // Verify receipt exists
+    const receipt = await db.collection('receipts').findOne({ _id: new ObjectId(rid) });
+    if (!receipt) {
+      return Response.json({ error: 'Receipt not found' }, { status: 404 });
+    }
+
+    // Delete receipt document
+    await db.collection('receipts').deleteOne({ _id: new ObjectId(rid) });
+
+    // Remove any claims associated with this receipt
+    await db.collection('claims').deleteMany({ receiptId: rid });
+
+    return Response.json({ success: true });
+  } catch (error) {
+    console.error('Delete receipt error:', error);
+    return Response.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
