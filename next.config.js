@@ -2,13 +2,8 @@
 const nextConfig = {
   reactStrictMode: true,
   
-  // Optimize for Vercel deployment
-  experimental: {
-    serverComponentsExternalPackages: ['ssh2', 'node-ssh', 'ssh2-sftp-client'],
-  },
-  
+  // External packages for serverless functions
   serverExternalPackages: [
-    // adjust this list to match the packages that cause native/binary .node errors
     'ssh2',
     'cpu-features', 
     'node-ssh',
