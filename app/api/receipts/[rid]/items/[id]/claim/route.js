@@ -3,8 +3,8 @@ import { ObjectId } from 'mongodb';
 
 export async function POST(request, context) {
   try {
-    // Safely extract params with multiple fallbacks
-    const params = context?.params || {};
+    // Safely extract and await params
+    const params = await (context?.params || {});
     const { rid, id } = params;
     
     // Validate that both rid and id exist and are strings

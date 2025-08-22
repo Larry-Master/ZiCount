@@ -3,8 +3,8 @@ import { ObjectId } from 'mongodb';
 
 export async function GET(request, context) {
   try {
-    // Safely extract params with multiple fallbacks
-    const params = context?.params || {};
+    // Safely extract and await params
+    const params = await (context?.params || {});
     const userId = params?.userId;
     
     // Validate that userId exists and is a string

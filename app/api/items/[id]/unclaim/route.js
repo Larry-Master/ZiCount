@@ -2,8 +2,8 @@ import { connectToDatabase } from '@/lib/db/mongodb';
 
 export async function POST(request, context) {
   try {
-    // Safely extract params with multiple fallbacks
-    const params = context?.params || {};
+    // Safely extract and await params
+    const params = await (context?.params || {});
     const id = params?.id;
     
     // Validate that id exists and is a string
