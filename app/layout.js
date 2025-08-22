@@ -6,7 +6,7 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
   title: 'ZiCount - Receipt Analyzer',
-  description: 'Analyze receipt images to extract items and prices using AI',
+  description: 'Analyze receipt images to extract items and prices using OCR',
 }
 
 export const viewport = {
