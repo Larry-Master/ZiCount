@@ -24,9 +24,6 @@
       "dest": "/$1"
     }
   ],
-  "env": {
-    "NODE_ENV": "production"
-  },
   "headers": [
     {
       "source": "/api/(.*)",
