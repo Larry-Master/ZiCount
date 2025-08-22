@@ -3,12 +3,25 @@ import { ObjectId } from 'mongodb';
 
 export async function GET(request, { params }) {
   try {
-  const { rid } = await Promise.resolve(params || {});
-    const { db } = await connectToDatabase();
+    // Ensure params is properly resolved and validated
+    const resolvedParams = await Promise.resolve(params || {});
+    const { rid } = resolvedParams;
     
-    // Find the receipt in MongoDB
+    // Validate that rid exists and is a string
+    if (!rid || typeof rid !== 'string' || rid.trim() === '') {
+      return Response.json({ error: 'Invalid receipt ID' }, { status: 400 });
+    }
+    
+    const { db } = await connectToDatabase();    // Find the receipt in MongoDB
+    let objectId;
+    try {
+      objectId = new ObjectId(rid);
+    } catch (err) {
+      return Response.json({ error: 'Invalid receipt ID format' }, { status: 400 });
+    }
+    
     const receipt = await db.collection('receipts').findOne({ 
-      _id: new ObjectId(rid) 
+      _id: objectId
     });
     
     if (!receipt) {
@@ -43,17 +56,30 @@ export async function GET(request, { params }) {
 
 export async function DELETE(request, { params }) {
   try {
-  const { rid } = await Promise.resolve(params || {});
-    const { db } = await connectToDatabase();
-
-    // Verify receipt exists
-    const receipt = await db.collection('receipts').findOne({ _id: new ObjectId(rid) });
+    // Ensure params is properly resolved and validated
+    const resolvedParams = await Promise.resolve(params || {});
+    const { rid } = resolvedParams;
+    
+    // Validate that rid exists and is a string
+    if (!rid || typeof rid !== 'string' || rid.trim() === '') {
+      return Response.json({ error: 'Invalid receipt ID' }, { status: 400 });
+    }
+    
+    const { db } = await connectToDatabase();    // Verify receipt exists
+    let objectId;
+    try {
+      objectId = new ObjectId(rid);
+    } catch (err) {
+      return Response.json({ error: 'Invalid receipt ID format' }, { status: 400 });
+    }
+    
+    const receipt = await db.collection('receipts').findOne({ _id: objectId });
     if (!receipt) {
       return Response.json({ error: 'Receipt not found' }, { status: 404 });
     }
 
     // Delete receipt document
-    await db.collection('receipts').deleteOne({ _id: new ObjectId(rid) });
+    await db.collection('receipts').deleteOne({ _id: objectId });
 
     // Remove any claims associated with this receipt
     await db.collection('claims').deleteMany({ receiptId: rid });

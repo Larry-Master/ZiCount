@@ -3,8 +3,18 @@ import { ObjectId } from 'mongodb';
 
 export async function POST(request, { params }) {
   try {
-    // keep await semantics but guard against undefined params
-    const { rid, id } = await Promise.resolve(params || {});
+    // Ensure params is properly resolved and validated
+    const resolvedParams = await Promise.resolve(params || {});
+    const { rid, id } = resolvedParams;
+    
+    // Validate that both rid and id exist and are strings
+    if (!rid || typeof rid !== 'string' || rid.trim() === '') {
+      return Response.json({ error: 'Invalid receipt ID' }, { status: 400 });
+    }
+    if (!id || typeof id !== 'string' || id.trim() === '') {
+      return Response.json({ error: 'Invalid item ID' }, { status: 400 });
+    }
+    
     const body = await request.json();
     const { userId } = body;
 
@@ -21,8 +31,15 @@ export async function POST(request, { params }) {
     }
 
     // Get item details from receipt
+    let receiptObjectId;
+    try {
+      receiptObjectId = new ObjectId(rid);
+    } catch (err) {
+      return Response.json({ error: 'Invalid receipt ID format' }, { status: 400 });
+    }
+    
     const receipt = await db.collection('receipts').findOne({ 
-      _id: new ObjectId(rid) 
+      _id: receiptObjectId
     });
     
     if (!receipt) {

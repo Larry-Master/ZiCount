@@ -3,8 +3,14 @@ import { ObjectId } from 'mongodb';
 
 export async function GET(request, { params }) {
   try {
-    // keep await semantics but guard against undefined params
-    const { userId } = await Promise.resolve(params || {});
+    // Ensure params is properly resolved and validated
+    const resolvedParams = await Promise.resolve(params || {});
+    const { userId } = resolvedParams;
+    
+    // Validate that userId exists and is a string
+    if (!userId || typeof userId !== 'string' || userId.trim() === '') {
+      return Response.json({ error: 'Invalid user ID' }, { status: 400 });
+    }
     
     const { db } = await connectToDatabase();
     
@@ -14,8 +20,25 @@ export async function GET(request, { params }) {
     // Get receipt details for each claim
     const claimsWithDetails = await Promise.all(
       claims.map(async (claim) => {
+        let receiptObjectId;
+        try {
+          receiptObjectId = new ObjectId(claim.receiptId);
+        } catch (err) {
+          // If ObjectId conversion fails, skip this receipt lookup
+          return {
+            id: claim.itemId,
+            name: claim.itemName || `Item ${claim.itemId}`,
+            price: claim.itemPrice || 0,
+            receiptId: claim.receiptId,
+            receiptName: `Receipt ${claim.receiptId}`,
+            claimedAt: claim.claimedAt,
+            tags: claim.itemTags || [],
+            claimId: claim._id
+          };
+        }
+        
         const receipt = await db.collection('receipts').findOne({ 
-          _id: new ObjectId(claim.receiptId) 
+          _id: receiptObjectId 
         });
         
         return {

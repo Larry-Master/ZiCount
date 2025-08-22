@@ -2,8 +2,14 @@ import { connectToDatabase } from '@/lib/db/mongodb';
 
 export async function POST(request, { params }) {
   try {
-    // keep await but guard against undefined params
-    const { id } = await Promise.resolve(params || {});
+    // Ensure params is properly resolved and validated
+    const resolvedParams = await Promise.resolve(params || {});
+    const { id } = resolvedParams;
+    
+    // Validate that id exists and is a string
+    if (!id || typeof id !== 'string' || id.trim() === '') {
+      return Response.json({ error: 'Invalid item ID' }, { status: 400 });
+    }
 
     const { db } = await connectToDatabase();
 
