@@ -3,7 +3,8 @@ import { ObjectId } from 'mongodb';
 
 export async function GET(request, { params }) {
   try {
-    const { userId } = await params;
+    // keep await semantics but guard against undefined params
+    const { userId } = await Promise.resolve(params || {});
     
     const { db } = await connectToDatabase();
     

@@ -3,7 +3,7 @@ import { ObjectId } from 'mongodb';
 
 export async function GET(request, { params }) {
   try {
-    const { rid } = await params;
+  const { rid } = await Promise.resolve(params || {});
     const { db } = await connectToDatabase();
     
     // Find the receipt in MongoDB
@@ -43,7 +43,7 @@ export async function GET(request, { params }) {
 
 export async function DELETE(request, { params }) {
   try {
-    const { rid } = await params;
+  const { rid } = await Promise.resolve(params || {});
     const { db } = await connectToDatabase();
 
     // Verify receipt exists

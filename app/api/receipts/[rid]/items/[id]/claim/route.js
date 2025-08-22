@@ -3,7 +3,8 @@ import { ObjectId } from 'mongodb';
 
 export async function POST(request, { params }) {
   try {
-    const { rid, id } = await params;
+    // keep await semantics but guard against undefined params
+    const { rid, id } = await Promise.resolve(params || {});
     const body = await request.json();
     const { userId } = body;
 

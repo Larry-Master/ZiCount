@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { formatCurrency, calculateTotal } from '@/lib/utils/currency';
 import { apiClient } from '@/lib/api/client';
 
-export default function MyClaims({ userId, onClaimsUpdated }) {
+export default function MyClaims({ userId, onClaimsUpdated, refreshKey }) {
   const [claims, setClaims] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -24,7 +24,7 @@ export default function MyClaims({ userId, onClaimsUpdated }) {
     };
 
     fetchClaims();
-  }, [userId]);
+  }, [userId, refreshKey]);
 
   const handleUnclaim = async (itemId) => {
     try {

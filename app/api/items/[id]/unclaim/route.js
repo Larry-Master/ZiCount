@@ -2,7 +2,8 @@ import { connectToDatabase } from '@/lib/db/mongodb';
 
 export async function POST(request, { params }) {
   try {
-  const { id } = params;
+    // keep await but guard against undefined params
+    const { id } = await Promise.resolve(params || {});
 
     const { db } = await connectToDatabase();
 

@@ -4,7 +4,6 @@ import ClaimModal from './ClaimModal';
 import { formatCurrency, calculateTotal } from '@/lib/utils/currency';
 import { useClaims, useReceipt } from '@/lib/hooks/useReceipts';
 import { usePeople } from '@/lib/hooks/usePeople';
-import { apiClient } from '@/lib/api/client';
 
 export default function ReceiptDetail({ receipt, receiptId, currentUserId, onItemClaimed, onItemUnclaimed, onBack, onClaimsUpdated, onDelete }) {
   const [selectedItem, setSelectedItem] = useState(null);
@@ -108,22 +107,19 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
             />
           )}
         </div>
-        {/* Delete button */}
+        {/* Delete button - parent handles actual delete + refresh */}
         <div className="receipt-actions">
           <button
             className="delete-button"
             onClick={async () => {
-              if (!confirm('Delete this receipt? This will remove the receipt and all associated claims.')) return;
+              if (typeof onDelete !== 'function') return;
               setDeleting(true);
               try {
-                await apiClient.deleteReceipt(currentReceipt.id);
-                if (onClaimsUpdated) onClaimsUpdated();
-                // Prefer onBack/onDelete ordering so parent can navigate/refresh
+                await onDelete();
                 if (onBack) onBack();
-                if (typeof onDelete === 'function') onDelete();
               } catch (err) {
                 console.error('Delete failed:', err);
-                alert(err.message || 'Delete failed');
+                alert(err?.message || 'Delete failed');
               } finally {
                 setDeleting(false);
               }

@@ -21,6 +21,7 @@ export default function HomePage() {
   const [selectedReceiptId, setSelectedReceiptId] = useState(null)
 
   const { receipts, loading: receiptsLoading, refetch: refetchReceipts } = useReceipts()
+  const [claimsVersion, setClaimsVersion] = useState(0);
 
   const handleDeleteReceipt = async (receiptId) => {
     if (!receiptId) return;
@@ -28,7 +29,8 @@ export default function HomePage() {
       if (!confirm('Delete this receipt? This will remove the receipt and all associated claims.')) return;
       await apiClient.deleteReceipt(receiptId);
       // Refresh list and navigate back to receipts
-      refetchReceipts();
+  refetchReceipts();
+  setClaimsVersion(v => v + 1);
       setSelectedReceiptId(null);
       setCurrentView('receipts');
     } catch (err) {
@@ -145,7 +147,8 @@ export default function HomePage() {
 
       setResults(savedReceipt);
       setCurrentView('receipt');
-      refetchReceipts(); // Refresh receipts list
+  refetchReceipts(); // Refresh receipts list
+  setClaimsVersion(v => v + 1);
     } catch (err) {
       setError(err.message || 'Unknown error');
     } finally {
@@ -223,12 +226,12 @@ export default function HomePage() {
 
       {currentView === 'selected-receipt' && selectedReceiptId && (
         <ReceiptDetail
-          receiptId={selectedReceiptId}
-          currentUserId={currentUserId}
-          onBack={() => setCurrentView('receipts')}
-          onClaimsUpdated={() => refetchReceipts()}
-          onDelete={() => handleDeleteReceipt(selectedReceiptId)}
-        />
+            receiptId={selectedReceiptId}
+            currentUserId={currentUserId}
+            onBack={() => setCurrentView('receipts')}
+            onClaimsUpdated={() => { refetchReceipts(); setClaimsVersion(v => v + 1); }}
+            onDelete={() => handleDeleteReceipt(selectedReceiptId)}
+          />
       )}
 
       {currentView === 'upload' && (
@@ -301,7 +304,7 @@ export default function HomePage() {
       )}
 
       {currentView === 'receipt' && results && (
-        <ReceiptDetail
+  <ReceiptDetail
           receipt={results}
           currentUserId={currentUserId}
           onItemClaimed={(itemId, claimedBy, claimedAt) => {
@@ -317,6 +320,7 @@ export default function HomePage() {
             }));
           }}
           onDelete={() => handleDeleteReceipt(results.id)}
+          onClaimsUpdated={() => { refetchReceipts(); setClaimsVersion(v => v + 1); }}
         />
       )}
 
@@ -324,6 +328,7 @@ export default function HomePage() {
         <MyClaims 
           userId={currentUserId} 
           onClaimsUpdated={refetchReceipts}
+          refreshKey={claimsVersion}
         />
       )}
 
