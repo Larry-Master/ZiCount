@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import ItemCard from '../components/ItemCard';
+import ItemCard from '@/components/ItemCard';
 
 // Mock the utils
 jest.mock('@/lib/utils/currency', () => ({

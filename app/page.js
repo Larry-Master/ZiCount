@@ -1,11 +1,11 @@
 "use client"
 
 import { useRef, useState } from 'react'
-import ReceiptDetail from '../components/ReceiptDetail'
-import ReceiptList from '../components/ReceiptList'
-import MyClaims from '../components/MyClaims'
-import PeopleManager from '../components/PeopleManager'
-import { useReceipts } from '../lib/hooks/useReceipts'
+import ReceiptDetail from '@/components/ReceiptDetail'
+import ReceiptList from '@/components/ReceiptList'
+import MyClaims from '@/components/MyClaims'
+import PeopleManager from '@/components/PeopleManager'
+import { useReceipts } from '@/lib/hooks/useReceipts'
 
 export default function HomePage() {
   const [selectedImage, setSelectedImage] = useState(null)
