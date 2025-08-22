@@ -1,12 +1,21 @@
 "use client"
 
-import { useRef, useState } from 'react'
-import ReceiptDetail from '@/components/ReceiptDetail'
-import ReceiptList from '@/components/ReceiptList'
-import MyClaims from '@/components/MyClaims'
-import PeopleManager from '@/components/PeopleManager'
+import { useRef, useState, lazy, Suspense } from 'react'
 import { useReceipts } from '@/lib/hooks/useReceipts'
 import { apiClient } from '@/lib/api/client'
+
+// Lazy load components for better code splitting
+const ReceiptDetail = lazy(() => import('@/components/ReceiptDetail'))
+const ReceiptList = lazy(() => import('@/components/ReceiptList'))
+const MyClaims = lazy(() => import('@/components/MyClaims'))
+const PeopleManager = lazy(() => import('@/components/PeopleManager'))
+
+// Loading component
+const LoadingSpinner = () => (
+  <div className="flex items-center justify-center p-8">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+  </div>
+)
 
 export default function HomePage() {
   const [selectedImage, setSelectedImage] = useState(null)
@@ -213,25 +222,29 @@ export default function HomePage() {
 
       {currentView === 'receipts' && (
         <div className="receipts-overview">
-          <ReceiptList
-            receipts={receipts}
-            loading={receiptsLoading}
-            onReceiptSelect={(receiptId) => {
-              setSelectedReceiptId(receiptId);
-              setCurrentView('selected-receipt');
-            }}
-          />
+          <Suspense fallback={<LoadingSpinner />}>
+            <ReceiptList
+              receipts={receipts}
+              loading={receiptsLoading}
+              onReceiptSelect={(receiptId) => {
+                setSelectedReceiptId(receiptId);
+                setCurrentView('selected-receipt');
+              }}
+            />
+          </Suspense>
         </div>
       )}
 
       {currentView === 'selected-receipt' && selectedReceiptId && (
-        <ReceiptDetail
-            receiptId={selectedReceiptId}
-            currentUserId={currentUserId}
-            onBack={() => setCurrentView('receipts')}
-            onClaimsUpdated={() => { refetchReceipts(); setClaimsVersion(v => v + 1); }}
-            onDelete={() => handleDeleteReceipt(selectedReceiptId)}
-          />
+        <Suspense fallback={<LoadingSpinner />}>
+          <ReceiptDetail
+              receiptId={selectedReceiptId}
+              currentUserId={currentUserId}
+              onBack={() => setCurrentView('receipts')}
+              onClaimsUpdated={() => { refetchReceipts(); setClaimsVersion(v => v + 1); }}
+              onDelete={() => handleDeleteReceipt(selectedReceiptId)}
+            />
+        </Suspense>
       )}
 
       {currentView === 'upload' && (
@@ -304,41 +317,47 @@ export default function HomePage() {
       )}
 
       {currentView === 'receipt' && results && (
-  <ReceiptDetail
-          receipt={results}
-          currentUserId={currentUserId}
-          onItemClaimed={(itemId, claimedBy, claimedAt) => {
-            setResults(prev => ({
-              ...prev,
-              items: prev.items.map(it => it.id === itemId ? { ...it, claimedBy, claimedAt } : it)
-            }));
-          }}
-          onItemUnclaimed={(itemId) => {
-            setResults(prev => ({
-              ...prev,
-              items: prev.items.map(it => it.id === itemId ? { ...it, claimedBy: null, claimedAt: null } : it)
-            }));
-          }}
-          onDelete={() => handleDeleteReceipt(results.id)}
-          onClaimsUpdated={() => { refetchReceipts(); setClaimsVersion(v => v + 1); }}
-        />
+        <Suspense fallback={<LoadingSpinner />}>
+          <ReceiptDetail
+                receipt={results}
+                currentUserId={currentUserId}
+                onItemClaimed={(itemId, claimedBy, claimedAt) => {
+                  setResults(prev => ({
+                    ...prev,
+                    items: prev.items.map(it => it.id === itemId ? { ...it, claimedBy, claimedAt } : it)
+                  }));
+                }}
+                onItemUnclaimed={(itemId) => {
+                  setResults(prev => ({
+                    ...prev,
+                    items: prev.items.map(it => it.id === itemId ? { ...it, claimedBy: null, claimedAt: null } : it)
+                  }));
+                }}
+                onDelete={() => handleDeleteReceipt(results.id)}
+                onClaimsUpdated={() => { refetchReceipts(); setClaimsVersion(v => v + 1); }}
+              />
+        </Suspense>
       )}
 
       {currentView === 'claims' && (
-        <MyClaims 
-          userId={currentUserId} 
-          onClaimsUpdated={refetchReceipts}
-          refreshKey={claimsVersion}
-        />
+        <Suspense fallback={<LoadingSpinner />}>
+          <MyClaims 
+            userId={currentUserId} 
+            onClaimsUpdated={refetchReceipts}
+            refreshKey={claimsVersion}
+          />
+        </Suspense>
       )}
 
       {currentView === 'people' && (
         <div className="people-section">
-          <PeopleManager 
-            currentUserId={currentUserId}
-            onCurrentUserChange={setCurrentUserId}
-            compact={false}
-          />
+          <Suspense fallback={<LoadingSpinner />}>
+            <PeopleManager 
+              currentUserId={currentUserId}
+              onCurrentUserChange={setCurrentUserId}
+              compact={false}
+            />
+          </Suspense>
         </div>
       )}
 
