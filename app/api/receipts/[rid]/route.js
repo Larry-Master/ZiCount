@@ -1,5 +1,6 @@
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { ObjectId } from 'mongodb';
+import { safeObjectId } from '@/lib/db/mongodb';
 
 export async function GET(request, context) {
   try {
@@ -13,16 +14,12 @@ export async function GET(request, context) {
     }
     
     const { db } = await connectToDatabase();    // Find the receipt in MongoDB
-    let objectId;
-    try {
-      objectId = new ObjectId(rid);
-    } catch (err) {
+    const objectId = safeObjectId(rid);
+    if (!objectId) {
       return Response.json({ error: 'Invalid receipt ID format' }, { status: 400 });
     }
-    
-    const receipt = await db.collection('receipts').findOne({ 
-      _id: objectId
-    });
+
+    const receipt = await db.collection('receipts').findOne({ _id: objectId });
     
     if (!receipt) {
       return Response.json({ error: 'Receipt not found' }, { status: 404 });
@@ -66,13 +63,11 @@ export async function DELETE(request, context) {
     }
     
     const { db } = await connectToDatabase();    // Verify receipt exists
-    let objectId;
-    try {
-      objectId = new ObjectId(rid);
-    } catch (err) {
+    const objectId = safeObjectId(rid);
+    if (!objectId) {
       return Response.json({ error: 'Invalid receipt ID format' }, { status: 400 });
     }
-    
+
     const receipt = await db.collection('receipts').findOne({ _id: objectId });
     if (!receipt) {
       return Response.json({ error: 'Receipt not found' }, { status: 404 });

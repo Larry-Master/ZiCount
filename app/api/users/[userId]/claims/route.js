@@ -1,5 +1,6 @@
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { ObjectId } from 'mongodb';
+import { safeObjectId } from '@/lib/db/mongodb';
 
 export async function GET(request, context) {
   try {
@@ -20,11 +21,8 @@ export async function GET(request, context) {
     // Get receipt details for each claim
     const claimsWithDetails = await Promise.all(
       claims.map(async (claim) => {
-        let receiptObjectId;
-        try {
-          receiptObjectId = new ObjectId(claim.receiptId);
-        } catch (err) {
-          // If ObjectId conversion fails, skip this receipt lookup
+        const receiptObjectId = safeObjectId(claim.receiptId);
+        if (!receiptObjectId) {
           return {
             id: claim.itemId,
             name: claim.itemName || `Item ${claim.itemId}`,
@@ -36,10 +34,8 @@ export async function GET(request, context) {
             claimId: claim._id
           };
         }
-        
-        const receipt = await db.collection('receipts').findOne({ 
-          _id: receiptObjectId 
-        });
+
+        const receipt = await db.collection('receipts').findOne({ _id: receiptObjectId });
         
         return {
           id: claim.itemId,

@@ -1,5 +1,6 @@
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { ObjectId } from 'mongodb';
+import { safeObjectId } from '@/lib/db/mongodb';
 
 export async function POST(request, context) {
   try {
@@ -31,16 +32,12 @@ export async function POST(request, context) {
     }
 
     // Get item details from receipt
-    let receiptObjectId;
-    try {
-      receiptObjectId = new ObjectId(rid);
-    } catch (err) {
+    const receiptObjectId = safeObjectId(rid);
+    if (!receiptObjectId) {
       return Response.json({ error: 'Invalid receipt ID format' }, { status: 400 });
     }
-    
-    const receipt = await db.collection('receipts').findOne({ 
-      _id: receiptObjectId
-    });
+
+    const receipt = await db.collection('receipts').findOne({ _id: receiptObjectId });
     
     if (!receipt) {
       return Response.json({ error: 'Receipt not found' }, { status: 404 });
