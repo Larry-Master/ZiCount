@@ -3,9 +3,9 @@ import { ObjectId } from 'mongodb';
 
 export async function GET(request, context) {
   try {
-    // Safely extract and await params
-    const params = await (context?.params || {});
-    const userId = params?.userId;
+  // Await params directly (Next.js requires awaiting params) and extract safely
+  const params = await context.params;
+  const userId = params?.userId;
     
     // Validate that userId exists and is a string
     if (!userId || typeof userId !== 'string' || userId.trim() === '') {

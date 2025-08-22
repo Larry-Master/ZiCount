@@ -2,9 +2,9 @@ import { connectToDatabase } from '@/lib/db/mongodb';
 
 export async function POST(request, context) {
   try {
-    // Safely extract and await params
-    const params = await (context?.params || {});
-    const id = params?.id;
+  // Await params directly (Next.js requires awaiting params) and extract safely
+  const params = await context.params;
+  const id = params?.id;
     
     // Validate that id exists and is a string
     if (!id || typeof id !== 'string' || id.trim() === '') {

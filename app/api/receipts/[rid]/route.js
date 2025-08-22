@@ -3,9 +3,9 @@ import { ObjectId } from 'mongodb';
 
 export async function GET(request, context) {
   try {
-    // Safely extract and await params
-    const params = await (context?.params || {});
-    const rid = params?.rid;
+  // Await params directly (Next.js requires awaiting params) and extract safely
+  const params = await context.params;
+  const rid = params?.rid;
     
     // Validate that rid exists and is a string
     if (!rid || typeof rid !== 'string' || rid.trim() === '') {
@@ -56,9 +56,9 @@ export async function GET(request, context) {
 
 export async function DELETE(request, context) {
   try {
-    // Safely extract and await params
-    const params = await (context?.params || {});
-    const rid = params?.rid;
+  // Await params directly (Next.js requires awaiting params) and extract safely
+  const params = await context.params;
+  const rid = params?.rid;
     
     // Validate that rid exists and is a string
     if (!rid || typeof rid !== 'string' || rid.trim() === '') {
