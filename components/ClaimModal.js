@@ -9,7 +9,7 @@ export default function ClaimModal({ item, onClaim, onCancel, currentUserId }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!selectedUserId) return;
 
     setLoading(true);
@@ -30,7 +30,7 @@ export default function ClaimModal({ item, onClaim, onCancel, currentUserId }) {
       <div className="modal-content" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h3>Claim Item</h3>
-          <button className="close-button" onClick={onCancel}>×</button>
+          <button className="close-button" onClick={onCancel}>x</button>
         </div>
 
         <div className="modal-body">
@@ -70,16 +70,16 @@ export default function ClaimModal({ item, onClaim, onCancel, currentUserId }) {
             </div>
 
             <div className="modal-actions">
-              <button 
-                type="button" 
-                className="cancel-button" 
+              <button
+                type="button"
+                className="cancel-button"
                 onClick={onCancel}
                 disabled={loading}
               >
                 Cancel
               </button>
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 className="claim-button"
                 disabled={loading || !selectedUserId}
               >

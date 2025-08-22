@@ -10,7 +10,7 @@ export default function MyClaims({ userId, onClaimsUpdated, refreshKey }) {
   useEffect(() => {
     const fetchClaims = async () => {
       if (!userId) return;
-      
+
       setLoading(true);
       setError(null);
       try {
@@ -90,7 +90,7 @@ export default function MyClaims({ userId, onClaimsUpdated, refreshKey }) {
                 {formatCurrency(receipt.total)}
               </span>
             </div>
-            
+
             <div className="receipt-items">
               {receipt.items.map(item => {
                 return (
@@ -113,9 +113,9 @@ export default function MyClaims({ userId, onClaimsUpdated, refreshKey }) {
                         </div>
                       )}
                     </div>
-                    
+
                     <div className="item-actions">
-                      <button 
+                      <button
                         className="unclaim-button"
                         onClick={() => handleUnclaim(item.id)}
                       >
