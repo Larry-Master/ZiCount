@@ -527,6 +527,71 @@
 }
 
 /* Receipt List */
+.receipts-overview {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.overview-header {
+  margin-bottom: 1.5rem;
+}
+
+.overview-header h2 {
+  font-size: 1.5rem;
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.overview-totals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.total-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.total-label {
+  font-size: 0.875rem;
+  color: #6c757d;
+  margin-bottom: 0.25rem;
+}
+
+.total-amount {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.total-amount.claimed {
+  color: #28a745;
+}
+
+.total-amount.remaining {
+  color: #007bff;
+}
+
+.no-receipts {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #6c757d;
+}
+
+.no-receipts h2 {
+  margin-bottom: 0.5rem;
+  color: #333;
+}
+
 .receipt-list {
   display: grid;
   gap: 1rem;
@@ -537,24 +602,71 @@
   padding: 1rem;
   border-radius: 8px;
   cursor: pointer;
+  background: white;
+  transition: all 0.2s ease;
 }
 
 .receipt-item:hover {
   background: #f8f9fa;
+  border-color: #007bff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 .receipt-header {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 0.5rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.receipt-header h3 {
+  font-size: 1.1rem;
+  color: #333;
+  margin: 0;
+}
+
+.receipt-date {
+  font-size: 0.875rem;
+  color: #6c757d;
 }
 
 .receipt-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.stat-group {
   display: flex;
-  justify-content: space-between;
-  margin-bottom: 0.5rem;
-  font-size: 0.9rem;
-  color: #666;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.5rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: #6c757d;
+  margin-bottom: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-value {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.stat-value.claimed-amount {
+  color: #28a745;
+}
+
+.receipt-progress {
+  margin-top: 1rem;
 }
 
 .receipt-total {

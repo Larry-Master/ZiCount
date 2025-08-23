@@ -1,60 +1,56 @@
-"use client"
-
-import { useRef, useState, lazy, Suspense } from 'react'
+import { useRef, useState, useEffect } from 'react'
+import dynamic from 'next/dynamic'
 import { useReceipts } from '@/lib/hooks/useReceipts'
 import { apiClient } from '@/lib/api/client'
 
-// Lazy load components for better code splitting
-const ReceiptDetail = lazy(() => import('@/components/ReceiptDetail'))
-const ReceiptList = lazy(() => import('@/components/ReceiptList'))
-const MyClaims = lazy(() => import('@/components/MyClaims'))
-const PeopleManager = lazy(() => import('@/components/PeopleManager'))
-
-// Loading component
-const LoadingSpinner = () => (
-  <div className="flex items-center justify-center p-8">
+// Dynamic imports for better code splitting and mobile performance
+const ReceiptDetail = dynamic(() => import('@/components/ReceiptDetail'), {
+  loading: () => <div className="flex items-center justify-center p-8">
     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
   </div>
-)
+})
+
+const ReceiptList = dynamic(() => import('@/components/ReceiptList'), {
+  loading: () => <div className="flex items-center justify-center p-8">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+  </div>
+})
+
+const MyClaims = dynamic(() => import('@/components/MyClaims'), {
+  loading: () => <div className="flex items-center justify-center p-8">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+  </div>
+})
+
+const PeopleManager = dynamic(() => import('@/components/PeopleManager'), {
+  loading: () => <div className="flex items-center justify-center p-8">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+  </div>
+})
 
 export default function HomePage() {
+  // State management
   const [selectedImage, setSelectedImage] = useState(null)
   const [imagePreview, setImagePreview] = useState(null)
   const [analyzing, setAnalyzing] = useState(false)
   const [results, setResults] = useState(null)
   const [error, setError] = useState(null)
   const [isDragging, setIsDragging] = useState(false)
-  const [showOcrText, setShowOcrText] = useState(false)
   const [currentView, setCurrentView] = useState('receipts') // 'upload', 'receipts', 'receipt', 'claims', 'people'
   const [currentUserId, setCurrentUserId] = useState('user1') // Default user
   const [selectedReceiptId, setSelectedReceiptId] = useState(null)
+  const [claimsVersion, setClaimsVersion] = useState(0)
 
   const { receipts, loading: receiptsLoading, refetch: refetchReceipts } = useReceipts()
-  const [claimsVersion, setClaimsVersion] = useState(0);
-
-  const handleDeleteReceipt = async (receiptId) => {
-    if (!receiptId) return;
-    try {
-      if (!confirm('Delete this receipt? This will remove the receipt and all associated claims.')) return;
-      await apiClient.deleteReceipt(receiptId);
-      // Refresh list and navigate back to receipts
-  refetchReceipts();
-  setClaimsVersion(v => v + 1);
-      setSelectedReceiptId(null);
-      setCurrentView('receipts');
-    } catch (err) {
-      setError(err.message || 'Delete failed');
-    }
-  }
-
   const inputRef = useRef(null)
 
+  // File handling functions
   const onFile = (file) => {
     if (!file) return
     setSelectedImage(file)
     setResults(null)
     setError(null)
-    setImagePreview(null) // Reset image preview when a new file is selected
+    setImagePreview(null)
 
     const reader = new FileReader()
     reader.onload = (e) => setImagePreview(e.target.result)
@@ -66,6 +62,7 @@ export default function HomePage() {
     onFile(file)
   }
 
+  // Drag and drop handlers
   const handleDragOver = (e) => {
     e.preventDefault()
     e.stopPropagation()
@@ -86,6 +83,7 @@ export default function HomePage() {
     if (files && files.length > 0) onFile(files[0])
   }
 
+  // Receipt analysis function
   const analyzeReceipt = async () => {
     if (!selectedImage) {
       setError('Please select an image first')
@@ -94,31 +92,30 @@ export default function HomePage() {
 
     setAnalyzing(true)
     setError(null)
-    setShowOcrText(false) // Reset the OCR text visibility
 
     try {
-      const formData = new FormData();
-      formData.append('file', selectedImage);
+      const formData = new FormData()
+      formData.append('file', selectedImage)
 
       const response = await fetch('/api/analyze', {
         method: 'POST',
         body: formData,
-      });
+      })
 
-      const text = await response.text();
-      let data;
+      const text = await response.text()
+      let data
       try {
-        data = JSON.parse(text);
+        data = JSON.parse(text)
       } catch (e) {
-        data = { raw: text };
+        data = { raw: text }
       }
 
-      if (!response.ok) throw new Error(data.error || data.raw || `Request failed: ${response.status}`);
+      if (!response.ok) throw new Error(data.error || data.raw || `Request failed: ${response.status}`)
 
       // Transform OCR results into claimable items format
       const receipt = {
         name: `Receipt ${new Date().toLocaleDateString('de-DE')}`,
-        uploadedBy: currentUserId, // Track who uploaded the receipt
+        uploadedBy: currentUserId,
         imageUrl: imagePreview,
         items: (data.items || []).map((item, index) => ({
           id: `item_${Date.now()}_${index}`,
@@ -131,7 +128,7 @@ export default function HomePage() {
           claimedAt: null
         })),
         text: data.text
-      };
+      }
 
       // Save receipt to database
       const saveResponse = await fetch('/api/receipts', {
@@ -140,33 +137,49 @@ export default function HomePage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(receipt),
-      });
+      })
 
       if (!saveResponse.ok) {
-        throw new Error('Failed to save receipt');
+        throw new Error('Failed to save receipt')
       }
 
-      const savedReceipt = await saveResponse.json();
+      const savedReceipt = await saveResponse.json()
       
       // Update items with the saved receipt ID
       savedReceipt.items = savedReceipt.items.map(item => ({
         ...item,
         receiptId: savedReceipt.id
-      }));
+      }))
 
-      setResults(savedReceipt);
-      setCurrentView('receipt');
-  refetchReceipts(); // Refresh receipts list
-  setClaimsVersion(v => v + 1);
+      setResults(savedReceipt)
+      setCurrentView('receipt')
+      refetchReceipts()
+      setClaimsVersion(v => v + 1)
     } catch (err) {
-      setError(err.message || 'Unknown error');
+      setError(err.message || 'Unknown error')
     } finally {
-      setAnalyzing(false);
+      setAnalyzing(false)
+    }
+  }
+
+  // Receipt deletion handler
+  const handleDeleteReceipt = async (receiptId) => {
+    if (!receiptId) return
+    try {
+      if (!confirm('Delete this receipt? This will remove the receipt and all associated claims.')) return
+      await apiClient.deleteReceipt(receiptId)
+      refetchReceipts()
+      setClaimsVersion(v => v + 1)
+      setSelectedReceiptId(null)
+      setCurrentView('receipts')
+    } catch (err) {
+      setError(err.message || 'Delete failed')
     }
   }
 
   return (
     <div className="container">
+      {/* App Header */}
       <div className="app-header">
         <h1 className="title">🧾 ZiCount</h1>
         <div className="header-controls">
@@ -220,37 +233,39 @@ export default function HomePage() {
         </nav>
       </div>
 
+      {/* Receipts Overview */}
       {currentView === 'receipts' && (
         <div className="receipts-overview">
-          <Suspense fallback={<LoadingSpinner />}>
-            <ReceiptList
-              receipts={receipts}
-              loading={receiptsLoading}
-              onReceiptSelect={(receiptId) => {
-                setSelectedReceiptId(receiptId);
-                setCurrentView('selected-receipt');
-              }}
-            />
-          </Suspense>
+          <ReceiptList
+            receipts={receipts}
+            loading={receiptsLoading}
+            onReceiptSelect={(receiptId) => {
+              setSelectedReceiptId(receiptId)
+              setCurrentView('selected-receipt')
+            }}
+          />
         </div>
       )}
 
+      {/* Selected Receipt Detail */}
       {currentView === 'selected-receipt' && selectedReceiptId && (
-        <Suspense fallback={<LoadingSpinner />}>
-          <ReceiptDetail
-              receiptId={selectedReceiptId}
-              currentUserId={currentUserId}
-              onBack={() => setCurrentView('receipts')}
-              onClaimsUpdated={() => { refetchReceipts(); setClaimsVersion(v => v + 1); }}
-              onDelete={() => handleDeleteReceipt(selectedReceiptId)}
-            />
-        </Suspense>
+        <ReceiptDetail
+          receiptId={selectedReceiptId}
+          currentUserId={currentUserId}
+          onBack={() => setCurrentView('receipts')}
+          onClaimsUpdated={() => { 
+            refetchReceipts() 
+            setClaimsVersion(v => v + 1) 
+          }}
+          onDelete={() => handleDeleteReceipt(selectedReceiptId)}
+        />
       )}
 
+      {/* Upload Section */}
       {currentView === 'upload' && (
         <div className="upload-section">
           <div className="upload-card">
-            <p className="subtitle">Receipt Analyzer</p>
+            <p className="text-lg text-gray-600 mb-6 text-center">Receipt Analyzer</p>
 
             <div
               className={`upload-area ${selectedImage ? 'has-file' : ''} ${isDragging ? 'drag-over' : ''}`}
@@ -287,10 +302,10 @@ export default function HomePage() {
                 <button 
                   className="remove-image"
                   onClick={() => {
-                    setSelectedImage(null);
-                    setImagePreview(null);
-                    setResults(null);
-                    setError(null);
+                    setSelectedImage(null)
+                    setImagePreview(null)
+                    setResults(null)
+                    setError(null)
                   }}
                 >
                   ✕
@@ -301,7 +316,7 @@ export default function HomePage() {
             <button 
               onClick={analyzeReceipt} 
               disabled={!selectedImage || analyzing} 
-              className="btn btn-primary"
+              className="btn btn-primary w-full"
             >
               {analyzing ? (
                 <div className="loading">
@@ -316,51 +331,52 @@ export default function HomePage() {
         </div>
       )}
 
+      {/* Current Receipt Detail */}
       {currentView === 'receipt' && results && (
-        <Suspense fallback={<LoadingSpinner />}>
-          <ReceiptDetail
-                receipt={results}
-                currentUserId={currentUserId}
-                onItemClaimed={(itemId, claimedBy, claimedAt) => {
-                  setResults(prev => ({
-                    ...prev,
-                    items: prev.items.map(it => it.id === itemId ? { ...it, claimedBy, claimedAt } : it)
-                  }));
-                }}
-                onItemUnclaimed={(itemId) => {
-                  setResults(prev => ({
-                    ...prev,
-                    items: prev.items.map(it => it.id === itemId ? { ...it, claimedBy: null, claimedAt: null } : it)
-                  }));
-                }}
-                onDelete={() => handleDeleteReceipt(results.id)}
-                onClaimsUpdated={() => { refetchReceipts(); setClaimsVersion(v => v + 1); }}
-              />
-        </Suspense>
+        <ReceiptDetail
+          receipt={results}
+          currentUserId={currentUserId}
+          onItemClaimed={(itemId, claimedBy, claimedAt) => {
+            setResults(prev => ({
+              ...prev,
+              items: prev.items.map(it => it.id === itemId ? { ...it, claimedBy, claimedAt } : it)
+            }))
+          }}
+          onItemUnclaimed={(itemId) => {
+            setResults(prev => ({
+              ...prev,
+              items: prev.items.map(it => it.id === itemId ? { ...it, claimedBy: null, claimedAt: null } : it)
+            }))
+          }}
+          onDelete={() => handleDeleteReceipt(results.id)}
+          onClaimsUpdated={() => { 
+            refetchReceipts() 
+            setClaimsVersion(v => v + 1) 
+          }}
+        />
       )}
 
+      {/* My Claims */}
       {currentView === 'claims' && (
-        <Suspense fallback={<LoadingSpinner />}>
-          <MyClaims 
-            userId={currentUserId} 
-            onClaimsUpdated={refetchReceipts}
-            refreshKey={claimsVersion}
-          />
-        </Suspense>
+        <MyClaims 
+          userId={currentUserId} 
+          onClaimsUpdated={refetchReceipts}
+          refreshKey={claimsVersion}
+        />
       )}
 
+      {/* People Management */}
       {currentView === 'people' && (
         <div className="people-section">
-          <Suspense fallback={<LoadingSpinner />}>
-            <PeopleManager 
-              currentUserId={currentUserId}
-              onCurrentUserChange={setCurrentUserId}
-              compact={false}
-            />
-          </Suspense>
+          <PeopleManager 
+            currentUserId={currentUserId}
+            onCurrentUserChange={setCurrentUserId}
+            compact={false}
+          />
         </div>
       )}
 
+      {/* Error Display */}
       {error && (
         <div className="error-message">
           <strong>Error:</strong> {error}

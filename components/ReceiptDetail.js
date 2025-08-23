@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import ItemCard from './ItemCard';
-import ClaimModal from './ClaimModal';
+import ItemCard from '@/components/ItemCard';
+import ClaimModal from '@/components/ClaimModal';
 import { formatCurrency, calculateTotal } from '@/lib/utils/currency';
 import { useClaims, useReceipt } from '@/lib/hooks/useReceipts';
 import { usePeople } from '@/lib/hooks/usePeople';
