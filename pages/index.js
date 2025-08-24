@@ -134,7 +134,8 @@ export default function HomePage() {
         <div className="flex space-x-2 items-center">
           <PeopleManager currentUserId={currentUserId} onCurrentUserChange={setCurrentUserId} compact />
           <button
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+            type="button"
+            className="add-person-btn"
             onClick={() => setShowManualForm(true)}
           >
             Beleg manuell hinzufügen

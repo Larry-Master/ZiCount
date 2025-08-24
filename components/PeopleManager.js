@@ -16,10 +16,7 @@ export default function PeopleManager({ currentUserId, onCurrentUserChange, comp
       const newPerson = await addPerson(newPersonName);
       setNewPersonName('');
       setShowAddForm(false);
-      // Optionally switch to the new person
-      if (onCurrentUserChange) {
-        onCurrentUserChange(newPerson.id);
-      }
+  // Do not auto-switch current user when creating a new person.
     } catch (err) {
       console.error('Failed to add person:', err);
     } finally {

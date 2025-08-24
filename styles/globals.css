@@ -114,6 +114,67 @@ body {
 .btn-primary { background: var(--primary); color: #fff; }
 .btn-ghost { background: transparent; color: var(--muted); }
 
+/* Modern action buttons for PeopleManager */
+.add-person-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.85rem;
+  min-height: 44px; /* minimum touch target */
+  border-radius: 9999px; /* pill */
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(59,130,246,0.16);
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+}
+.add-person-btn:active { transform: translateY(1px); }
+.add-person-btn.compact {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #60a5fa, #3b82f6);
+  box-shadow: 0 8px 20px rgba(59,130,246,0.18);
+  font-size: 1.25rem;
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.6rem;
+}
+.form-actions button {
+  flex: 1 1 auto;
+  min-height: 44px;
+  border-radius: 10px;
+  padding: 0.6rem 0.9rem;
+  font-weight: 700;
+}
+.form-actions button[type="submit"] { background: var(--primary); color: #fff; box-shadow: 0 6px 18px rgba(59,130,246,0.12); }
+.form-actions button[type="button"] { background: #f3f4f6; color: var(--muted); }
+
+.switch-user-btn {
+  background: transparent;
+  border: 1px solid #e6edf8;
+  color: var(--primary);
+  padding: 0.4rem 0.65rem;
+  border-radius: 8px;
+  font-weight: 700;
+}
+.remove-person-btn {
+  background: transparent;
+  border: none;
+  color: #ef4444; /* red */
+  font-size: 1.15rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 8px;
+}
+
 /* Form elements */
 input[type="text"], input[type="search"], input[type="email"], input[type="number"], textarea, select {
   width: 100%;
@@ -139,6 +200,19 @@ input:focus, textarea:focus, select:focus { box-shadow: 0 6px 18px rgba(59,130,2
 .people-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.6rem; }
 .person-item { display:flex; align-items:center; justify-content:space-between; padding:0.5rem; border-radius:10px; background:#fff; border:1px solid #f1f3f5; }
 .person-avatar { width:36px; height:36px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; color:#fff; font-weight:700; }
+
+.person-item.current { box-shadow: 0 6px 18px rgba(59,130,246,0.06); border-color: rgba(59,130,246,0.12); }
+.person-details { margin-left: 0.6rem; display:flex; flex-direction:column; }
+.person-info { display:flex; align-items:center; }
+
+/* Small screens: stack actions and make inputs full-width */
+@media (max-width: 640px) {
+  .form-actions { flex-direction: column-reverse; gap: 0.5rem; }
+  .add-person-btn.compact { width:44px; height:44px; border-radius:12px; }
+  .people-list { grid-template-columns: 1fr; }
+  .person-avatar { width:44px; height:44px; border-radius:10px; font-size:1rem; }
+  .person-item { padding:0.75rem; }
+}
 
 
 /* Responsive */
