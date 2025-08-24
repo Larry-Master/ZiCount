@@ -99,6 +99,9 @@ export default function HomePage() {
 
       const response = await fetch('/api/analyze', {
         method: 'POST',
+        headers: {
+          'x-file-name': selectedImage.name || `upload_${Date.now()}.jpg`
+        },
         body: formData,
       })
 
