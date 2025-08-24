@@ -80,7 +80,7 @@ export default function ReceiptList({ receipts, onReceiptSelect, loading }) {
               <div>
                 <div className="flex items-baseline gap-3">
                   <h3 className="text-sm font-semibold text-gray-900">{receipt.name || `Receipt #${receipt.id}`}</h3>
-                  <span className="text-xs text-gray-500">{new Date(receipt.createdAt).toLocaleDateString('de-DE')}</span>
+                 
                 </div>
                 <div className="mt-2 text-sm text-gray-600 flex gap-4 flex-wrap">
                   <div>Items: <span className="font-medium">{receipt.items?.length || 0}</span></div>
