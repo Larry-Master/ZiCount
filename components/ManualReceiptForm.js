@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { usePeople } from '@/lib/hooks/usePeople';
 
-export default function ManualReceiptForm({ onCreated, onRefresh }) {
+export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId }) {
   const [name, setName] = useState('');
   const [total, setTotal] = useState('');
   const [selectedPeople, setSelectedPeople] = useState([]);
-  const [date, setDate] = useState('');
+  // date is no longer collected from the user; use current date automatically
   const [loading, setLoading] = useState(false);
 
   const { people } = usePeople();
-  const currentUserId = typeof window !== 'undefined' ? localStorage.getItem('currentUserId') || 'user1' : 'user1';
+  // prefer prop currentUserId, fallback to localStorage
+  const runtimeCurrentUserId = currentUserId || (typeof window !== 'undefined' ? localStorage.getItem('currentUserId') || 'user1' : 'user1');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -42,13 +43,16 @@ export default function ManualReceiptForm({ onCreated, onRefresh }) {
             confidence: 1
           }];
 
+      // ensure we don't include the uploader (current user) in participants
+      const participants = selectedPeople.filter(pid => pid !== runtimeCurrentUserId);
+
       const receipt = {
         name: name || `Manual ${new Date().toLocaleDateString('de-DE')}`,
-        createdAt: date ? new Date(date).toISOString() : new Date().toISOString(),
+        createdAt: new Date().toISOString(),
         imageUrl: null,
         items,
-        uploadedBy: currentUserId,
-        participants: selectedPeople,
+        uploadedBy: runtimeCurrentUserId,
+        participants,
         text: ''
       };
 
@@ -63,8 +67,8 @@ export default function ManualReceiptForm({ onCreated, onRefresh }) {
         throw new Error(txt || 'Failed to save receipt');
       }
 
-      const saved = await res.json();
-      setName(''); setTotal(''); setSelectedPeople([]); setDate('');
+  const saved = await res.json();
+  setName(''); setTotal(''); setSelectedPeople([]);
       onRefresh?.();
       onCreated?.(saved);
     } catch (err) {
@@ -101,17 +105,11 @@ export default function ManualReceiptForm({ onCreated, onRefresh }) {
         <span className="px-3 flex items-center bg-gray-100 border border-l-0 border-gray-300 rounded-r-lg text-gray-700">€</span>
       </div>
 
-      <label className="block text-sm font-medium text-gray-600 mb-1">Datum</label>
-      <input
-        type="date"
-        value={date}
-        onChange={(e) => setDate(e.target.value)}
-        className="mb-4 p-3 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-      />
+  {/* date is set automatically; no input shown */}
 
       <label className="block text-sm font-medium text-gray-600 mb-2">Personen auswählen</label>
       <div className="grid grid-cols-2 gap-2 mb-6">
-        {people.map((p) => (
+        {people.filter(p => p.id !== runtimeCurrentUserId).map((p) => (
           <label key={p.id} className="flex items-center space-x-2 p-2 border border-gray-200 rounded-lg hover:bg-gray-50">
             <input
               type="checkbox"

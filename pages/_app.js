@@ -1,6 +1,7 @@
 import '@/styles/globals.css'
 import Head from 'next/head'
 import ErrorBoundary from '@/components/ErrorBoundary'
+import DarkModeToggle from '@/components/DarkModeToggle'
 
 export default function App({ Component, pageProps }) {
   return (
@@ -12,6 +13,7 @@ export default function App({ Component, pageProps }) {
         <meta name="theme-color" content="#3B82F6" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
+      <DarkModeToggle />
       <ErrorBoundary>
         <Component {...pageProps} />
       </ErrorBoundary>

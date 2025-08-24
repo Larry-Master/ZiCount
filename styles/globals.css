@@ -2,9 +2,36 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Remove Tailwind directives if not using Tailwind build tools */
+/* If you want to use Tailwind, make sure to build your CSS with PostCSS and Tailwind */
+
 /* Base resets */
 * {
   box-sizing: border-box;
+}
+
+/* Theme variables (light defaults) */
+:root {
+  --bg: #f5f5f5;
+  --text: #111827;
+  --muted: #6b7280;
+  --primary: #3b82f6;
+  --card-bg: #ffffff;
+  --muted-bg: #f3f4f6;
+  --input-bg: #ffffff;
+  --card-shadow: rgba(16,24,40,0.04);
+}
+
+/* Dark theme overrides applied when documentElement has .dark */
+.dark {
+  --bg: #0b1220;
+  --text: #e6eef8;
+  --muted: #9ca3af;
+  --primary: #60a5fa;
+  --card-bg: #0f1724;
+  --muted-bg: #071426;
+  --input-bg: #0b1220;
+  --card-shadow: rgba(2,6,23,0.6);
 }
 
 /* Body base */
@@ -38,7 +65,7 @@ body {
 
 /* App Header */
 .app-header {
-  background: white;
+  background: var(--card-bg);
   border-radius: 12px;
   padding: 1.5rem;
   margin-bottom: 1.5rem;
@@ -51,13 +78,28 @@ body {
 .title {
   font-size: 2rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--text);
   margin-bottom: 1rem;
   text-align: center;
 }
 
 .header-controls {
   margin-bottom: 1rem;
+}
+
+/* Make the page header and header controls responsive on small screens */
+header {
+  width: 100%;
+  box-sizing: border-box;
+  padding-inline: 0.5rem;
+}
+
+.header-controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  overflow-x: auto; /* allow horizontal scroll if content is wide */
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Navigation Tabs */
@@ -68,8 +110,15 @@ body {
   padding-bottom: 0.5rem;
 }
 
+/* Ensure nav tab buttons stay on a single line and are touch-friendly */
 .nav-tabs button {
-  background: #f3f4f6;
+  flex: 0 0 auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+}
+
+.nav-tabs button {
+  background: var(--muted-bg);
   border: none;
   padding: 0.6rem 0.9rem;
   border-radius: 10px;
@@ -93,7 +142,7 @@ body {
   border-radius: 12px;
   padding: 1.25rem;
   margin-bottom: 1.25rem;
-  box-shadow: 0 6px 18px rgba(16,24,40,0.04);
+  box-shadow: 0 6px 18px var(--card-shadow);
 }
 
 /* Button base to normalize look across components */
@@ -114,23 +163,34 @@ body {
 .btn-primary { background: var(--primary); color: #fff; }
 .btn-ghost { background: transparent; color: var(--muted); }
 
-/* Modern action buttons for PeopleManager */
-.add-person-btn {
+/* Dark toggle (fixed, small) */
+.dark-toggle {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  z-index: 9999; /* ensure above sticky headers and overlays */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dark-toggle .btn {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  font-size: 1.05rem;
+  border-radius: 9999px;
+  box-shadow: 0 8px 24px rgba(2,6,23,0.12);
+  background: var(--card-bg);
+  color: var(--text);
+  border: 1px solid rgba(0,0,0,0.06);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.85rem;
-  min-height: 44px; /* minimum touch target */
-  border-radius: 9999px; /* pill */
-  background: var(--primary);
-  color: #fff;
-  box-shadow: 0 6px 18px rgba(59,130,246,0.16);
-  border: none;
-  font-weight: 700;
-  cursor: pointer;
-  transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
 }
+.dark .dark-toggle .btn { border-color: rgba(255,255,255,0.06); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+
+/* Modern action buttons for PeopleManager */
+
 .add-person-btn:active { transform: translateY(1px); }
 .add-person-btn.compact {
   width: 40px;
@@ -140,6 +200,60 @@ body {
   background: linear-gradient(180deg, #60a5fa, #3b82f6);
   box-shadow: 0 8px 20px rgba(59,130,246,0.18);
   font-size: 1.25rem;
+}
+
+.add-person-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;          /* space between icon and text */
+  padding: 0.75rem 1rem; /* py-3 px-4 equivalent */
+  min-height: 44px;      /* touch target */
+  border-radius: 0.5rem; /* rounded-lg */
+  font-weight: 600;      /* font-semibold */
+  border: 2px solid #4f46e5; /* indigo-600 border */
+  color: #4f46e5;        /* indigo-600 text */
+  background-color: transparent; /* outlined */
+  cursor: pointer;
+  transition: color 150ms cubic-bezier(0.4,0,0.2,1),
+              background-color 150ms cubic-bezier(0.4,0,0.2,1);
+}
+.add-receipt-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;          /* space between icon and text */
+  padding: 0.75rem 1rem; /* py-3 px-4 equivalent */
+  min-height: 44px;      /* touch target */
+  border-radius: 0.5rem; /* rounded-lg */
+  font-weight: 600;      /* font-semibold */
+  border: 2px solid #4f46e5; /* indigo-600 border */
+  color: #4f46e5;        /* indigo-600 text */
+  background-color: transparent; /* outlined */
+  cursor: pointer;
+  transition: color 150ms cubic-bezier(0.4,0,0.2,1),
+              background-color 150ms cubic-bezier(0.4,0,0.2,1);
+}
+
+.add-receipt-btn:hover {
+  background-color: #4f46e5; /* hover fill indigo-600 */
+  color: #ffffff;            /* text becomes white */
+}
+
+.dark .add-receipt-btn {
+  border-color: #818cf8;     /* indigo-400 in dark mode */
+  color: #818cf8;
+  background-color: transparent;
+}
+
+.dark .add-receipt-btn:hover {
+  background-color: #818cf8; /* hover fill in dark mode */
+  color: #000000;
+}
+
+.add-receipt-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(79,70,229,0.5); /* focus ring */
 }
 
 .form-actions {
@@ -156,7 +270,7 @@ body {
   font-weight: 700;
 }
 .form-actions button[type="submit"] { background: var(--primary); color: #fff; box-shadow: 0 6px 18px rgba(59,130,246,0.12); }
-.form-actions button[type="button"] { background: #f3f4f6; color: var(--muted); }
+.form-actions button[type="button"] { background: var(--muted-bg); color: var(--muted); }
 
 .switch-user-btn {
   background: transparent;
@@ -173,6 +287,58 @@ body {
   font-size: 1.15rem;
   padding: 0.25rem 0.5rem;
   border-radius: 8px;
+}
+
+/* Participant checkbox -> pill toggle styles (used in ManualReceiptForm and Upload participant list) */
+/* Relies on structure: <label> <input type="checkbox" /> <span>Label</span> </label> */
+label:has(> input[type="checkbox"]) {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 12px;
+  border: 1px solid rgba(230,232,235,0.9);
+  background: var(--card-bg);
+  cursor: pointer;
+  transition: background-color 0.12s ease, box-shadow 0.12s ease, transform 0.08s ease;
+}
+label:has(> input[type="checkbox"]):active { transform: translateY(1px); }
+/* hide native checkbox but keep it accessible */
+label:has(> input[type="checkbox"]) input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+}
+/* style the visible text and optional icon */
+label:has(> input[type="checkbox"]) span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  color: #111827;
+  font-weight: 600;
+}
+/* checked state */
+label:has(> input[type="checkbox"]) input[type="checkbox"]:checked + span {
+  background: linear-gradient(180deg, #60a5fa, #3b82f6);
+  color: #fff;
+  padding: 0.25rem 0.5rem;
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(59,130,246,0.12);
+}
+/* ensure label spacing for inputs that used padding in markup */
+label:has(> input[type="checkbox"]) > input[type="checkbox"] + span { padding-left: 0; }
+
+/* Make participant pills full-width and stacked on small screens */
+@media (max-width: 640px) {
+  .grid > label:has(> input[type="checkbox"]) {
+    width: 100%;
+    display: flex;
+  }
+  .grid.grid-cols-2 { grid-template-columns: 1fr; }
 }
 
 /* Form elements */
@@ -198,7 +364,7 @@ input:focus, textarea:focus, select:focus { box-shadow: 0 6px 18px rgba(59,130,2
 /* People manager responsive tweaks */
 .people-manager { display: flex; flex-direction: column; gap: 0.75rem; }
 .people-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.6rem; }
-.person-item { display:flex; align-items:center; justify-content:space-between; padding:0.5rem; border-radius:10px; background:#fff; border:1px solid #f1f3f5; }
+.person-item { display:flex; align-items:center; justify-content:space-between; padding:0.5rem; border-radius:10px; background:var(--card-bg); border:1px solid rgba(241,243,245,0.6); }
 .person-avatar { width:36px; height:36px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; color:#fff; font-weight:700; }
 
 .person-item.current { box-shadow: 0 6px 18px rgba(59,130,246,0.06); border-color: rgba(59,130,246,0.12); }
@@ -235,3 +401,128 @@ input:focus, textarea:focus, select:focus { box-shadow: 0 6px 18px rgba(59,130,2
 /* Small helper utilities */
 .muted { color: var(--muted); }
 .caps { text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.04em; }
+
+/* Minimal dark-mode overrides (non-invasive) - applied when documentElement has .dark */
+.dark body {
+  background: #0b1220;
+  color: #e6eef8;
+}
+.dark .card,
+.dark .app-header,
+.dark .person-item,
+.dark label:has(> input[type="checkbox"]) {
+  background: #0f1724;
+  color: #e6eef8;
+  border-color: rgba(255,255,255,0.04);
+}
+.dark input[type="text"],
+.dark input[type="search"],
+.dark input[type="email"],
+.dark input[type="number"],
+.dark textarea,
+.dark select {
+  background: #0b1220;
+  color: #e6eef8;
+  border-color: rgba(255,255,255,0.06);
+}
+.dark .nav-tabs button { background: #071426; color: #9ca3af; }
+.dark .nav-tabs button.active { background: #60a5fa; color: #031124; }
+
+/* Dark toggle button (fixed, small) */
+.dark-toggle {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  z-index: 60;
+}
+.dark-toggle .btn {
+  padding: 0.5rem 0.6rem;
+  font-size: 0.875rem;
+  border-radius: 9999px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+}
+
+/* Map common Tailwind utility classes to dark-mode equivalents */
+.dark .bg-white,
+.dark .bg-gray-50,
+.dark .bg-gray-100,
+.dark .bg-gray-200 {
+  background-color: var(--card-bg) !important;
+}
+
+.dark .bg-gray-50 { background-color: rgba(255,255,255,0.02) !important; }
+
+.dark .text-gray-900,
+.dark .text-gray-800,
+.dark .text-gray-700,
+.dark .text-gray-600,
+.dark .text-gray-500 {
+  color: var(--text) !important;
+}
+
+.dark .text-gray-400,
+.dark .text-gray-300 {
+  color: var(--muted) !important;
+}
+
+.dark .text-indigo-600 { color: #60a5fa !important; }
+.dark .text-green-600 { color: #34d399 !important; }
+.dark .text-red-600 { color: #f97373 !important; }
+
+.dark .border-gray-100,
+.dark .border-gray-200,
+.dark .border-gray-300,
+.dark .border-gray-400 {
+  border-color: rgba(255,255,255,0.04) !important;
+}
+
+.dark .bg-indigo-50,
+.dark .bg-green-50,
+.dark .bg-red-50 {
+  background-color: rgba(255,255,255,0.02) !important;
+}
+
+/* badges and small colored pills */
+.dark .bg-green-50 { background-color: rgba(16,185,129,0.08) !important; }
+.dark .bg-red-50 { background-color: rgba(239,68,68,0.08) !important; }
+
+/* card accent backgrounds used in ReceiptDetail */
+.dark .bg-gray-50 { background-color: #071426 !important; }
+
+/* More aggressive mappings for common utilities used across the app */
+.dark .min-h-screen,
+.dark .min-h-0,
+.dark .min-h-full {
+  background: var(--bg) !important;
+}
+
+.dark .bg-gray-100,
+.dark .bg-gray-200,
+.dark .bg-gray-300,
+.dark .bg-gray-400 {
+  background-color: #0b1220 !important;
+}
+
+.dark .bg-indigo-50,
+.dark .bg-indigo-100 {
+  background-color: rgba(96,165,250,0.06) !important;
+}
+
+.dark .bg-white { background-color: var(--card-bg) !important; }
+
+.dark .text-white { color: #e6eef8 !important; }
+.dark .text-gray-500 { color: var(--muted) !important; }
+
+.dark .border-gray-300,
+.dark .border-gray-400,
+.dark .border-gray-500 {
+  border-color: rgba(255,255,255,0.04) !important;
+}
+
+/* Ensure some high-contrast UI pieces remain visible */
+.dark .add-receipt-btn { box-shadow: 0 6px 18px rgba(59,130,246,0.12); }
+.dark .btn-primary { background: #2563eb !important; color: #fff !important; }
+
+/* Make muted small text more legible in dark backgrounds */
+.dark small, .dark .text-sm { color: var(--muted) !important; }
+

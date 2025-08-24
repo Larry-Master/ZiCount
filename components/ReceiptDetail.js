@@ -151,11 +151,13 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
                     <h3 className="text-sm font-medium mb-2">Teilnehmerliste</h3>
                     <div className="text-sm text-gray-700 mb-2"><span className="font-semibold">Bezahlt von:</span> {uploaderName} <span className="font-semibold">({formatCurrency(totalAmount)})</span></div>
                     <ul className="list-disc ml-5 text-sm text-gray-700">
-                      {participantCosts.map(p => (
-                        <li key={p.id}>
-                          {p.name}: {formatCurrency(p.cost)}
-                        </li>
-                      ))}
+                      {participantCosts
+                        .filter(p => p.id !== currentReceipt.uploadedBy)
+                        .map(p => (
+                          <li key={p.id}>
+                            {p.name}: {formatCurrency(p.cost)}
+                          </li>
+                        ))}
                     </ul>
                   </div>
                 )}

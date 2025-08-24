@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useReceipts } from '@/lib/hooks/useReceipts';
 import { apiClient } from '@/lib/api/client';
@@ -18,6 +18,9 @@ const MyClaims = dynamic(() => import('@/components/MyClaims'), {
 const PeopleManager = dynamic(() => import('@/components/PeopleManager'), {
   loading: () => <div className="flex justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>
 });
+const DebtSolver = dynamic(() => import('@/components/DebtSolver'), {
+  loading: () => <div className="flex justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>
+});
 
 export default function HomePage() {
   const { people } = usePeople();
@@ -32,8 +35,46 @@ export default function HomePage() {
   const [savedReceipt, setSavedReceipt] = useState(null);
   const [error, setError] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [currentView, setCurrentView] = useState('receipts'); // 'upload', 'receipts', 'receipt', 'claims', 'people'
-  const [currentUserId, setCurrentUserId] = useState('user1');
+  const [currentView, setCurrentView] = useState('receipts'); // 'upload', 'receipts', 'receipt', 'claims', 'people', 'schulden'
+  // SSR-safe initializer: read persisted selection from localStorage on client
+  const [currentUserId, setCurrentUserId] = useState(() => {
+    if (typeof window === 'undefined') return 'user1';
+    return localStorage.getItem('currentUserId') || 'user1';
+  });
+
+  // wrapper that persists selection to localStorage
+  const handleSetCurrentUser = (id) => {
+    setCurrentUserId(id);
+    try {
+      localStorage.setItem('currentUserId', id);
+    } catch (e) {
+      /* ignore storage errors */
+    }
+  };
+
+  // keep selection in sync across tabs/windows
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onStorage = (e) => {
+      if (e.key === 'currentUserId') {
+        if (e.newValue) setCurrentUserId(e.newValue);
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
+  // Ensure we read persisted value once on client mount (helps when SSR initially rendered a fallback)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const stored = localStorage.getItem('currentUserId');
+      console.debug('localStorage.currentUserId=', stored);
+      if (stored) setCurrentUserId(stored);
+    } catch (e) {
+      console.debug('reading localStorage failed', e);
+    }
+  }, []);
   const [claimsVersion, setClaimsVersion] = useState(0);
   const [showManualForm, setShowManualForm] = useState(false);
   const [selectedParticipants, setSelectedParticipants] = useState([]);
@@ -132,10 +173,9 @@ export default function HomePage() {
       <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-800 mb-3 sm:mb-0">🧾 ZiCount</h1>
         <div className="flex space-x-2 items-center">
-          <PeopleManager currentUserId={currentUserId} onCurrentUserChange={setCurrentUserId} compact />
-          <button
+          <button 
             type="button"
-            className="add-person-btn"
+            className="add-receipt-btn"
             onClick={() => setShowManualForm(true)}
           >
             Beleg manuell hinzufügen
@@ -155,6 +195,7 @@ export default function HomePage() {
               &times;
             </button>
             <ManualReceiptForm 
+              currentUserId={currentUserId}
               onCreated={(saved) => { if(saved) { setSavedReceipt(saved); setCurrentView('receipt'); } setShowManualForm(false); }} 
               onRefresh={refetchReceipts} 
             />
@@ -162,10 +203,10 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Navigation Tabs */}
-      <nav className="flex overflow-x-auto space-x-2 mb-6">
-        {['receipts','upload','receipt','claims','people'].map(view => {
-          const labels = { receipts:'📋 All Receipts', upload:'📷 Upload', receipt:'🧾 Current Receipt', claims:'💰 My Claims', people:'👥 People' };
+  {/* Navigation Tabs */}
+  <nav className="nav-tabs mb-6">
+        {['receipts','upload','receipt','claims','people','schulden'].map(view => {
+          const labels = { receipts:'📋 All Receipts', upload:'📷 Upload', receipt:'🧾 Current Receipt', claims:'💰 My Claims', people:'👥 People', schulden:'💸 Schulden' };
           if(view==='receipt' && !savedReceipt) return null;
           return (
             <button
@@ -212,7 +253,7 @@ export default function HomePage() {
           <div className="mt-4 mb-6">
             <label className="block mb-2 font-semibold text-gray-700">Teilnehmer auswählen</label>
             <div className="grid grid-cols-2 gap-2">
-              {people.map(p => (
+              {people.filter(p => p.id !== currentUserId).map(p => (
                 <label key={p.id} className="flex items-center space-x-2">
                   <input type="checkbox" value={p.id} checked={selectedParticipants.includes(p.id)}
                     onChange={e => setSelectedParticipants(e.target.checked ? [...selectedParticipants,p.id] : selectedParticipants.filter(id => id!==p.id))}
@@ -254,7 +295,8 @@ export default function HomePage() {
       )}
 
       {currentView === 'claims' && <MyClaims userId={currentUserId} onClaimsUpdated={refetchReceipts} refreshKey={claimsVersion} />}
-      {currentView === 'people' && <PeopleManager currentUserId={currentUserId} onCurrentUserChange={setCurrentUserId} compact={false} />}
+  {currentView === 'people' && <PeopleManager currentUserId={currentUserId} onCurrentUserChange={handleSetCurrentUser} compact={false} />}
+  {currentView === 'schulden' && <DebtSolver />}
 
       {error && <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-lg">{error}</div>}
     </div>
