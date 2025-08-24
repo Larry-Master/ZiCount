@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import ItemCard from '@/components/ItemCard';
 import ClaimModal from '@/components/ClaimModal';
 import { formatCurrency, calculateTotal } from '@/lib/utils/currency';
@@ -12,20 +12,12 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
   const [deleting, setDeleting] = useState(false);
   const { claimItem, unclaimItem, optimisticClaims } = useClaims();
   const { getPerson } = usePeople();
-  
-  // Use the hook to fetch receipt if receiptId is provided
+
   const { receipt: fetchedReceipt, loading: receiptLoading, refetch: refetchReceipt } = useReceipt(receiptId || null);
-  
-  // Use the fetched receipt if available, otherwise use the passed receipt
   const currentReceipt = fetchedReceipt || receipt;
 
-  if (receiptLoading) {
-    return <div>Loading receipt...</div>;
-  }
-
-  if (!currentReceipt) {
-    return <div>Loading receipt...</div>;
-  }
+  if (receiptLoading) return <div className="p-6 text-center text-gray-500">Loading receipt...</div>;
+  if (!currentReceipt) return <div className="p-6 text-center text-gray-500">Loading receipt...</div>;
 
   const handleClaimClick = (item) => {
     setSelectedItem(item);
@@ -35,17 +27,9 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
   const handleClaim = async (item, userId) => {
     try {
       const result = await claimItem(currentReceipt.id, item.id, userId);
-      // Update parent/local receipt state if callback provided so UI stays in sync
-      if (result && onItemClaimed) {
-        onItemClaimed(result.id || item.id, result.claimedBy || userId, result.claimedAt || new Date().toISOString());
-      }
-      // Refresh receipt data and notify parent
-      if (refetchReceipt) {
-        refetchReceipt();
-      }
-      if (onClaimsUpdated) {
-        onClaimsUpdated();
-      }
+      if (result && onItemClaimed) onItemClaimed(result.id || item.id, result.claimedBy || userId, result.claimedAt || new Date().toISOString());
+      if (refetchReceipt) refetchReceipt();
+      if (onClaimsUpdated) onClaimsUpdated();
       setShowClaimModal(false);
       setSelectedItem(null);
     } catch (err) {
@@ -56,28 +40,19 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
   const handleUnclaim = async (item) => {
     try {
       const result = await unclaimItem(item.id);
-      if (result && onItemUnclaimed) {
-        onItemUnclaimed(item.id);
-      }
-      // Refresh receipt data and notify parent
-      if (refetchReceipt) {
-        refetchReceipt();
-      }
-      if (onClaimsUpdated) {
-        onClaimsUpdated();
-      }
+      if (result && onItemUnclaimed) onItemUnclaimed(item.id);
+      if (refetchReceipt) refetchReceipt();
+      if (onClaimsUpdated) onClaimsUpdated();
     } catch (err) {
       console.error('Unclaim failed:', err);
     }
   };
 
   const getItemStatus = (item) => {
-    const optimistic = optimisticClaims.get(item.id);
-    if (optimistic) return optimistic;
-    return item;
+    const optimistic = optimisticClaims?.get ? optimisticClaims.get(item.id) : undefined;
+    return optimistic || item;
   };
 
-  // Calculate total and claimed amounts
   const totalAmount = calculateTotal(currentReceipt.items || []);
   const claimedAmount = (currentReceipt.items || [])
     .filter(item => getItemStatus(item).claimedBy)
@@ -88,10 +63,7 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
 
   const uploaderName = currentReceipt.uploadedBy ? getPerson(currentReceipt.uploadedBy)?.name || 'Unknown' : 'Unknown';
 
-  // Calculate per-participant cost for this receipt
   let participantCosts = [];
-
-  // Determine participants: prefer explicit list, otherwise derive from item.participant fields
   let participantsList = Array.isArray(currentReceipt.participants) && currentReceipt.participants.length > 0
     ? currentReceipt.participants
     : [];
@@ -102,9 +74,7 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
   }
 
   if (participantsList && participantsList.length > 0) {
-    // If every item has a participant, treat this as a manual split and sum per participant
     const itemsHaveParticipant = currentReceipt.items && currentReceipt.items.length > 0 && currentReceipt.items.every(it => it.participant);
-
     if (itemsHaveParticipant) {
       participantCosts = participantsList.map(pid => {
         const person = getPerson(pid);
@@ -116,7 +86,6 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
         return { id: pid, name: person?.name || pid, cost };
       });
     } else {
-      // Uploaded receipts or mixed: split total equally across participantsList
       const split = parseFloat((totalAmount / participantsList.length).toFixed(2));
       participantCosts = participantsList.map(pid => {
         const person = getPerson(pid);
@@ -126,70 +95,17 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
   }
 
   return (
-  <div className="receipt-detail">
-      {onBack && (
-        <button className="back-button" onClick={onBack}>
-          ← Back to Receipts
-        </button>
-      )}
+    <div className="p-4 sm:p-6">
+      <div className="flex items-center justify-between mb-4">
+        {onBack && (
+          <button className="text-sm text-indigo-600 hover:underline" onClick={onBack}>
+            ← Back to Receipts
+          </button>
+        )}
 
-      <div className="receipt-header">
-        <h2>{currentReceipt.name || `Receipt #${currentReceipt.id}`}</h2>
-        <div className="receipt-meta">
-          <span>{new Date(currentReceipt.createdAt).toLocaleDateString('de-DE')}</span>
-          {currentReceipt.imageUrl && (
-            <img 
-              src={currentReceipt.imageUrl} 
-              alt="Receipt" 
-              className="receipt-thumbnail"
-            />
-          )}
-          <div className="mt-2">
-            <span className="font-semibold">Bezahlt von:</span> {uploaderName} <span className="font-semibold">({formatCurrency(totalAmount)})</span>
-          </div>
-          <div className="mt-2">
-            <span className="font-semibold">Gesamtbetrag:</span> {formatCurrency(totalAmount)}
-          </div>
-          {/* Always show Teilnehmerliste button for receipts with participants, regardless of type */}
-          {participantCosts.length > 0 && (
-            <div className="mt-2">
-              <button
-                className="btn btn-secondary"
-                onClick={() => setShowParticipants(v => !v)}
-              >
-                {showParticipants ? 'Teilnehmerliste ausblenden' : 'Teilnehmerliste anzeigen'}
-              </button>
-              {showParticipants && (
-                <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-                  <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative">
-                    <button
-                      className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl"
-                      onClick={() => setShowParticipants(false)}
-                      aria-label="Schließen"
-                    >
-                      &times;
-                    </button>
-                    <h3 className="text-lg font-bold mb-2">Teilnehmerliste</h3>
-                    <div className="mb-2">
-                      <span className="font-semibold">Bezahlt von:</span> {uploaderName} <span className="font-semibold">({formatCurrency(totalAmount)})</span>
-                    </div>
-                    <ul className="list-disc ml-6">
-                      {participantCosts.map(p => (
-                        <li key={p.id}>
-                          {p.name}: {formatCurrency(p.cost)}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-        {/* Delete button - parent handles actual delete + refresh */}
-        <div className="receipt-actions">
+        <div className="flex items-center gap-3">
           <button
-            className="delete-button"
+            className="text-sm text-red-600 hover:underline"
             onClick={async () => {
               if (typeof onDelete !== 'function') return;
               setDeleting(true);
@@ -210,25 +126,57 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
         </div>
       </div>
 
-      <div className="receipt-summary">
-        <div className="summary-item">
-          <span>Total:</span>
-          <span className="amount">{formatCurrency(totalAmount)}</span>
-        </div>
-        <div className="summary-item">
-          <span>Claimed:</span>
-          <span className="amount claimed">{formatCurrency(claimedAmount)}</span>
-        </div>
-        <div className="summary-item">
-          <span>Remaining:</span>
-          <span className="amount remaining">{formatCurrency(totalAmount - claimedAmount)}</span>
-        </div>
-      </div>
+      <div className="bg-white border border-gray-100 rounded-lg p-4 sm:p-6 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div className="flex-1">
+            <h2 className="text-lg font-semibold text-gray-900">{currentReceipt.name || `Receipt #${currentReceipt.id}`}</h2>
+            <div className="text-sm text-gray-500 mt-1">{new Date(currentReceipt.createdAt).toLocaleDateString('de-DE')}</div>
+            {currentReceipt.imageUrl && (
+              <img src={currentReceipt.imageUrl} alt="Receipt" className="mt-4 w-full max-w-xs rounded-md object-contain" />
+            )}
 
-      {/* Only show ItemCards for claimable items (detected, not manual) */}
-      {currentReceipt.items && currentReceipt.items.some(it => it.tags?.includes('detected')) && (
-        <>
-          <div className="items-grid">
+            <div className="mt-4 text-sm text-gray-700">
+              <div><span className="font-semibold">Bezahlt von:</span> {uploaderName} <span className="font-semibold">({formatCurrency(totalAmount)})</span></div>
+              <div className="mt-1"><span className="font-semibold">Gesamtbetrag:</span> {formatCurrency(totalAmount)}</div>
+            </div>
+
+            {participantCosts.length > 0 && (
+              <div className="mt-4">
+                <button className="text-sm text-indigo-600 hover:underline" onClick={() => setShowParticipants(v => !v)}>
+                  {showParticipants ? 'Teilnehmerliste ausblenden' : 'Teilnehmerliste anzeigen'}
+                </button>
+
+                {showParticipants && (
+                  <div className="mt-3 bg-gray-50 border border-gray-100 rounded-lg p-4">
+                    <h3 className="text-sm font-medium mb-2">Teilnehmerliste</h3>
+                    <div className="text-sm text-gray-700 mb-2"><span className="font-semibold">Bezahlt von:</span> {uploaderName} <span className="font-semibold">({formatCurrency(totalAmount)})</span></div>
+                    <ul className="list-disc ml-5 text-sm text-gray-700">
+                      {participantCosts.map(p => (
+                        <li key={p.id}>
+                          {p.name}: {formatCurrency(p.cost)}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="w-full sm:w-48">
+            <div className="bg-gray-50 rounded-lg p-3 text-center">
+              <div className="text-sm text-gray-500">Total</div>
+              <div className="text-lg font-semibold">{formatCurrency(totalAmount)}</div>
+              <div className="text-sm text-gray-500 mt-2">Claimed</div>
+              <div className="text-lg font-semibold text-indigo-600">{formatCurrency(claimedAmount)}</div>
+              <div className="text-sm text-gray-500 mt-2">Remaining</div>
+              <div className="text-lg font-semibold">{formatCurrency(totalAmount - claimedAmount)}</div>
+            </div>
+          </div>
+        </div>
+
+        {currentReceipt.items && currentReceipt.items.some(it => it.tags?.includes('detected')) && (
+          <div className="mt-6 grid gap-3">
             {currentReceipt.items.filter(it => it.tags?.includes('detected')).map(item => (
               <ItemCard
                 key={item.id}
@@ -239,21 +187,21 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
               />
             ))}
           </div>
-          {/* NOTE: Teilnehmerliste modal is rendered above in the receipt header area so we avoid duplicating it here. */}
-        </>
-      )}
+        )}
 
-      {showClaimModal && selectedItem && (
-        <ClaimModal
-          item={selectedItem}
-          currentUserId={currentUserId}
-          onClaim={(userId) => handleClaim(selectedItem, userId)}
-          onCancel={() => {
-            setShowClaimModal(false);
-            setSelectedItem(null);
-          }}
-        />
-      )}
+        {showClaimModal && selectedItem && (
+          <ClaimModal
+            item={selectedItem}
+            currentUserId={currentUserId}
+            onClaim={(userId) => handleClaim(selectedItem, userId)}
+            onCancel={() => {
+              setShowClaimModal(false);
+              setSelectedItem(null);
+            }}
+          />
+        )}
+      </div>
     </div>
   );
 }
+

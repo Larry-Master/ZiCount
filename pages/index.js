@@ -1,129 +1,88 @@
-import { useRef, useState, useEffect } from 'react'
-import dynamic from 'next/dynamic'
-import { useReceipts } from '@/lib/hooks/useReceipts'
-import { apiClient } from '@/lib/api/client'
+import { useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
+import { useReceipts } from '@/lib/hooks/useReceipts';
+import { apiClient } from '@/lib/api/client';
 import ManualReceiptForm from '@/components/ManualReceiptForm';
 import { usePeople } from '@/lib/hooks/usePeople';
 
-// Dynamic imports for better code splitting and mobile performance
+// Dynamic components with loading spinners
 const ReceiptDetail = dynamic(() => import('@/components/ReceiptDetail'), {
-  loading: () => <div className="flex items-center justify-center p-8">
-    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-  </div>
-})
-
+  loading: () => <div className="flex justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>
+});
 const ReceiptList = dynamic(() => import('@/components/ReceiptList'), {
-  loading: () => <div className="flex items-center justify-center p-8">
-    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-  </div>
-})
-
+  loading: () => <div className="flex justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>
+});
 const MyClaims = dynamic(() => import('@/components/MyClaims'), {
-  loading: () => <div className="flex items-center justify-center p-8">
-    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-  </div>
-})
-
+  loading: () => <div className="flex justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>
+});
 const PeopleManager = dynamic(() => import('@/components/PeopleManager'), {
-  loading: () => <div className="flex items-center justify-center p-8">
-    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-  </div>
-})
+  loading: () => <div className="flex justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>
+});
 
 export default function HomePage() {
-  // Drag and drop handlers
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  };
+  const { people } = usePeople();
+  const { receipts, loading: receiptsLoading, refetch: refetchReceipts } = useReceipts();
 
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    setIsDragging(false);
-  };
+  const inputRef = useRef(null);
 
-  const handleDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-    const files = e.dataTransfer && e.dataTransfer.files;
-    if (files && files.length > 0) onFile(files[0]);
-  };
   // State management
-  const [selectedImage, setSelectedImage] = useState(null)
-  const [imagePreview, setImagePreview] = useState(null)
-  const [analyzing, setAnalyzing] = useState(false)
-  // Remove unused results state
-  const [savedReceipt, setSavedReceipt] = useState(null); // Use for all receipt detail views
-  const [error, setError] = useState(null)
-  const [isDragging, setIsDragging] = useState(false)
-  const [currentView, setCurrentView] = useState('receipts') // 'upload', 'receipts', 'receipt', 'claims', 'people'
-  const [currentUserId, setCurrentUserId] = useState('user1') // Default user
-  // Always use savedReceipt for current receipt view
-  const [claimsVersion, setClaimsVersion] = useState(0)
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [savedReceipt, setSavedReceipt] = useState(null);
+  const [error, setError] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [currentView, setCurrentView] = useState('receipts'); // 'upload', 'receipts', 'receipt', 'claims', 'people'
+  const [currentUserId, setCurrentUserId] = useState('user1');
+  const [claimsVersion, setClaimsVersion] = useState(0);
   const [showManualForm, setShowManualForm] = useState(false);
   const [selectedParticipants, setSelectedParticipants] = useState([]);
-  const { people } = usePeople();
 
-  const { receipts, loading: receiptsLoading, refetch: refetchReceipts } = useReceipts()
-  const inputRef = useRef(null)
+  // Drag & drop
+  const handleDragOver = (e) => { e.preventDefault(); setIsDragging(true); };
+  const handleDragLeave = () => setIsDragging(false);
+  const handleDrop = (e) => {
+    e.preventDefault(); setIsDragging(false);
+    const file = e.dataTransfer?.files?.[0];
+    if (file) onFile(file);
+  };
 
-  // File handling functions
   const onFile = (file) => {
     if (!file) return;
     setSelectedImage(file);
-    setError(null);
     setImagePreview(null);
-
+    setError(null);
     const reader = new FileReader();
     reader.onload = (e) => setImagePreview(e.target.result);
     reader.readAsDataURL(file);
   };
 
-  // Receipt analysis function
   const analyzeReceipt = async () => {
-    if (!selectedImage) {
-      setError('Please select an image first')
-    // Remove unused results state
-    }
-    if (!selectedParticipants.length) {
-      setError('Bitte Teilnehmer auswählen')
-      return
-    }
+    if (!selectedImage) return setError('Please select an image first');
+    if (!selectedParticipants.length) return setError('Bitte Teilnehmer auswählen');
 
-    setAnalyzing(true)
-    setError(null)
-
+    setAnalyzing(true); setError(null);
     try {
-      const formData = new FormData()
-      formData.append('file', selectedImage)
-
+      const formData = new FormData();
+      formData.append('file', selectedImage);
       const response = await fetch('/api/analyze', {
         method: 'POST',
-        headers: {
-          'x-file-name': selectedImage.name || `upload_${Date.now()}.jpg`
-        },
+        headers: { 'x-file-name': selectedImage.name || `upload_${Date.now()}.jpg` },
         body: formData,
-      })
+      });
 
-      const text = await response.text()
-      let data
-      try {
-        data = JSON.parse(text)
-      } catch (e) {
-        data = { raw: text }
-      }
+      const text = await response.text();
+      let data;
+      try { data = JSON.parse(text); } catch { data = { raw: text }; }
 
-      if (!response.ok) throw new Error(data.error || data.raw || `Request failed: ${response.status}`)
+      if (!response.ok) throw new Error(data.error || data.raw || `Request failed: ${response.status}`);
 
-      // Transform OCR results into claimable items format
       const receipt = {
         name: `Receipt ${new Date().toLocaleDateString('de-DE')}`,
         uploadedBy: currentUserId,
         imageUrl: imagePreview,
-        items: (data.items || []).map((item, index) => ({
-          id: `item_${Date.now()}_${index}`,
+        items: (data.items || []).map((item, idx) => ({
+          id: `item_${Date.now()}_${idx}`,
           name: item.name,
           price: typeof item.price === 'object' ? item.price.value : item.price,
           priceEUR: typeof item.price === 'object' ? item.price.value : item.price,
@@ -134,321 +93,169 @@ export default function HomePage() {
         })),
         participants: selectedParticipants,
         text: data.text
-      }
+      };
 
-      // Save receipt to database
       const saveResponse = await fetch('/api/receipts', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(receipt),
-      })
-
-      if (!saveResponse.ok) {
-        throw new Error('Failed to save receipt')
-      }
-
-      const savedReceipt = await saveResponse.json()
-      
-      // Update items with the saved receipt ID
-      savedReceipt.items = savedReceipt.items.map(item => ({
-        ...item,
-        receiptId: savedReceipt.id
-      }))
-
-  setSavedReceipt(savedReceipt)
-      setCurrentView('receipt')
-      refetchReceipts()
-      setClaimsVersion(v => v + 1)
+      });
+      if (!saveResponse.ok) throw new Error('Failed to save receipt');
+      const saved = await saveResponse.json();
+      saved.items = saved.items.map(item => ({ ...item, receiptId: saved.id }));
+      setSavedReceipt(saved);
+      setCurrentView('receipt');
+      refetchReceipts();
+      setClaimsVersion(v => v + 1);
     } catch (err) {
-      setError(err.message || 'Unknown error')
-    } finally {
-      setAnalyzing(false)
-    }
-  }
+      setError(err.message || 'Unknown error');
+    } finally { setAnalyzing(false); }
+  };
 
-  // Receipt deletion handler
   const handleDeleteReceipt = async (receiptId) => {
-    if (!receiptId) return
+    if (!receiptId) return;
     try {
-      if (!confirm('Delete this receipt? This will remove the receipt and all associated claims.')) return
-      await apiClient.deleteReceipt(receiptId)
-      refetchReceipts()
-      setClaimsVersion(v => v + 1)
-  setSavedReceipt(null)
-      setCurrentView('receipts')
+      if (!confirm('Delete this receipt? This will remove the receipt and all associated claims.')) return;
+      await apiClient.deleteReceipt(receiptId);
+      refetchReceipts();
+      setClaimsVersion(v => v + 1);
+      setSavedReceipt(null);
+      setCurrentView('receipts');
     } catch (err) {
-      setError(err.message || 'Delete failed')
+      setError(err.message || 'Delete failed');
     }
-  }
+  };
 
   return (
-    <div className="container">
-      {/* App Header */}
-      <div className="app-header">
-        <h1 className="title">🧾 ZiCount</h1>
-        <div className="header-controls">
-          <PeopleManager 
-            currentUserId={currentUserId}
-            onCurrentUserChange={setCurrentUserId}
-            compact={true}
-          />
-        </div>
-        <div className="mt-4">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
+      {/* Header */}
+      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+        <h1 className="text-2xl font-bold text-gray-800 mb-3 sm:mb-0">🧾 ZiCount</h1>
+        <div className="flex space-x-2 items-center">
+          <PeopleManager currentUserId={currentUserId} onCurrentUserChange={setCurrentUserId} compact />
           <button
-            className="btn btn-primary"
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
             onClick={() => setShowManualForm(true)}
           >
             Beleg manuell hinzufügen
           </button>
         </div>
-        {showManualForm && (
-          <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative">
-              <button
-                className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl"
-                onClick={() => setShowManualForm(false)}
-                aria-label="Schließen"
-              >
-                &times;
-              </button>
-              <ManualReceiptForm onCreated={(saved) => {
-                // If the form returns the saved receipt, open it immediately
-                if (saved) {
-                  setSavedReceipt(saved);
-                  setCurrentView('receipt');
-                }
-                setShowManualForm(false);
-              }} onRefresh={refetchReceipts} />
-            </div>
-          </div>
-        )}
-        <nav className="nav-tabs">
-          <button 
-            className={currentView === 'receipts' ? 'active' : ''}
-            onClick={() => setCurrentView('receipts')}
-          >
-            📋 All Receipts
-          </button>
-          <button 
-            className={currentView === 'upload' ? 'active' : ''}
-            onClick={() => setCurrentView('upload')}
-          >
-            📷 Upload
-          </button>
-          {savedReceipt && (
-            <button 
-              className={currentView === 'receipt' ? 'active' : ''}
-              onClick={() => setCurrentView('receipt')}
-            >
-              🧾 Current Receipt
-            </button>
-          )}
-          {/* Removed selectedReceiptId and broken JSX */}
-          <button 
-            className={currentView === 'claims' ? 'active' : ''}
-            onClick={() => setCurrentView('claims')}
-          >
-            💰 My Claims
-          </button>
-          <button 
-            className={currentView === 'people' ? 'active' : ''}
-            onClick={() => setCurrentView('people')}
-          >
-            👥 People
-          </button>
-        </nav>
-      </div>
+      </header>
 
-      {/* Receipts Overview */}
+      {/* Manual Receipt Modal */}
+      {showManualForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-lg w-full max-w-md p-6 relative">
+            <button
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-2xl"
+              onClick={() => setShowManualForm(false)}
+              aria-label="Schließen"
+            >
+              &times;
+            </button>
+            <ManualReceiptForm 
+              onCreated={(saved) => { if(saved) { setSavedReceipt(saved); setCurrentView('receipt'); } setShowManualForm(false); }} 
+              onRefresh={refetchReceipts} 
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Navigation Tabs */}
+      <nav className="flex overflow-x-auto space-x-2 mb-6">
+        {['receipts','upload','receipt','claims','people'].map(view => {
+          const labels = { receipts:'📋 All Receipts', upload:'📷 Upload', receipt:'🧾 Current Receipt', claims:'💰 My Claims', people:'👥 People' };
+          if(view==='receipt' && !savedReceipt) return null;
+          return (
+            <button
+              key={view}
+              className={`px-3 py-2 rounded-lg ${currentView===view?'bg-indigo-600 text-white':'bg-gray-200 text-gray-700'}`}
+              onClick={() => setCurrentView(view)}
+            >
+              {labels[view]}
+            </button>
+          )
+        })}
+      </nav>
+
+      {/* Views */}
       {currentView === 'receipts' && (
-        <div className="receipts-overview">
-          <ReceiptList
-            receipts={receipts}
-            loading={receiptsLoading}
-            onReceiptSelect={(receiptId) => {
-              const found = receipts.find(r => r.id === receiptId);
-              if (found) {
-                setSavedReceipt(found);
-                setCurrentView('receipt');
-              }
-            }}
-          />
-        </div>
+        <ReceiptList
+          receipts={receipts}
+          loading={receiptsLoading}
+          onReceiptSelect={(id) => {
+            const r = receipts.find(r => r.id===id);
+            if(r) { setSavedReceipt(r); setCurrentView('receipt'); }
+          }}
+        />
       )}
 
-  {/* Removed selected-receipt view */}
-
-      {/* Upload Section */}
       {currentView === 'upload' && (
-        <div className="upload-section">
-          <div className="upload-card">
-            <p className="text-lg text-gray-600 mb-6 text-center">Receipt Analyzer</p>
-
-            <div
-              className={`upload-area ${selectedImage ? 'has-file' : ''} ${isDragging ? 'drag-over' : ''}`}
-              onClick={() => inputRef.current && inputRef.current.click()}
-              onDragOver={handleDragOver}
-              onDragEnter={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-            >
-              <input
-                ref={inputRef}
-                id="image-upload"
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={e => onFile(e.target.files && e.target.files[0])}
-                style={{ display: 'none' }}
-              />
-
-              <div className="upload-content">
-                <div className="upload-icon">📱</div>
-                <div className="upload-text">
-                  {selectedImage ? selectedImage.name : isDragging ? 'Drop image here' : 'Tap to take photo or select image'}
-                </div>
-                <div className="upload-hint">
-                  Supports JPG, PNG • Max 10MB
-                </div>
-              </div>
-            </div>
-
-            {/* Participant selection */}
-            <div className="mb-4">
-              <label className="block mb-1 font-semibold">Teilnehmer auswählen</label>
-              <div className="grid grid-cols-2 gap-2">
-                {people.map(p => (
-                  <label key={p.id} className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      value={p.id}
-                      checked={selectedParticipants.includes(p.id)}
-                      onChange={e => {
-                        if (e.target.checked) {
-                          setSelectedParticipants([...selectedParticipants, p.id]);
-                        } else {
-                          setSelectedParticipants(selectedParticipants.filter(id => id !== p.id));
-                        }
-                      }}
-                    />
-                    <span>{p.name}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {imagePreview && (
-              <div className="image-preview-container">
-                <img src={imagePreview} alt="Receipt preview" className="image-preview" />
-                <button 
-                  className="remove-image"
-                  onClick={() => {
-                    setSelectedImage(null);
-                    setImagePreview(null);
-                    setError(null);
-                  }}
-                >
-                  ✕
-                </button>
-              </div>
-            )}
-
-            <button 
-              onClick={analyzeReceipt} 
-              disabled={!selectedImage || analyzing} 
-              className="btn btn-primary w-full"
-            >
-              {analyzing ? (
-                <div className="loading">
-                  <div className="spinner" />
-                  Analyzing...
-                </div>
-              ) : (
-                '🔍 Analyze Receipt'
-              )}
-            </button>
+        <div className="bg-white rounded-2xl shadow p-6 max-w-md mx-auto">
+          <p className="text-lg text-gray-600 mb-4 text-center font-medium">Receipt Analyzer</p>
+          <div
+            className={`border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition-colors ${isDragging?'border-indigo-500 bg-indigo-50':'border-gray-300 bg-white'}`}
+            onClick={() => inputRef.current && inputRef.current.click()}
+            onDragOver={handleDragOver}
+            onDragEnter={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            <input ref={inputRef} type="file" accept="image/*" capture="environment" onChange={e => onFile(e.target.files?.[0])} className="hidden" />
+            <div className="text-4xl mb-2">📱</div>
+            <p className="text-gray-700 mb-1">{selectedImage ? selectedImage.name : isDragging ? 'Drop image here' : 'Tap to take photo or select image'}</p>
+            <p className="text-sm text-gray-400">Supports JPG, PNG • Max 10MB</p>
           </div>
+
+          {/* Participant selection */}
+          <div className="mt-4 mb-6">
+            <label className="block mb-2 font-semibold text-gray-700">Teilnehmer auswählen</label>
+            <div className="grid grid-cols-2 gap-2">
+              {people.map(p => (
+                <label key={p.id} className="flex items-center space-x-2">
+                  <input type="checkbox" value={p.id} checked={selectedParticipants.includes(p.id)}
+                    onChange={e => setSelectedParticipants(e.target.checked ? [...selectedParticipants,p.id] : selectedParticipants.filter(id => id!==p.id))}
+                    className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                  />
+                  <span className="text-gray-700">{p.name}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {imagePreview && (
+            <div className="relative mb-4">
+              <img src={imagePreview} className="rounded-lg w-full object-cover" alt="Preview" />
+              <button className="absolute top-2 right-2 text-white bg-black bg-opacity-50 rounded-full px-2 hover:bg-opacity-75" onClick={()=>{setSelectedImage(null); setImagePreview(null); setError(null);}}>✕</button>
+            </div>
+          )}
+
+          <button onClick={analyzeReceipt} disabled={!selectedImage || analyzing} className="w-full py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+            {analyzing ? '🔄 Analyzing...' : '🔍 Analyze Receipt'}
+          </button>
         </div>
       )}
 
-      {/* Current Receipt Detail */}
       {currentView === 'receipt' && savedReceipt && (
         <ReceiptDetail
           receipt={savedReceipt}
           receiptId={savedReceipt.id}
           currentUserId={currentUserId}
           onItemClaimed={(itemId, claimedBy, claimedAt) => {
-            // optimistic local update
-            setSavedReceipt(prev => ({
-              ...prev,
-              items: prev.items.map(it => it.id === itemId ? { ...it, claimedBy, claimedAt } : it)
-            }));
-            // fetch fresh receipt to ensure server state (prevents double-delete or stale actions)
-            (async () => {
-              try {
-                const fresh = await apiClient.getReceipt(savedReceipt.id);
-                setSavedReceipt(fresh);
-                refetchReceipts();
-              } catch (err) {
-                console.error('Failed to refresh receipt after claim:', err);
-              }
-            })();
+            setSavedReceipt(prev => ({ ...prev, items: prev.items.map(it => it.id===itemId ? {...it, claimedBy, claimedAt} : it) }));
+            (async()=>{try{const fresh=await apiClient.getReceipt(savedReceipt.id); setSavedReceipt(fresh); refetchReceipts();}catch(e){console.error(e)}})();
           }}
-          onItemUnclaimed={(itemId) => {
-            setSavedReceipt(prev => ({
-              ...prev,
-              items: prev.items.map(it => it.id === itemId ? { ...it, claimedBy: null, claimedAt: null } : it)
-            }));
-            (async () => {
-              try {
-                const fresh = await apiClient.getReceipt(savedReceipt.id);
-                setSavedReceipt(fresh);
-                refetchReceipts();
-              } catch (err) {
-                console.error('Failed to refresh receipt after unclaim:', err);
-              }
-            })();
-          }}
-          onDelete={() => handleDeleteReceipt(savedReceipt.id)}
-          onClaimsUpdated={() => { 
-            refetchReceipts() 
-            setClaimsVersion(v => v + 1) 
-          }}
-          onBack={() => {
-            setCurrentView('receipts');
-            setSavedReceipt(null);
-          }}
+          onItemUnclaimed={(itemId)=>{ setSavedReceipt(prev => ({ ...prev, items: prev.items.map(it => it.id===itemId ? {...it, claimedBy:null, claimedAt:null}:it) })); (async()=>{try{const fresh=await apiClient.getReceipt(savedReceipt.id); setSavedReceipt(fresh); refetchReceipts();}catch(e){console.error(e)}})();}}
+          onDelete={()=>handleDeleteReceipt(savedReceipt.id)}
+          onClaimsUpdated={()=>{ refetchReceipts(); setClaimsVersion(v=>v+1); }}
+          onBack={()=>{ setCurrentView('receipts'); setSavedReceipt(null); }}
         />
       )}
 
-      {/* My Claims */}
-      {currentView === 'claims' && (
-        <MyClaims 
-          userId={currentUserId} 
-          onClaimsUpdated={refetchReceipts}
-          refreshKey={claimsVersion}
-        />
-      )}
+      {currentView === 'claims' && <MyClaims userId={currentUserId} onClaimsUpdated={refetchReceipts} refreshKey={claimsVersion} />}
+      {currentView === 'people' && <PeopleManager currentUserId={currentUserId} onCurrentUserChange={setCurrentUserId} compact={false} />}
 
-      {/* People Management */}
-      {currentView === 'people' && (
-        <div className="people-section">
-          <PeopleManager 
-            currentUserId={currentUserId}
-            onCurrentUserChange={setCurrentUserId}
-            compact={false}
-          />
-        </div>
-      )}
-
-      {/* Error Display */}
-      {error && (
-        <div className="error-message">
-          <strong>Error:</strong> {error}
-        </div>
-      )}
+      {error && <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-lg">{error}</div>}
     </div>
   )
 }

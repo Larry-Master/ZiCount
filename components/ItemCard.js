@@ -1,7 +1,7 @@
 import { formatCurrency, parsePrice } from '@/lib/utils/currency';
 import { usePeople } from '@/lib/hooks/usePeople';
 
-export default function ItemCard({ item, currentUserId, onClaim, onUnclaim }) {
+export default function ItemCard({ item, currentUserId, onClaim, onUnclaim, isMyClaimsContext = false }) {
   const { getPerson } = usePeople();
   const price = typeof item.price === 'object' ? item.price.value : item.price;
   const parsedPrice = parsePrice(price);
@@ -13,86 +13,87 @@ export default function ItemCard({ item, currentUserId, onClaim, onUnclaim }) {
 
   const claimedByPerson = isClaimed ? getPerson(item.claimedBy) : null;
 
-  const handleClick = () => {
-    if (isPending) return;
-    
-    if (isClaimed) {
-      if (canUnclaim) {
-        onUnclaim(item);
-      }
-    } else {
-      onClaim(item);
-    }
-  };
-
   const getStatusText = () => {
-    if (isPending) return 'Claiming...';
+    if (isPending) return 'Processing...';
     if (isClaimed) {
       if (isMyItem) {
         return 'Claimed by you';
       }
       return `Claimed by ${claimedByPerson?.name || 'Unknown'}`;
     }
-    return 'Available';
+    return isMyClaimsContext ? 'Unclaim' : 'Available';
   };
 
   const getButtonText = () => {
     if (isPending) return 'Processing...';
+    if (isMyClaimsContext) {
+      return 'Unclaim';
+    }
     if (isClaimed) {
       return canUnclaim ? 'Unclaim' : 'Claimed';
     }
     return 'Claim';
   };
 
+  const handleClick = () => {
+    if (isPending) return;
+
+    if (isMyClaimsContext) {
+      if (isClaimed) {
+        onUnclaim(item);
+      }
+    } else {
+      if (isClaimed) {
+        if (canUnclaim) {
+          onUnclaim(item);
+        }
+      } else if (onClaim) {
+        onClaim(item);
+      }
+    }
+  };
+
   return (
-    <div className={`item-card ${isClaimed ? 'claimed' : 'available'} ${isPending ? 'pending' : ''}`}>
-      <div className="item-content">
-        <div className="item-header">
-          <h4 className="item-name">{item.name}</h4>
-          <div className="item-price">
-            {formatCurrency(parsedPrice)}
-          </div>
-        </div>
-        
-        {item.tags && item.tags.length > 0 && (
-          <div className="item-tags">
-            {item.tags.map(tag => (
-              <span key={tag} className="tag">{tag}</span>
-            ))}
-          </div>
-        )}
-
-        <div className="item-status">
-          <div className="status-row">
-            <span className={`status-indicator ${isClaimed ? 'claimed' : 'available'}`} />
-            <span className="status-text">{getStatusText()}</span>
-          </div>
-          {claimedByPerson && (
-            <div className="claimed-by">
-              <div
-                className="person-avatar tiny"
-                style={{ backgroundColor: claimedByPerson.color }}
-              >
-                {claimedByPerson.name.charAt(0).toUpperCase()}
+    <div className={`flex items-center justify-between p-4 bg-white rounded-lg shadow-sm border ${isClaimed ? 'border-indigo-200' : 'border-gray-100'} ${isPending ? 'opacity-70' : 'hover:shadow-md'} transition`}>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 pr-2">
+            <h4 className="text-sm font-semibold text-gray-900 truncate">{item.name}</h4>
+            {item.tags && item.tags.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {item.tags.map(tag => (
+                  <span key={tag} className="text-[11px] px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full">{tag}</span>
+                ))}
               </div>
-            </div>
-          )}
-        </div>
-
-        {item.confidence && (
-          <div className="item-confidence">
-            Confidence: {Math.round(item.confidence * 100)}%
+            )}
+            {item.confidence && (
+              <div className="mt-2 text-xs text-gray-500">Confidence: {Math.round(item.confidence * 100)}%</div>
+            )}
           </div>
-        )}
+
+          <div className="flex-shrink-0 text-right ml-2">
+            <div className="text-sm font-medium text-gray-900">{formatCurrency(parsedPrice)}</div>
+            <div className="mt-2 flex items-center justify-end gap-2">
+              {claimedByPerson && (
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium text-white" style={{ backgroundColor: claimedByPerson.color }}>{claimedByPerson.name.charAt(0).toUpperCase()}</div>
+                </div>
+              )}
+            </div>
+            <div className="mt-1 text-xs text-gray-500">{getStatusText()}</div>
+          </div>
+        </div>
       </div>
 
-      <button
-        className={`claim-button ${isClaimed ? (canUnclaim ? 'unclaim' : 'disabled') : 'available'}`}
-        onClick={handleClick}
-        disabled={isPending || (isClaimed && !canUnclaim)}
-      >
-        {getButtonText()}
-      </button>
+      <div className="ml-4 flex-shrink-0">
+        <button
+          onClick={handleClick}
+          disabled={isPending || (isMyClaimsContext && !isClaimed)}
+          className={`px-3 py-1.5 rounded-md text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-offset-1 ${isClaimed ? (canUnclaim ? 'bg-white text-indigo-600 border border-indigo-200 hover:bg-indigo-50' : 'bg-gray-100 text-gray-500 cursor-default') : (isMyClaimsContext ? 'bg-gray-100 text-gray-500 cursor-default' : 'bg-indigo-600 text-white hover:bg-indigo-700')}`}
+        >
+          {getButtonText()}
+        </button>
+      </div>
     </div>
   );
 }

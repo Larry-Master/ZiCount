@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { formatCurrency, calculateTotal } from '@/lib/utils/currency';
 import { apiClient } from '@/lib/api/client';
+import ItemCard from '@/components/ItemCard';
 
 export default function MyClaims({ userId, onClaimsUpdated, refreshKey }) {
   const [claims, setClaims] = useState([]);
@@ -26,10 +27,15 @@ export default function MyClaims({ userId, onClaimsUpdated, refreshKey }) {
     fetchClaims();
   }, [userId, refreshKey]);
 
-  const handleUnclaim = async (itemId) => {
+  const handleUnclaim = async (item) => {
+    if (!item.claimedBy || item.claimedBy !== userId) {
+      console.error('Cannot unclaim an item not claimed by the current user.');
+      return;
+    }
+
     try {
-      await apiClient.unclaimItem(itemId);
-      setClaims(prev => prev.filter(claim => claim.id !== itemId));
+      await apiClient.unclaimItem(item.id);
+      setClaims(prev => prev.filter(claim => claim.id !== item.id));
       // Notify parent component to refresh data
       if (onClaimsUpdated) {
         onClaimsUpdated();
@@ -39,9 +45,9 @@ export default function MyClaims({ userId, onClaimsUpdated, refreshKey }) {
     }
   };
 
-  if (loading) return <div>Loading your claims...</div>;
-  if (error) return <div>Error: {error}</div>;
-  if (!claims.length) return <div>No claims yet</div>;
+  if (loading) return <div className="container">Loading your claims...</div>;
+  if (error) return <div className="container">Error: {error}</div>;
+  if (!claims.length) return <div className="container">No claims yet</div>;
 
   const totalClaimed = calculateTotal(claims);
   const claimsByReceipt = claims.reduce((acc, claim) => {
@@ -60,75 +66,41 @@ export default function MyClaims({ userId, onClaimsUpdated, refreshKey }) {
   }, {});
 
   return (
-    <div className="my-claims">
-      <div className="claims-header">
-        <h2>My Claims</h2>
-        <div className="total-claimed">
-          Total: {formatCurrency(totalClaimed)}
-        </div>
+    <div className="container">
+      <div className="app-header">
+        <h2 className="title">My Claims</h2>
+        <div>Total: {formatCurrency(totalClaimed)}</div>
       </div>
 
-      <div className="claims-summary">
-        <div className="summary-stats">
-          <div className="stat">
-            <span className="stat-value">{claims.length}</span>
-            <span className="stat-label">Items</span>
+      <div className="card">
+        <div className="nav-tabs">
+          <div>
+            <span>{claims.length} Items</span>
           </div>
-          <div className="stat">
-            <span className="stat-value">{Object.keys(claimsByReceipt).length}</span>
-            <span className="stat-label">Receipts</span>
+          <div>
+            <span>{Object.keys(claimsByReceipt).length} Receipts</span>
           </div>
         </div>
       </div>
 
-      <div className="claims-by-receipt">
-        {Object.values(claimsByReceipt).map(receipt => (
-          <div key={receipt.receiptId} className="receipt-group">
-            <div className="receipt-group-header">
-              <h3>{receipt.receiptName}</h3>
-              <span className="receipt-total">
-                {formatCurrency(receipt.total)}
-              </span>
-            </div>
+      {Object.values(claimsByReceipt).map(receipt => (
+        <div key={receipt.receiptId} className="card">
+          <div className="title">{receipt.receiptName}</div>
+          <div>Total: {formatCurrency(receipt.total)}</div>
 
-            <div className="receipt-items">
-              {receipt.items.map(item => {
-                return (
-                  <div key={item.id} className="claim-item">
-                    <div className="item-info">
-                      <div className="item-name">{item.name}</div>
-                      <div className="item-meta">
-                        <span className="item-price">
-                          {formatCurrency(parseFloat(item.price) || 0)}
-                        </span>
-                        <span className="claim-time">
-                          {new Date(item.claimedAt).toLocaleString('de-DE')}
-                        </span>
-                      </div>
-                      {item.tags && (
-                        <div className="item-tags">
-                          {item.tags.map(tag => (
-                            <span key={tag} className="tag">{tag}</span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="item-actions">
-                      <button
-                        className="unclaim-button"
-                        onClick={() => handleUnclaim(item.id)}
-                      >
-                        Unclaim
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+          <div className="grid gap-3 mt-4">
+            {receipt.items.map(item => (
+              <ItemCard
+                key={item.id}
+                item={{ ...item, claimedBy: item.claimedBy || userId }}
+                currentUserId={userId}
+                onUnclaim={handleUnclaim}
+                isMyClaimsContext={true} // Ensure only 'Unclaim' is shown
+              />
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
     </div>
   );
 }

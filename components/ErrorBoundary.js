@@ -47,6 +47,40 @@ class ErrorBoundary extends React.Component {
         </div>
       );
     }
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-[60vh] flex flex-col items-center justify-center p-6">
+          <div className="text-center max-w-lg">
+            <div className="text-4xl">⚠️</div>
+            <h2 className="mt-4 text-xl font-semibold">Something went wrong</h2>
+            <p className="mt-2 text-sm text-gray-600">An unexpected error occurred. You can retry or reload the page.</p>
+
+            <details className="mt-4 p-3 bg-gray-50 rounded" style={{ whiteSpace: 'pre-wrap' }}>
+              <summary className="cursor-pointer text-sm font-medium">Error details (expand)</summary>
+              <div className="mt-2 text-xs text-gray-700">
+                <p><strong>Error:</strong> {this.state.error && this.state.error.toString()}</p>
+                <pre className="mt-2 text-xs">{this.state.errorInfo?.componentStack}</pre>
+              </div>
+            </details>
+
+            <div className="mt-4 flex gap-3 justify-center">
+              <button 
+                onClick={() => this.setState({ hasError: false, error: null, errorInfo: null })}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm"
+              >
+                Try again
+              </button>
+              <button 
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 border rounded-md text-sm"
+              >
+                Reload page
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
     return this.props.children;
   }
