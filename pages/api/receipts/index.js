@@ -45,10 +45,13 @@ export default async function handler(req, res) {
       
       const receipt = {
         name: body.name || `Receipt ${new Date().toLocaleDateString('de-DE')}`,
-        createdAt: new Date(),
+        // allow client to pass createdAt (e.g., manual form), fallback to now
+        createdAt: body.createdAt ? new Date(body.createdAt) : new Date(),
         imageUrl: body.imageUrl,
         items: body.items || [],
         uploadedBy: body.uploadedBy || 'anonymous',
+        // persist participants if provided (used for Teilnehmerliste)
+        participants: body.participants || [],
         text: body.text || ''
       };
 

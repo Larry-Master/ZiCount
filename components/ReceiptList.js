@@ -14,10 +14,26 @@ export default function ReceiptList({ receipts, onReceiptSelect, loading }) {
     );
   }
 
+  // Calculate total value: sum of all items (manual and uploaded receipts)
   const totalOverall = receipts.reduce((sum, receipt) => {
-    return sum + calculateTotal(receipt.items || []);
+    // If receipt has participants and items, sum per participant cost
+    if (receipt.participants && receipt.participants.length > 0) {
+      // Manual receipts: items have participant field
+      if (receipt.items && receipt.items.every(it => it.participant)) {
+        return sum + receipt.items.reduce((s, it) => s + (typeof it.price === 'object' ? it.price.value : it.price), 0);
+      } else if (receipt.items && receipt.items.length > 0) {
+        // Uploaded receipts: split total equally
+        const total = calculateTotal(receipt.items);
+        return sum + total;
+      }
+    } else {
+      // No participants: fallback to total
+      return sum + calculateTotal(receipt.items || []);
+    }
+    return sum;
   }, 0);
 
+  // Total claimed: only claimed items
   const totalClaimedOverall = receipts.reduce((sum, receipt) => {
     const claimedAmount = (receipt.items || [])
       .filter(item => item.claimedBy)

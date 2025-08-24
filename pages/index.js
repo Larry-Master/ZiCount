@@ -2,6 +2,8 @@ import { useRef, useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { useReceipts } from '@/lib/hooks/useReceipts'
 import { apiClient } from '@/lib/api/client'
+import ManualReceiptForm from '@/components/ManualReceiptForm';
+import { usePeople } from '@/lib/hooks/usePeople';
 
 // Dynamic imports for better code splitting and mobile performance
 const ReceiptDetail = dynamic(() => import('@/components/ReceiptDetail'), {
@@ -29,64 +31,64 @@ const PeopleManager = dynamic(() => import('@/components/PeopleManager'), {
 })
 
 export default function HomePage() {
+  // Drag and drop handlers
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const files = e.dataTransfer && e.dataTransfer.files;
+    if (files && files.length > 0) onFile(files[0]);
+  };
   // State management
   const [selectedImage, setSelectedImage] = useState(null)
   const [imagePreview, setImagePreview] = useState(null)
   const [analyzing, setAnalyzing] = useState(false)
-  const [results, setResults] = useState(null)
+  // Remove unused results state
+  const [savedReceipt, setSavedReceipt] = useState(null); // Use for all receipt detail views
   const [error, setError] = useState(null)
   const [isDragging, setIsDragging] = useState(false)
   const [currentView, setCurrentView] = useState('receipts') // 'upload', 'receipts', 'receipt', 'claims', 'people'
   const [currentUserId, setCurrentUserId] = useState('user1') // Default user
-  const [selectedReceiptId, setSelectedReceiptId] = useState(null)
+  // Always use savedReceipt for current receipt view
   const [claimsVersion, setClaimsVersion] = useState(0)
+  const [showManualForm, setShowManualForm] = useState(false);
+  const [selectedParticipants, setSelectedParticipants] = useState([]);
+  const { people } = usePeople();
 
   const { receipts, loading: receiptsLoading, refetch: refetchReceipts } = useReceipts()
   const inputRef = useRef(null)
 
   // File handling functions
   const onFile = (file) => {
-    if (!file) return
-    setSelectedImage(file)
-    setResults(null)
-    setError(null)
-    setImagePreview(null)
+    if (!file) return;
+    setSelectedImage(file);
+    setError(null);
+    setImagePreview(null);
 
-    const reader = new FileReader()
-    reader.onload = (e) => setImagePreview(e.target.result)
-    reader.readAsDataURL(file)
-  }
-
-  const handleFileChange = (e) => {
-    const file = e.target.files && e.target.files[0]
-    onFile(file)
-  }
-
-  // Drag and drop handlers
-  const handleDragOver = (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragging(true)
-  }
-
-  const handleDragLeave = (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragging(false)
-  }
-
-  const handleDrop = (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragging(false)
-    const files = e.dataTransfer && e.dataTransfer.files
-    if (files && files.length > 0) onFile(files[0])
-  }
+    const reader = new FileReader();
+    reader.onload = (e) => setImagePreview(e.target.result);
+    reader.readAsDataURL(file);
+  };
 
   // Receipt analysis function
   const analyzeReceipt = async () => {
     if (!selectedImage) {
       setError('Please select an image first')
+    // Remove unused results state
+    }
+    if (!selectedParticipants.length) {
+      setError('Bitte Teilnehmer auswählen')
       return
     }
 
@@ -130,6 +132,7 @@ export default function HomePage() {
           claimedBy: null,
           claimedAt: null
         })),
+        participants: selectedParticipants,
         text: data.text
       }
 
@@ -154,7 +157,7 @@ export default function HomePage() {
         receiptId: savedReceipt.id
       }))
 
-      setResults(savedReceipt)
+  setSavedReceipt(savedReceipt)
       setCurrentView('receipt')
       refetchReceipts()
       setClaimsVersion(v => v + 1)
@@ -173,7 +176,7 @@ export default function HomePage() {
       await apiClient.deleteReceipt(receiptId)
       refetchReceipts()
       setClaimsVersion(v => v + 1)
-      setSelectedReceiptId(null)
+  setSavedReceipt(null)
       setCurrentView('receipts')
     } catch (err) {
       setError(err.message || 'Delete failed')
@@ -192,6 +195,35 @@ export default function HomePage() {
             compact={true}
           />
         </div>
+        <div className="mt-4">
+          <button
+            className="btn btn-primary"
+            onClick={() => setShowManualForm(true)}
+          >
+            Beleg manuell hinzufügen
+          </button>
+        </div>
+        {showManualForm && (
+          <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative">
+              <button
+                className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl"
+                onClick={() => setShowManualForm(false)}
+                aria-label="Schließen"
+              >
+                &times;
+              </button>
+              <ManualReceiptForm onCreated={(saved) => {
+                // If the form returns the saved receipt, open it immediately
+                if (saved) {
+                  setSavedReceipt(saved);
+                  setCurrentView('receipt');
+                }
+                setShowManualForm(false);
+              }} onRefresh={refetchReceipts} />
+            </div>
+          </div>
+        )}
         <nav className="nav-tabs">
           <button 
             className={currentView === 'receipts' ? 'active' : ''}
@@ -205,7 +237,7 @@ export default function HomePage() {
           >
             📷 Upload
           </button>
-          {results && (
+          {savedReceipt && (
             <button 
               className={currentView === 'receipt' ? 'active' : ''}
               onClick={() => setCurrentView('receipt')}
@@ -213,14 +245,7 @@ export default function HomePage() {
               🧾 Current Receipt
             </button>
           )}
-          {selectedReceiptId && (
-            <button 
-              className={currentView === 'selected-receipt' ? 'active' : ''}
-              onClick={() => setCurrentView('selected-receipt')}
-            >
-              🧾 Selected Receipt
-            </button>
-          )}
+          {/* Removed selectedReceiptId and broken JSX */}
           <button 
             className={currentView === 'claims' ? 'active' : ''}
             onClick={() => setCurrentView('claims')}
@@ -243,26 +268,17 @@ export default function HomePage() {
             receipts={receipts}
             loading={receiptsLoading}
             onReceiptSelect={(receiptId) => {
-              setSelectedReceiptId(receiptId)
-              setCurrentView('selected-receipt')
+              const found = receipts.find(r => r.id === receiptId);
+              if (found) {
+                setSavedReceipt(found);
+                setCurrentView('receipt');
+              }
             }}
           />
         </div>
       )}
 
-      {/* Selected Receipt Detail */}
-      {currentView === 'selected-receipt' && selectedReceiptId && (
-        <ReceiptDetail
-          receiptId={selectedReceiptId}
-          currentUserId={currentUserId}
-          onBack={() => setCurrentView('receipts')}
-          onClaimsUpdated={() => { 
-            refetchReceipts() 
-            setClaimsVersion(v => v + 1) 
-          }}
-          onDelete={() => handleDeleteReceipt(selectedReceiptId)}
-        />
-      )}
+  {/* Removed selected-receipt view */}
 
       {/* Upload Section */}
       {currentView === 'upload' && (
@@ -284,7 +300,7 @@ export default function HomePage() {
                 type="file"
                 accept="image/*"
                 capture="environment"
-                onChange={handleFileChange}
+                onChange={e => onFile(e.target.files && e.target.files[0])}
                 style={{ display: 'none' }}
               />
 
@@ -299,16 +315,39 @@ export default function HomePage() {
               </div>
             </div>
 
+            {/* Participant selection */}
+            <div className="mb-4">
+              <label className="block mb-1 font-semibold">Teilnehmer auswählen</label>
+              <div className="grid grid-cols-2 gap-2">
+                {people.map(p => (
+                  <label key={p.id} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      value={p.id}
+                      checked={selectedParticipants.includes(p.id)}
+                      onChange={e => {
+                        if (e.target.checked) {
+                          setSelectedParticipants([...selectedParticipants, p.id]);
+                        } else {
+                          setSelectedParticipants(selectedParticipants.filter(id => id !== p.id));
+                        }
+                      }}
+                    />
+                    <span>{p.name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
             {imagePreview && (
               <div className="image-preview-container">
                 <img src={imagePreview} alt="Receipt preview" className="image-preview" />
                 <button 
                   className="remove-image"
                   onClick={() => {
-                    setSelectedImage(null)
-                    setImagePreview(null)
-                    setResults(null)
-                    setError(null)
+                    setSelectedImage(null);
+                    setImagePreview(null);
+                    setError(null);
                   }}
                 >
                   ✕
@@ -335,26 +374,51 @@ export default function HomePage() {
       )}
 
       {/* Current Receipt Detail */}
-      {currentView === 'receipt' && results && (
+      {currentView === 'receipt' && savedReceipt && (
         <ReceiptDetail
-          receipt={results}
+          receipt={savedReceipt}
+          receiptId={savedReceipt.id}
           currentUserId={currentUserId}
           onItemClaimed={(itemId, claimedBy, claimedAt) => {
-            setResults(prev => ({
+            // optimistic local update
+            setSavedReceipt(prev => ({
               ...prev,
               items: prev.items.map(it => it.id === itemId ? { ...it, claimedBy, claimedAt } : it)
-            }))
+            }));
+            // fetch fresh receipt to ensure server state (prevents double-delete or stale actions)
+            (async () => {
+              try {
+                const fresh = await apiClient.getReceipt(savedReceipt.id);
+                setSavedReceipt(fresh);
+                refetchReceipts();
+              } catch (err) {
+                console.error('Failed to refresh receipt after claim:', err);
+              }
+            })();
           }}
           onItemUnclaimed={(itemId) => {
-            setResults(prev => ({
+            setSavedReceipt(prev => ({
               ...prev,
               items: prev.items.map(it => it.id === itemId ? { ...it, claimedBy: null, claimedAt: null } : it)
-            }))
+            }));
+            (async () => {
+              try {
+                const fresh = await apiClient.getReceipt(savedReceipt.id);
+                setSavedReceipt(fresh);
+                refetchReceipts();
+              } catch (err) {
+                console.error('Failed to refresh receipt after unclaim:', err);
+              }
+            })();
           }}
-          onDelete={() => handleDeleteReceipt(results.id)}
+          onDelete={() => handleDeleteReceipt(savedReceipt.id)}
           onClaimsUpdated={() => { 
             refetchReceipts() 
             setClaimsVersion(v => v + 1) 
+          }}
+          onBack={() => {
+            setCurrentView('receipts');
+            setSavedReceipt(null);
           }}
         />
       )}
