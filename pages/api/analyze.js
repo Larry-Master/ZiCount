@@ -1,11 +1,10 @@
 import { promises as fs } from 'fs';
 import formidable from 'formidable';
-import fetch from 'node-fetch';
-import FormData from 'form-data';
+import { DocumentProcessorServiceClient } from '@google-cloud/documentai';
 
 export const config = {
   api: {
-    bodyParser: false, // we handle multipart ourselves
+    bodyParser: false,
   },
 };
 
@@ -13,7 +12,7 @@ export const config = {
 function parseFormData(req) {
   return new Promise((resolve, reject) => {
     const form = formidable({
-      maxFileSize: 20 * 1024 * 1024, // 20MB limit
+      maxFileSize: 20 * 1024 * 1024,
       keepExtensions: true,
     });
 
@@ -25,58 +24,134 @@ function parseFormData(req) {
 }
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
   try {
-    // 1) Parse FormData to get the uploaded file
+    // Environment validation
+    if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+      return res.status(500).json({ error: 'Missing GOOGLE_APPLICATION_CREDENTIALS' });
+    }
+    if (!process.env.DOC_AI_PROJECT_ID || !process.env.DOC_AI_PROCESSOR_ID) {
+      return res.status(500).json({ error: 'Missing DOC_AI_PROJECT_ID or DOC_AI_PROCESSOR_ID' });
+    }
+
+    // Parse uploaded file
     const { files } = await parseFormData(req);
     const uploadedFile = Array.isArray(files.file) ? files.file[0] : files.file;
+    
     if (!uploadedFile) {
-      return res.status(400).json({ error: 'No file uploaded', debug: { files } });
+      return res.status(400).json({ error: 'No file uploaded' });
     }
 
     const filePath = uploadedFile.filepath || uploadedFile.path;
-    if (!filePath) {
-      return res.status(400).json({ error: 'Uploaded file missing path', debug: { uploadedFile } });
-    }
-
     const buffer = await fs.readFile(filePath);
-    const originalName = req.headers['x-file-name'] || uploadedFile.originalFilename || uploadedFile.name || 'upload.jpg';
+    const originalName = uploadedFile.originalFilename || uploadedFile.name || 'upload.jpg';
 
-  // Use stem for result file check, always append _items.json
-  const stem = originalName.replace(/\.[^/.]+$/, "");
-  const flaskUrl = process.env.OCR_REMOTE_URL;
-  const resultFileName = `${stem}_items.json`;
-  const getUrl = `${flaskUrl}?filename=${encodeURIComponent(resultFileName)}`;
-  console.log(`[OCR] Checking for result file:`, resultFileName, 'GET URL:', getUrl);
-  const getResponse = await fetch(getUrl, { method: 'GET' });
-  console.log(`[OCR] GET response status:`, getResponse.status, 'Content-Type:', getResponse.headers.get('content-type'));
+    // Detect MIME type
+    const ext = originalName.split('.').pop().toLowerCase();
+    const mimeType = ext === 'png' ? 'image/png' : 'image/jpeg';
 
-    if (getResponse.ok && getResponse.headers.get('content-type')?.includes('application/json')) {
-      // Stream the result file directly to client
-      console.log(`[OCR] Found cached result, streaming to client.`);
-      res.status(getResponse.status);
-      getResponse.body.pipe(res);
-      return;
+    // Initialize Document AI client
+    const client = new DocumentProcessorServiceClient();
+    const location = process.env.DOC_AI_LOCATION || 'us';
+    const processorName = `projects/${process.env.DOC_AI_PROJECT_ID}/locations/${location}/processors/${process.env.DOC_AI_PROCESSOR_ID}`;
+
+    console.log('Processing document with Google Document AI...');
+    
+    // Process document with Document AI
+    const request = {
+      name: processorName,
+      rawDocument: {
+        content: buffer.toString('base64'),
+        mimeType: mimeType,
+      },
+    };
+
+    const [result] = await client.processDocument(request);
+    
+    if (!result?.document) {
+      return res.status(200).json({
+        items: [],
+        totalAmount: 0,
+        currency: 'EUR'
+      });
     }
 
-    // If not found, upload and run OCR
-    console.log(`[OCR] Result not found, uploading image for OCR.`);
-    const formData = new FormData();
-    formData.append('file', buffer, originalName);
+    const document = result.document;
+    const items = [];
+    let totalAmount = 0;
 
-    const postResponse = await fetch(flaskUrl, {
-      method: 'POST',
-      body: formData,
-      headers: formData.getHeaders(),
+    // Extract data using your custom processor structure
+    if (document.entities) {
+      const itemNames = [];
+      const itemPrices = [];
+      
+      // Collect all items and prices
+      for (const entity of document.entities) {
+        if (entity.type === 'items') {
+          itemNames.push(entity.mentionText?.trim() || '');
+        } else if (entity.type === 'prices') {
+          let price = 0;
+          if (entity.normalizedValue?.moneyValue) {
+            const units = parseFloat(entity.normalizedValue.moneyValue.units || 0);
+            const nanos = parseFloat(entity.normalizedValue.moneyValue.nanos || 0) / 1000000000;
+            price = units + nanos;
+          } else {
+            // Fallback to parsing the mention text
+            const priceText = entity.mentionText?.replace(',', '.');
+            price = parseFloat(priceText) || 0;
+          }
+          itemPrices.push(price);
+        } else if (entity.type === 'sum') {
+          if (entity.normalizedValue?.moneyValue) {
+            const units = parseFloat(entity.normalizedValue.moneyValue.units || 0);
+            const nanos = parseFloat(entity.normalizedValue.moneyValue.nanos || 0) / 1000000000;
+            totalAmount = units + nanos;
+          } else {
+            // Fallback to parsing the mention text
+            const sumText = entity.mentionText?.replace(',', '.');
+            totalAmount = parseFloat(sumText) || 0;
+          }
+        }
+      }
+      
+      // Match items with prices 1:1
+      const maxLength = Math.max(itemNames.length, itemPrices.length);
+      for (let i = 0; i < maxLength; i++) {
+        const name = itemNames[i];
+        const price = itemPrices[i];
+        
+        if (name && price > 0) {
+          items.push({
+            id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            name: name,
+            price: price,
+            claimed: false
+          });
+        }
+      }
+    }
+
+    // If no total was found, calculate from items
+    if (totalAmount === 0 && items.length > 0) {
+      totalAmount = items.reduce((sum, item) => sum + item.price, 0);
+    }
+
+    console.log(`Processing complete: ${items.length} items extracted, total: €${totalAmount.toFixed(2)}`);
+
+    return res.status(200).json({
+      items: items,
+      totalAmount: totalAmount,
+      currency: 'EUR'
     });
-    console.log(`[OCR] POST response status:`, postResponse.status, 'Content-Type:', postResponse.headers.get('content-type'));
 
-    res.status(postResponse.status);
-    postResponse.body.pipe(res);
-
-  } catch (err) {
-    console.error('Flask OCR failed:', err);
-    return res.status(500).json({ error: 'Flask OCR failed', message: err.message });
+  } catch (error) {
+    console.error('Document AI processing error:', error);
+    return res.status(500).json({
+      error: 'Document processing failed',
+      message: error.message
+    });
   }
 }
