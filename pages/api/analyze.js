@@ -29,9 +29,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Environment validation
-    if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-      return res.status(500).json({ error: 'Missing GOOGLE_APPLICATION_CREDENTIALS' });
+    // Environment validation - support both file path and JSON string
+    const hasCredentials = process.env.GOOGLE_APPLICATION_CREDENTIALS || process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
+    if (!hasCredentials) {
+      return res.status(500).json({ error: 'Missing GOOGLE_APPLICATION_CREDENTIALS or GOOGLE_APPLICATION_CREDENTIALS_JSON' });
     }
     if (!process.env.DOC_AI_PROJECT_ID || !process.env.DOC_AI_PROCESSOR_ID) {
       return res.status(500).json({ error: 'Missing DOC_AI_PROJECT_ID or DOC_AI_PROCESSOR_ID' });
@@ -53,8 +54,17 @@ export default async function handler(req, res) {
     const ext = originalName.split('.').pop().toLowerCase();
     const mimeType = ext === 'png' ? 'image/png' : 'image/jpeg';
 
-    // Initialize Document AI client
-    const client = new DocumentProcessorServiceClient();
+    // Initialize Document AI client with proper credential handling
+    let client;
+    if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+      // Production: use JSON credentials
+      const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+      client = new DocumentProcessorServiceClient({ credentials });
+    } else {
+      // Local development: use file path
+      client = new DocumentProcessorServiceClient();
+    }
+    
     const location = process.env.DOC_AI_LOCATION || 'us';
     const processorName = `projects/${process.env.DOC_AI_PROJECT_ID}/locations/${location}/processors/${process.env.DOC_AI_PROCESSOR_ID}`;
     

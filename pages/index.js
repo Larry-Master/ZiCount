@@ -215,7 +215,10 @@ export default function HomePage() {
           <button
             key={view}
             className={`px-3 py-2 rounded-lg ${currentView===view?'bg-indigo-600 text-white':'bg-gray-200 text-gray-700'}`}
-            onClick={() => setCurrentView(view)}
+            onClick={() => {
+              setCurrentView(view);
+              setError(null); // Clear any existing errors when switching views
+            }}
           >
             {labels[view]}
           </button>
