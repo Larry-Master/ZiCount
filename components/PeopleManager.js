@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { usePeople } from '@/lib/hooks/usePeople';
 
-export default function PeopleManager({ currentUserId, onCurrentUserChange, compact = false }) {
+export default function PeopleManager({ currentUserId, onCurrentUserChange, onDataChanged, compact = false }) {
   const { people, addPerson, removePerson } = usePeople();
   const [showAddForm, setShowAddForm] = useState(false);
   const [newPersonName, setNewPersonName] = useState('');
@@ -16,6 +16,8 @@ export default function PeopleManager({ currentUserId, onCurrentUserChange, comp
       const newPerson = await addPerson(newPersonName);
       setNewPersonName('');
       setShowAddForm(false);
+      // Trigger data refresh in parent components
+      if (onDataChanged) onDataChanged();
   // Do not auto-switch current user when creating a new person.
     } catch (err) {
       console.error('Failed to add person:', err);
@@ -26,14 +28,26 @@ export default function PeopleManager({ currentUserId, onCurrentUserChange, comp
 
   const handleRemovePerson = async (personId) => {
     if (people.length <= 1) return; // Keep at least one person
-    if (confirm('Remove this person? Their claims will remain but they cannot be selected anymore.')) {
-      await removePerson(personId);
-      if (currentUserId === personId && people.length > 1) {
-        // Switch to first remaining person
-        const remainingPeople = people.filter(p => p.id !== personId);
-        if (onCurrentUserChange && remainingPeople.length > 0) {
-          onCurrentUserChange(remainingPeople[0].id);
+    
+    const personName = people.find(p => p.id === personId)?.name || 'Unknown';
+    
+    if (confirm(`Remove ${personName}? This will permanently delete:\n\n• The person from your people list\n• All their claims on receipts\n• Their participation in receipts\n\nThis action cannot be undone.`)) {
+      try {
+        await removePerson(personId);
+        
+        // Trigger data refresh in parent components
+        if (onDataChanged) onDataChanged();
+        
+        // Switch current user if necessary
+        if (currentUserId === personId && people.length > 1) {
+          const remainingPeople = people.filter(p => p.id !== personId);
+          if (onCurrentUserChange && remainingPeople.length > 0) {
+            onCurrentUserChange(remainingPeople[0].id);
+          }
         }
+      } catch (err) {
+        alert('Failed to remove person. Please try again.');
+        console.error('Failed to remove person:', err);
       }
     }
   };
@@ -98,7 +112,6 @@ export default function PeopleManager({ currentUserId, onCurrentUserChange, comp
   return (
     <div className="people-manager">
       <div className="people-header">
-        <h3>People</h3>
         <button
           type="button"
           onClick={() => setShowAddForm(true)}

@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { usePeople } from '@/lib/hooks/usePeople';
 
-export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId }) {
-  const [name, setName] = useState('');
-  const [total, setTotal] = useState('');
-  const [selectedPeople, setSelectedPeople] = useState([]);
+export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId, isEditing = false, initialData = null }) {
+  const [name, setName] = useState(initialData?.name || '');
+  const [total, setTotal] = useState(initialData?.totalAmount?.toString() || '');
+  const [selectedPeople, setSelectedPeople] = useState(initialData?.participants || []);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(initialData?.imageUrl || null);
   // date is no longer collected from the user; use current date automatically
   const [loading, setLoading] = useState(false);
 
@@ -22,9 +24,29 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId 
       // Use only the selected people for cost calculation
       const perPerson = selectedPeople.length > 0 ? parseFloat((totalValue / selectedPeople.length).toFixed(2)) : totalValue;
 
+      // Handle image upload if selected
+      let imageUrl = imagePreview;
+      if (selectedImage) {
+        // Use FormData like the analyze endpoint
+        const formData = new FormData();
+        formData.append('file', selectedImage);
+        
+        const uploadRes = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (!uploadRes.ok) {
+          throw new Error('Failed to upload image');
+        }
+        
+        const uploadData = await uploadRes.json();
+        imageUrl = uploadData.url;
+      }
+
       const items = selectedPeople.length > 0
         ? selectedPeople.map((personId, idx) => ({
-            id: `manual_item_${Date.now()}_${idx}`,
+            id: isEditing ? `manual_item_${initialData.id}_${idx}` : `manual_item_${Date.now()}_${idx}`,
             name: name || 'Manual item',
             price: perPerson,
             priceEUR: perPerson,
@@ -35,7 +57,7 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId 
             participant: personId
           }))
         : [{
-            id: `manual_item_${Date.now()}_0`,
+            id: isEditing ? `manual_item_${initialData.id}_0` : `manual_item_${Date.now()}_0`,
             name: name || 'Manual item',
             price: totalValue,
             priceEUR: totalValue,
@@ -50,8 +72,8 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId 
 
       const receipt = {
         name: name || `Manual ${new Date().toLocaleDateString('de-DE')}`,
-        createdAt: new Date().toISOString(),
-        imageUrl: null,
+        createdAt: isEditing ? initialData.createdAt : new Date().toISOString(),
+        imageUrl: imageUrl,
         items,
         totalAmount: totalValue, // Include the total amount for manual receipts
         uploadedBy: runtimeCurrentUserId,
@@ -59,61 +81,131 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId 
         text: ''
       };
 
-      const res = await fetch('/api/receipts', {
-        method: 'POST',
+      const url = isEditing ? `/api/receipts/${initialData.id}` : '/api/receipts';
+      const method = isEditing ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method: method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(receipt)
       });
 
       if (!res.ok) {
         const txt = await res.text();
-        throw new Error(txt || 'Failed to save receipt');
+        throw new Error(txt || `Failed to ${isEditing ? 'update' : 'save'} receipt`);
       }
 
-  const saved = await res.json();
-  setName(''); setTotal(''); setSelectedPeople([]);
+      const saved = await res.json();
+      
+      if (!isEditing) {
+        setName(''); 
+        setTotal(''); 
+        setSelectedPeople([]);
+        setSelectedImage(null);
+        setImagePreview(null);
+      }
+      
       onRefresh?.();
       onCreated?.(saved);
     } catch (err) {
-      console.error('Save manual receipt failed:', err);
-      alert(err?.message || 'Failed to save receipt');
+      console.error(`${isEditing ? 'Update' : 'Save'} manual receipt failed:`, err);
+      alert(err?.message || `Failed to ${isEditing ? 'update' : 'save'} receipt`);
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <form onSubmit={handleSubmit} className="p-4 sm:p-6 bg-white rounded-2xl shadow-lg max-w-md mx-auto">
-      <h2 className="text-xl font-bold mb-4 text-gray-800">Beleg manuell hinzufügen</h2>
+  const handleImageSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onload = (e) => setImagePreview(e.target.result);
+      reader.readAsDataURL(file);
+    }
+  };
 
-      <label className="block text-sm font-medium text-gray-600 mb-1">Belegname</label>
+  const handleImageRemove = () => {
+    setSelectedImage(null);
+    setImagePreview(initialData?.imageUrl || null);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="p-4 sm:p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-lg max-w-md mx-auto">
+      <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-white">
+        {isEditing ? 'Beleg bearbeiten' : 'Beleg manuell hinzufügen'}
+      </h2>
+
+      <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">Belegname</label>
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Belegname"
-        className="mb-4 p-3 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+        className="mb-4 p-3 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-indigo-500 focus:outline-none text-gray-900 dark:text-white dark:bg-gray-800 dark:border-gray-600 dark:placeholder-gray-400"
         required
       />
 
-      <label className="block text-sm font-medium text-gray-600 mb-1">Betrag</label>
+      <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">Betrag</label>
       <div className="flex mb-4">
         <input
           value={total}
           onChange={(e) => setTotal(e.target.value.replace(/[^\d,.]/g, ''))}
           placeholder="Betrag"
           inputMode="decimal"
-          className="flex-1 p-3 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+          className="flex-1 p-3 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none text-gray-900 dark:text-white dark:bg-gray-800 dark:border-gray-600 dark:placeholder-gray-400"
           required
         />
-        <span className="px-3 flex items-center bg-gray-100 border border-l-0 border-gray-300 rounded-r-lg text-gray-700">€</span>
+        <span className="px-3 flex items-center bg-gray-100 border border-l-0 border-gray-300 rounded-r-lg text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300">€</span>
+      </div>
+
+      {/* Image Upload Section */}
+      <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Bild hinzufügen (optional)</label>
+      <div className="mb-4">
+        {imagePreview ? (
+          <div className="relative">
+            <img 
+              src={imagePreview} 
+              alt="Receipt preview" 
+              className="w-full h-32 object-cover rounded-lg border border-gray-300"
+            />
+            <button
+              type="button"
+              onClick={handleImageRemove}
+              className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
+            >
+              ×
+            </button>
+          </div>
+        ) : (
+          <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-indigo-400 dark:hover:border-indigo-500 transition-colors">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageSelect}
+              className="hidden"
+              id="image-upload"
+            />
+            <label
+              htmlFor="image-upload"
+              className="cursor-pointer flex flex-col items-center gap-2"
+            >
+              <div className="text-gray-400 dark:text-gray-500">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+              </div>
+              <span className="text-sm text-gray-600 dark:text-gray-300">Bild auswählen</span>
+            </label>
+          </div>
+        )}
       </div>
 
   {/* date is set automatically; no input shown */}
 
-      <label className="block text-sm font-medium text-gray-600 mb-2">Personen auswählen</label>
+      <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Personen auswählen</label>
       <div className="grid grid-cols-2 gap-2 mb-6">
         {people.map((p) => (
-          <label key={p.id} className="flex items-center space-x-2 p-2 border border-gray-200 rounded-lg hover:bg-gray-50">
+          <label key={p.id} className="flex items-center space-x-2 p-2 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-800">
             <input
               type="checkbox"
               value={p.id}
@@ -122,12 +214,12 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId 
                 if (e.target.checked) setSelectedPeople([...selectedPeople, p.id]);
                 else setSelectedPeople(selectedPeople.filter((id) => id !== p.id));
               }}
-              className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+              className="w-4 h-4 text-indigo-600 border-gray-300 dark:border-gray-600 rounded focus:ring-indigo-500 dark:bg-gray-700"
             />
-            <span className="text-sm text-gray-700">
+            <span className="text-sm text-gray-700 dark:text-gray-300">
               {p.name}
               {p.id === runtimeCurrentUserId && (
-                <span className="ml-1 text-xs text-gray-500">(Sie bezahlen)</span>
+                <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">(Sie bezahlen)</span>
               )}
             </span>
           </label>
@@ -139,7 +231,7 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId 
         disabled={loading}
         className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-colors"
       >
-        {loading ? 'Speichern...' : 'Beleg hinzufügen'}
+        {loading ? (isEditing ? 'Aktualisieren...' : 'Speichern...') : (isEditing ? 'Beleg aktualisieren' : 'Beleg hinzufügen')}
       </button>
     </form>
   );

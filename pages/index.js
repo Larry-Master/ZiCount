@@ -320,7 +320,17 @@ export default function HomePage() {
       )}
 
       {currentView === 'claims' && <MyClaims userId={currentUserId} onClaimsUpdated={refetchReceipts} refreshKey={claimsVersion} />}
-  {currentView === 'people' && <PeopleManager currentUserId={currentUserId} onCurrentUserChange={handleSetCurrentUser} compact={false} />}
+  {currentView === 'people' && (
+    <PeopleManager 
+      currentUserId={currentUserId} 
+      onCurrentUserChange={handleSetCurrentUser} 
+      onDataChanged={() => {
+        refetchReceipts();
+        setClaimsVersion(v => v + 1);
+      }}
+      compact={false} 
+    />
+  )}
   {currentView === 'schulden' && <DebtSolver />}
 
       {error && <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-lg">{error}</div>}

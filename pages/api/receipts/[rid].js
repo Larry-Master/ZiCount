@@ -121,8 +121,39 @@ export default async function handler(req, res) {
       res.status(500).json({ error: 'Internal server error' });
     }
 
+  } else if (req.method === 'PUT') {
+    try {
+      if (!ObjectId.isValid(rid)) {
+        return res.status(400).json({ error: 'Invalid receipt ID' });
+      }
+
+      const updateData = { ...req.body };
+      delete updateData.id; // Remove the id field from the update data
+
+      const result = await db.collection('receipts').updateOne(
+        { _id: new ObjectId(rid) },
+        { $set: updateData }
+      );
+      
+      if (result.matchedCount === 0) {
+        return res.status(404).json({ error: 'Receipt not found' });
+      }
+
+      // Get the updated receipt
+      const updatedReceipt = await db.collection('receipts').findOne({ _id: new ObjectId(rid) });
+      const response = {
+        ...updatedReceipt,
+        id: updatedReceipt._id.toString()
+      };
+
+      res.status(200).json(response);
+    } catch (error) {
+      console.error('Update receipt error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+
   } else {
-    res.setHeader('Allow', ['GET', 'DELETE', 'PATCH']);
+    res.setHeader('Allow', ['GET', 'DELETE', 'PATCH', 'PUT']);
     res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }

@@ -630,7 +630,44 @@ input:focus, textarea:focus, select:focus { box-shadow: 0 6px 18px rgba(59,130,2
   }
 }
 
-/* Debt solver mobile improvements */
+/* Dark mode form and input improvements */
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: #374151;
+  border-color: #4b5563;
+  color: #ffffff;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #9ca3af;
+}
+
+.dark input:focus,
+.dark textarea:focus,
+.dark select:focus {
+  background-color: #374151;
+  border-color: #6366f1;
+  color: #ffffff;
+}
+
+/* Ensure text is visible in dark theme */
+.dark .text-gray-900 {
+  color: #ffffff !important;
+}
+
+.dark .text-gray-700 {
+  color: #d1d5db !important;
+}
+
+.dark .text-gray-600 {
+  color: #9ca3af !important;
+}
+
+.dark .text-gray-500 {
+  color: #6b7280 !important;
+}
 .debt-solver {
   padding: 1rem;
 }

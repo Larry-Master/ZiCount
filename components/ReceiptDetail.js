@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import ItemCard from '@/components/ItemCard';
 import ClaimModal from '@/components/ClaimModal';
+import ManualReceiptForm from '@/components/ManualReceiptForm';
 import { formatCurrency } from '@/lib/utils/currency';
 import { useClaims, useReceipt } from '@/lib/hooks/useReceipts';
 import { usePeople } from '@/lib/hooks/usePeople';
@@ -12,6 +13,8 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
   const [deleting, setDeleting] = useState(false);
   const [editingParticipants, setEditingParticipants] = useState(false);
   const [selectedParticipants, setSelectedParticipants] = useState([]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
   const { claimItem, unclaimItem, optimisticClaims } = useClaims();
   const { getPerson, people } = usePeople();
 
@@ -20,6 +23,48 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
 
   if (receiptLoading) return <div className="p-6 text-center text-gray-500">Loading receipt...</div>;
   if (!currentReceipt) return <div className="p-6 text-center text-gray-500">Loading receipt...</div>;
+
+  // Check if this is a manual receipt (can be edited)
+  const isManualReceipt = currentReceipt.items && currentReceipt.items.length > 0 && 
+    currentReceipt.items[0].tags?.includes('manual');
+
+  // If editing, show the form
+  if (isEditing && isManualReceipt) {
+    return (
+      <div className="p-4 sm:p-6">
+        <div className="flex items-center justify-between mb-4">
+          <button 
+            className="text-sm text-indigo-600 hover:underline" 
+            onClick={() => setIsEditing(false)}
+          >
+            ← Cancel Edit
+          </button>
+        </div>
+        
+        <ManualReceiptForm
+          isEditing={true}
+          initialData={{
+            id: currentReceipt.id,
+            name: currentReceipt.name,
+            totalAmount: currentReceipt.totalAmount,
+            participants: currentReceipt.participants || [],
+            imageUrl: currentReceipt.imageUrl,
+            createdAt: currentReceipt.createdAt
+          }}
+          currentUserId={currentUserId}
+          onCreated={(updatedReceipt) => {
+            setIsEditing(false);
+            if (refetchReceipt) refetchReceipt();
+            if (onClaimsUpdated) onClaimsUpdated();
+          }}
+          onRefresh={() => {
+            if (refetchReceipt) refetchReceipt();
+            if (onClaimsUpdated) onClaimsUpdated();
+          }}
+        />
+      </div>
+    );
+  }
 
   const handleClaimClick = (item) => {
     setSelectedItem(item);
@@ -169,6 +214,14 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
         )}
 
         <div className="flex items-center gap-3">
+          {isManualReceipt && (
+            <button
+              className="text-sm text-indigo-600 hover:underline"
+              onClick={() => setIsEditing(true)}
+            >
+              Edit Receipt
+            </button>
+          )}
           <button
             className="text-sm text-red-600 hover:underline"
             onClick={async () => {
@@ -197,7 +250,14 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
             <h2 className="text-lg font-semibold text-gray-900">{currentReceipt.name || `Receipt #${currentReceipt.id}`}</h2>
             <div className="text-sm text-gray-500 mt-1">{new Date(currentReceipt.createdAt).toLocaleDateString('de-DE')}</div>
             {currentReceipt.imageUrl && (
-              <img src={currentReceipt.imageUrl} alt="Receipt" className="mt-4 w-full max-w-xs rounded-md object-contain" />
+              <div className="mt-4">
+                <img 
+                  src={currentReceipt.imageUrl} 
+                  alt="Receipt" 
+                  className="w-full max-w-xs rounded-md object-contain cursor-pointer hover:opacity-90 transition-opacity" 
+                  onClick={() => setShowImageModal(true)}
+                />
+              </div>
             )}
 
             <div className="mt-4 text-sm text-gray-700">
@@ -359,6 +419,26 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
               setSelectedItem(null);
             }}
           />
+        )}
+
+        {/* Image Modal */}
+        {showImageModal && currentReceipt.imageUrl && (
+          <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4" onClick={() => setShowImageModal(false)}>
+            <div className="relative max-w-full max-h-full">
+              <button
+                className="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full w-8 h-8 flex items-center justify-center hover:bg-opacity-75 z-10"
+                onClick={() => setShowImageModal(false)}
+              >
+                ×
+              </button>
+              <img 
+                src={currentReceipt.imageUrl} 
+                alt="Receipt full size" 
+                className="max-w-full max-h-full object-contain rounded-lg"
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          </div>
         )}
       </div>
     </div>
