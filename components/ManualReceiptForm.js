@@ -18,6 +18,8 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId 
 
     try {
       const totalValue = parseFloat((total || '0').toString().replace(',', '.')) || 0;
+      
+      // Use only the selected people for cost calculation
       const perPerson = selectedPeople.length > 0 ? parseFloat((totalValue / selectedPeople.length).toFixed(2)) : totalValue;
 
       const items = selectedPeople.length > 0
@@ -43,14 +45,15 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId 
             confidence: 1
           }];
 
-      // ensure we don't include the uploader (current user) in participants
-      const participants = selectedPeople.filter(pid => pid !== runtimeCurrentUserId);
+      // Use selected people directly as participants
+      const participants = selectedPeople;
 
       const receipt = {
         name: name || `Manual ${new Date().toLocaleDateString('de-DE')}`,
         createdAt: new Date().toISOString(),
         imageUrl: null,
         items,
+        totalAmount: totalValue, // Include the total amount for manual receipts
         uploadedBy: runtimeCurrentUserId,
         participants,
         text: ''
@@ -109,7 +112,7 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId 
 
       <label className="block text-sm font-medium text-gray-600 mb-2">Personen auswählen</label>
       <div className="grid grid-cols-2 gap-2 mb-6">
-        {people.filter(p => p.id !== runtimeCurrentUserId).map((p) => (
+        {people.map((p) => (
           <label key={p.id} className="flex items-center space-x-2 p-2 border border-gray-200 rounded-lg hover:bg-gray-50">
             <input
               type="checkbox"
@@ -121,7 +124,12 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId 
               }}
               className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
             />
-            <span className="text-sm text-gray-700">{p.name}</span>
+            <span className="text-sm text-gray-700">
+              {p.name}
+              {p.id === runtimeCurrentUserId && (
+                <span className="ml-1 text-xs text-gray-500">(Sie bezahlen)</span>
+              )}
+            </span>
           </label>
         ))}
       </div>

@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { useReceipts } from '@/lib/hooks/useReceipts';
 import { usePeople } from '@/lib/hooks/usePeople';
-import { calculateTotal, formatCurrency } from '@/lib/utils/currency';
+import { formatCurrency } from '@/lib/utils/currency';
 
 /**
  * Debt solver / settlement computation (cents-based for exact math)
@@ -24,68 +24,56 @@ function computeSettlements(receipts = [], people = []) {
   });
 
   (receipts || []).forEach((r) => {
-    // Defensive: ensure items is array
-    const items = Array.isArray(r?.items) ? r.items : [];
-    // Use API totalAmount if available, otherwise calculate from items
-    const total = r?.totalAmount !== undefined ? r.totalAmount : calculateTotal(items || []);
+    // Use only the totalAmount from the receipt
+    const total = r?.totalAmount || 0;
     const totalCents = toCents(total);
     const payer = r?.uploadedBy;
-    if (!payer) return;
+    if (!payer || totalCents === 0) return;
 
-    // Start building derived participants set
-    const derived = new Set();
-    if (Array.isArray(r?.participants)) {
-      r.participants.forEach((pid) => pid && derived.add(pid));
-    }
-    // Ensure payer is included
-    derived.add(payer);
+    // Get explicitly selected participants
+    const participants = Array.isArray(r?.participants) ? r.participants.filter(Boolean) : [];
+    
+    // Calculate claimed items cost
+    const items = Array.isArray(r?.items) ? r.items : [];
+    let claimedTotalCents = 0;
+    const claimedByPerson = {};
 
-    // Collect solo claimed items and shared total
-    const soloByPerson = {}; // cents per person
-    let sharedTotal = 0;
-
-    items.forEach((it) => {
-      // Robust price extraction: supports numbers or shape { value } or { amount }.
-      const rawPrice =
-        it?.price && typeof it.price === 'object'
-          ? (it.price.value ?? it.price.amount ?? 0)
-          : it?.price ?? 0;
-      const cents = toCents(rawPrice);
-
-      if (it?.claimedBy) {
-        // Solo item: charged to claimer
-        soloByPerson[it.claimedBy] = (soloByPerson[it.claimedBy] || 0) + cents;
-        derived.add(it.claimedBy);
-      } else {
-        // Shared item
-        sharedTotal += cents;
-        // Note: if you have per-item participants, add them here (schema-dependent)
-        // e.g., if (Array.isArray(it.participants)) it.participants.forEach(pid => derived.add(pid));
+    items.forEach((item) => {
+      if (item?.claimedBy) {
+        const rawPrice = item?.price && typeof item.price === 'object'
+          ? (item.price.value ?? item.price.amount ?? 0)
+          : item?.price ?? 0;
+        const itemCents = toCents(rawPrice);
+        
+        claimedTotalCents += itemCents;
+        claimedByPerson[item.claimedBy] = (claimedByPerson[item.claimedBy] || 0) + itemCents;
       }
     });
 
-    // Make deterministic participant array (sorted) for fair remainder distribution
-    const participants = Array.from(derived).filter(Boolean).sort();
-
-    // Ensure balances has entries
+    // Remaining cost after claimed items
+    const remainingCents = totalCents - claimedTotalCents;
+    
+    // Ensure balances has entries for payer, participants, and claimers
+    if (!(payer in balances)) balances[payer] = 0;
     participants.forEach((pid) => {
       if (!(pid in balances)) balances[pid] = 0;
     });
-    if (!(payer in balances)) balances[payer] = 0;
+    Object.keys(claimedByPerson).forEach((pid) => {
+      if (!(pid in balances)) balances[pid] = 0;
+    });
 
     // Payer paid the full receipt amount (credit)
     balances[payer] += totalCents;
 
-    // Charge solo items to their claimers
-    Object.keys(soloByPerson).forEach((pid) => {
-      if (!(pid in balances)) balances[pid] = 0;
-      balances[pid] -= soloByPerson[pid];
+    // Charge claimed items to their claimers
+    Object.keys(claimedByPerson).forEach((pid) => {
+      balances[pid] -= claimedByPerson[pid];
     });
 
-    // Split sharedTotal among participants (if any shared items exist)
-    if (sharedTotal > 0 && participants.length > 0) {
-      const baseSplit = Math.floor(sharedTotal / participants.length);
-      let remainder = sharedTotal - baseSplit * participants.length;
+    // Split remaining cost among participants only (if any participants selected and remaining cost > 0)
+    if (participants.length > 0 && remainingCents > 0) {
+      const baseSplit = Math.floor(remainingCents / participants.length);
+      let remainder = remainingCents - baseSplit * participants.length;
 
       participants.forEach((pid) => {
         const extra = remainder > 0 ? 1 : 0;
@@ -94,6 +82,7 @@ function computeSettlements(receipts = [], people = []) {
         if (remainder > 0) remainder--;
       });
     }
+    // If no participants selected or all items claimed, payer keeps remaining credit
   });
 
   // Build creditors/debtors (in cents)
@@ -183,12 +172,12 @@ export default function DebtSolver() {
                     <span className="font-medium">{p.name}</span>
                     {isTopCreditor && (
                       <span className="inline-block text-xs font-medium bg-green-50 text-green-800 px-2 py-0.5 rounded">
-                        Größter Gläubiger
+                        Bezahlt alles &lt;3
                       </span>
                     )}
                     {isTopDebtor && (
                       <span className="inline-block text-xs font-medium bg-red-50 text-red-800 px-2 py-0.5 rounded">
-                        Größter Schuldner
+                        Vermutlich nie beim Einkauf dabei
                       </span>
                     )}
                   </div>

@@ -57,8 +57,6 @@ export default async function handler(req, res) {
     const client = new DocumentProcessorServiceClient();
     const location = process.env.DOC_AI_LOCATION || 'us';
     const processorName = `projects/${process.env.DOC_AI_PROJECT_ID}/locations/${location}/processors/${process.env.DOC_AI_PROCESSOR_ID}`;
-
-    console.log('Processing document with Google Document AI...');
     
     // Process document with Document AI
     const request = {
@@ -150,8 +148,6 @@ export default async function handler(req, res) {
       // Sort by position to match items with their corresponding prices
       itemsWithPositions.sort((a, b) => a.position - b.position);
       pricesWithPositions.sort((a, b) => a.position - b.position);
-
-      console.log(`Processing: ${itemsWithPositions.length} items, ${pricesWithPositions.length} prices detected`);
       
       // Smart filtering: merge items that are very close together (split item names)
       const mergedItems = [];
@@ -173,8 +169,6 @@ export default async function handler(req, res) {
           mergedItems.push(currentItem);
         }
       }
-      
-      console.log(`Merged items: ${itemsWithPositions.length} -> ${mergedItems.length}`);
       
       // Match items with prices by array position (first item with first price, etc.)
       const maxItems = Math.max(mergedItems.length, pricesWithPositions.length);
@@ -238,9 +232,6 @@ export default async function handler(req, res) {
         }
       }
     }
-
-    console.log(`Processing complete: ${items.length} items extracted, ${discounts.length} discounts found, total: €${totalAmount.toFixed(2)}`);
-
     return res.status(200).json({
       items: items,
       discounts: discounts,

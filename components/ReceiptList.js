@@ -1,4 +1,4 @@
-import { formatCurrency, calculateTotal } from '@/lib/utils/currency';
+import { formatCurrency } from '@/lib/utils/currency';
 
 export default function ReceiptList({ receipts, onReceiptSelect, loading }) {
   if (loading) {
@@ -14,31 +14,11 @@ export default function ReceiptList({ receipts, onReceiptSelect, loading }) {
     );
   }
 
-  // Calculate total value: sum of all receipts (use API totalAmount when available)
+  // Calculate total value: sum of all receipts using API totalAmount
   const totalOverall = receipts.reduce((sum, receipt) => {
-    // Use API totalAmount if available, otherwise calculate from items
+    // Use API totalAmount if available, otherwise fallback to 0
     if (receipt.totalAmount !== undefined) {
-      // Optional: Double-check API total against calculated total for validation
-      const calculatedTotal = calculateTotal(receipt.items || []);
-      if (Math.abs(receipt.totalAmount - calculatedTotal) > 0.01) {
-        console.warn(`Receipt ${receipt.id}: API total (${receipt.totalAmount}) differs from calculated total (${calculatedTotal})`);
-      }
       return sum + receipt.totalAmount;
-    }
-    
-    // Fallback to manual calculation for older receipts
-    if (receipt.participants && receipt.participants.length > 0) {
-      // Manual receipts: items have participant field
-      if (receipt.items && receipt.items.every(it => it.participant)) {
-        return sum + receipt.items.reduce((s, it) => s + (typeof it.price === 'object' ? it.price.value : it.price), 0);
-      } else if (receipt.items && receipt.items.length > 0) {
-        // Uploaded receipts: split total equally
-        const total = calculateTotal(receipt.items);
-        return sum + total;
-      }
-    } else {
-      // No participants: fallback to total
-      return sum + calculateTotal(receipt.items || []);
     }
     return sum;
   }, 0);
@@ -76,8 +56,8 @@ export default function ReceiptList({ receipts, onReceiptSelect, loading }) {
 
       <div className="grid gap-3">
         {receipts.map(receipt => {
-          // Use API totalAmount if available, otherwise calculate from items
-          const totalAmount = receipt.totalAmount !== undefined ? receipt.totalAmount : calculateTotal(receipt.items || []);
+          // Use API totalAmount
+          const totalAmount = receipt.totalAmount || 0;
           const claimedAmount = (receipt.items || [])
             .filter(item => item.claimedBy)
             .reduce((sum, item) => {
@@ -85,6 +65,9 @@ export default function ReceiptList({ receipts, onReceiptSelect, loading }) {
               return sum + (parseFloat(price) || 0);
             }, 0);
           const claimedCount = (receipt.items || []).filter(item => item.claimedBy).length;
+          
+          // Check if this is a manual receipt (items have 'manual' tag)
+          const isManualReceipt = receipt.items && receipt.items.length > 0 && receipt.items[0].tags?.includes('manual');
           
           return (
             <button key={receipt.id} onClick={() => onReceiptSelect(receipt.id)} className="w-full text-left bg-white border border-gray-100 rounded-lg p-4 hover:shadow transition flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -94,20 +77,32 @@ export default function ReceiptList({ receipts, onReceiptSelect, loading }) {
                  
                 </div>
                 <div className="mt-2 text-sm text-gray-600 flex gap-4 flex-wrap">
-                  <div>Items: <span className="font-medium">{receipt.items?.length || 0}</span></div>
-                  <div>Claimed: <span className="font-medium">{claimedCount}</span></div>
+                  {!isManualReceipt && (
+                    <>
+                      <div>Items: <span className="font-medium">{receipt.items?.length || 0}</span></div>
+                      <div>Claimed: <span className="font-medium">{claimedCount}</span></div>
+                    </>
+                  )}
                   <div>Total: <span className="font-medium">{formatCurrency(totalAmount)}</span></div>
-                  <div>Claimed Amount: <span className="font-medium text-indigo-600">{formatCurrency(claimedAmount)}</span></div>
+                  {!isManualReceipt && (
+                    <div>Claimed Amount: <span className="font-medium text-indigo-600">{formatCurrency(claimedAmount)}</span></div>
+                  )}
                 </div>
               </div>
 
               <div className="sm:w-48">
-                <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-                  <div className="bg-indigo-500 h-2" style={{ width: `${totalAmount > 0 ? (claimedAmount / totalAmount) * 100 : 0}%` }} />
-                </div>
+                {!isManualReceipt && (
+                  <>
+                    <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                      <div className="bg-indigo-500 h-2" style={{ width: `${totalAmount > 0 ? (claimedAmount / totalAmount) * 100 : 0}%` }} />
+                    </div>
 
-                <div className="mt-2 text-xs text-gray-500 text-right">{formatCurrency(claimedAmount)} / {formatCurrency(totalAmount)} claimed</div>
-
+                    <div className="mt-2 text-xs text-gray-500 text-right">{formatCurrency(claimedAmount)} / {formatCurrency(totalAmount)} claimed</div>
+                  </>
+                )}
+                {isManualReceipt && (
+                  <div className="text-xs text-gray-500 text-right">Manual Receipt</div>
+                )}
               </div>
             </button>
           );

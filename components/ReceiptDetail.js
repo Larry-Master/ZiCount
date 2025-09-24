@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import ItemCard from '@/components/ItemCard';
 import ClaimModal from '@/components/ClaimModal';
-import { formatCurrency, calculateTotal } from '@/lib/utils/currency';
+import { formatCurrency } from '@/lib/utils/currency';
 import { useClaims, useReceipt } from '@/lib/hooks/useReceipts';
 import { usePeople } from '@/lib/hooks/usePeople';
 
@@ -10,8 +10,10 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
   const [selectedItem, setSelectedItem] = useState(null);
   const [showClaimModal, setShowClaimModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [editingParticipants, setEditingParticipants] = useState(false);
+  const [selectedParticipants, setSelectedParticipants] = useState([]);
   const { claimItem, unclaimItem, optimisticClaims } = useClaims();
-  const { getPerson } = usePeople();
+  const { getPerson, people } = usePeople();
 
   const { receipt: fetchedReceipt, loading: receiptLoading, refetch: refetchReceipt } = useReceipt(receiptId || null);
   const currentReceipt = fetchedReceipt || receipt;
@@ -48,13 +50,71 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
     }
   };
 
+  const startEditingParticipants = () => {
+    const currentParticipants = Array.isArray(currentReceipt.participants) && currentReceipt.participants.length > 0
+      ? currentReceipt.participants
+      : [];
+    
+    // If no participants, derive from items (for manual receipts)
+    if (currentParticipants.length === 0 && currentReceipt.items) {
+      const derived = Array.from(new Set((currentReceipt.items || []).map(it => it.participant).filter(Boolean)));
+      setSelectedParticipants(derived);
+    } else {
+      // Use exactly the current participants (don't auto-include payer)
+      setSelectedParticipants(currentParticipants);
+    }
+    setEditingParticipants(true);
+    setShowParticipants(true); // Auto-open the participants list when editing
+  };
+
+  const saveParticipants = async () => {
+    try {
+      const response = await fetch(`/api/receipts/${receiptId || currentReceipt._id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          participants: selectedParticipants,
+          // Recalculate items for manual receipts
+          ...(currentReceipt.items?.[0]?.tags?.includes('manual') && {
+            recalculateItems: true,
+            totalAmount: currentReceipt.totalAmount
+          })
+        })
+      });
+      
+      if (!response.ok) throw new Error('Failed to update participants');
+      
+      await refetchReceipt();
+      setEditingParticipants(false);
+      setShowParticipants(false); // Auto-close the participants list when done editing
+      if (onClaimsUpdated) onClaimsUpdated();
+    } catch (error) {
+      console.error('Failed to update participants:', error);
+      alert('Failed to update participants');
+    }
+  };
+
+  const cancelEditingParticipants = () => {
+    setEditingParticipants(false);
+    setShowParticipants(false); // Auto-close when canceling
+    setSelectedParticipants([]);
+  };
+
+  const toggleParticipant = (personId) => {
+    setSelectedParticipants(prev => 
+      prev.includes(personId) 
+        ? prev.filter(id => id !== personId)
+        : [...prev, personId]
+    );
+  };
+
   const getItemStatus = (item) => {
     const optimistic = optimisticClaims?.get ? optimisticClaims.get(item.id) : undefined;
     return optimistic || item;
   };
 
-  // Use totalAmount from receipt data (from API) instead of calculating
-  const totalAmount = currentReceipt.totalAmount || calculateTotal(currentReceipt.items || []);
+  // Use totalAmount from receipt data (from API)
+  const totalAmount = currentReceipt.totalAmount || 0;
   const claimedAmount = (currentReceipt.items || [])
     .filter(item => getItemStatus(item).claimedBy)
     .reduce((sum, item) => {
@@ -74,10 +134,13 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
     if (derived.length > 0) participantsList = derived;
   }
 
-  if (participantsList && participantsList.length > 0) {
+  // Use the participant list as-is (payer may or may not be included)
+  const allParticipants = participantsList;
+
+  if (allParticipants && allParticipants.length > 0) {
     const itemsHaveParticipant = currentReceipt.items && currentReceipt.items.length > 0 && currentReceipt.items.every(it => it.participant);
     if (itemsHaveParticipant) {
-      participantCosts = participantsList.map(pid => {
+      participantCosts = allParticipants.map(pid => {
         const person = getPerson(pid);
         const itemsForPerson = (currentReceipt.items || []).filter(it => it.participant === pid);
         const cost = itemsForPerson.reduce((s, it) => {
@@ -87,8 +150,9 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
         return { id: pid, name: person?.name || pid, cost };
       });
     } else {
-      const split = parseFloat((totalAmount / participantsList.length).toFixed(2));
-      participantCosts = participantsList.map(pid => {
+      // Split the total among the participants (may or may not include payer)
+      const split = parseFloat((totalAmount / allParticipants.length).toFixed(2));
+      participantCosts = allParticipants.map(pid => {
         const person = getPerson(pid);
         return { id: pid, name: person?.name || pid, cost: split };
       });
@@ -143,23 +207,89 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
 
             {participantCosts.length > 0 && (
               <div className="mt-4">
-                <button className="text-sm text-indigo-600 hover:underline" onClick={() => setShowParticipants(v => !v)}>
-                  {showParticipants ? 'Teilnehmerliste ausblenden' : 'Teilnehmerliste anzeigen'}
-                </button>
+                <div className="flex items-center gap-2 mb-2">
+                  <button className="text-sm text-indigo-600 hover:underline" onClick={() => setShowParticipants(v => !v)}>
+                    {showParticipants ? 'Teilnehmerliste ausblenden' : 'Teilnehmerliste anzeigen'}
+                  </button>
+                  {!editingParticipants && (
+                    <button 
+                      className="text-sm text-indigo-600 hover:underline"
+                      onClick={startEditingParticipants}
+                    >
+                      Bearbeiten
+                    </button>
+                  )}
+                </div>
 
-                {showParticipants && (
+                {showParticipants && !editingParticipants && (
                   <div className="mt-3 bg-gray-50 border border-gray-100 rounded-lg p-4">
                     <h3 className="text-sm font-medium mb-2">Teilnehmerliste</h3>
-                    <div className="text-sm text-gray-700 mb-2"><span className="font-semibold">Bezahlt von:</span> {uploaderName} <span className="font-semibold">({formatCurrency(totalAmount)})</span></div>
-                    <ul className="list-disc ml-5 text-sm text-gray-700">
-                      {participantCosts
-                        .filter(p => p.id !== currentReceipt.uploadedBy)
-                        .map(p => (
-                          <li key={p.id}>
-                            {p.name}: {formatCurrency(p.cost)}
-                          </li>
-                        ))}
-                    </ul>
+                    <div className="text-sm text-gray-700 mb-2">
+                      <span className="font-semibold">Bezahlt von:</span> {uploaderName} <span className="font-semibold">({formatCurrency(totalAmount)})</span>
+                    </div>
+                    
+                    {participantCosts.length > 0 ? (
+                      <div>
+                        <div className="text-sm font-medium text-gray-600 mb-1">Anteilskosten:</div>
+                        <ul className="list-disc ml-5 text-sm text-gray-700">
+                          {participantCosts.map(p => (
+                            <li key={p.id}>
+                              {p.name}: {formatCurrency(p.cost)}
+                              {p.id === currentReceipt.uploadedBy && (
+                                <span className="ml-1 text-xs text-gray-500">(hat bereits bezahlt)</span>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : (
+                      <div className="text-sm text-gray-600 italic">
+                        Keine Teilnehmer ausgewählt.
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {showParticipants && editingParticipants && (
+                  <div className="mt-3 bg-gray-50 border border-gray-100 rounded-lg p-4">
+                    <h3 className="text-sm font-medium mb-3">Teilnehmer bearbeiten</h3>
+                    <div className="text-sm text-gray-700 mb-3">
+                      Wählen Sie alle Personen aus, die an diesem Beleg beteiligt sind:
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2 mb-4">
+                      {people.map(person => (
+                        <label key={person.id} className="flex items-center space-x-2 p-2 border border-gray-200 rounded-lg hover:bg-gray-50">
+                          <input
+                            type="checkbox"
+                            checked={selectedParticipants.includes(person.id)}
+                            onChange={() => toggleParticipant(person.id)}
+                            className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                          />
+                          <span className="text-sm text-gray-700">
+                            {person.name}
+                            {person.id === currentReceipt.uploadedBy && (
+                              <span className="ml-1 text-xs text-gray-500">(Bezahler)</span>
+                            )}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={saveParticipants}
+                        className="px-3 py-1 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700"
+                      >
+                        Speichern
+                      </button>
+                      <button
+                        onClick={cancelEditingParticipants}
+                        className="px-3 py-1 bg-gray-300 text-gray-700 text-sm rounded hover:bg-gray-400"
+                      >
+                        Abbrechen
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>

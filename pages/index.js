@@ -206,21 +206,29 @@ export default function HomePage() {
       )}
 
   {/* Navigation Tabs */}
-  <nav className="nav-tabs mb-6">
-        {['receipts','upload','receipt','claims','people','schulden'].map(view => {
-          const labels = { receipts:'📋 All Receipts', upload:'📷 Upload', receipt:'🧾 Current Receipt', claims:'💰 My Claims', people:'👥 People', schulden:'💸 Schulden' };
-          if(view==='receipt' && !savedReceipt) return null;
-          return (
-            <button
-              key={view}
-              className={`px-3 py-2 rounded-lg ${currentView===view?'bg-indigo-600 text-white':'bg-gray-200 text-gray-700'}`}
-              onClick={() => setCurrentView(view)}
-            >
-              {labels[view]}
-            </button>
-          )
-        })}
-      </nav>
+  <div className="relative mb-6">
+    <nav className="nav-tabs">
+      {['receipts','upload','receipt','claims','people','schulden'].map(view => {
+        const labels = { receipts:'📋 All Receipts', upload:'📷 Upload', receipt:'🧾 Current Receipt', claims:'💰 My Claims', people:'👥 People', schulden:'💸 Schulden' };
+        if(view==='receipt' && !savedReceipt) return null;
+        return (
+          <button
+            key={view}
+            className={`px-3 py-2 rounded-lg ${currentView===view?'bg-indigo-600 text-white':'bg-gray-200 text-gray-700'}`}
+            onClick={() => setCurrentView(view)}
+          >
+            {labels[view]}
+          </button>
+        )
+      })}
+    </nav>
+    {/* Mobile scroll hint */}
+    <div className="block md:hidden text-center mt-2">
+      <div className="text-xs text-gray-400 flex items-center justify-center gap-1">
+        <span>← Swipe to see more tabs →</span>
+      </div>
+    </div>
+  </div>
 
       {/* Views */}
       {currentView === 'receipts' && (
@@ -255,13 +263,18 @@ export default function HomePage() {
           <div className="mt-4 mb-6">
             <label className="block mb-2 font-semibold text-gray-700">Teilnehmer auswählen</label>
             <div className="grid grid-cols-2 gap-2">
-              {people.filter(p => p.id !== currentUserId).map(p => (
+              {people.map(p => (
                 <label key={p.id} className="flex items-center space-x-2">
                   <input type="checkbox" value={p.id} checked={selectedParticipants.includes(p.id)}
                     onChange={e => setSelectedParticipants(e.target.checked ? [...selectedParticipants,p.id] : selectedParticipants.filter(id => id!==p.id))}
                     className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
                   />
-                  <span className="text-gray-700">{p.name}</span>
+                  <span className="text-gray-700">
+                    {p.name}
+                    {p.id === currentUserId && (
+                      <span className="ml-1 text-xs text-gray-500">(Sie bezahlen)</span>
+                    )}
+                  </span>
                 </label>
               ))}
             </div>

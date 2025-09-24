@@ -51,7 +51,8 @@ export default async function handler(req, res) {
         imageUrl: body.imageUrl,
         items: body.items || [],
         discounts: body.discounts || [],
-        totalAmount: body.totalAmount,
+        // Calculate totalAmount if not provided, by summing item prices
+        totalAmount: body.totalAmount || (body.items || []).reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0),
         uploadedBy: body.uploadedBy || 'anonymous',
         // persist participants if provided (used for Teilnehmerliste)
         participants: body.participants || [],
