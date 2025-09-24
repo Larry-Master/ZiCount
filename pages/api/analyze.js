@@ -96,8 +96,15 @@ export default async function handler(req, res) {
         const position = entity.pageAnchor?.pageRefs?.[0]?.boundingPoly?.normalizedVertices?.[0]?.y || 0;
         
         if (entity.type === 'items') {
+          const itemName = entity.mentionText?.trim() || '';
+          // Fix common OCR error: "0,331" should be "0,33l" (liter) and "11" should be "1l"
+          const correctedName = itemName
+            .replace(/(\d+[,\.]\d+)1(\s|$)/g, '$1l$2')  // 0,331 -> 0,33l
+            .replace(/\b11(\s|$)/g, '1l$1')             // 11 -> 1l (OCR often reads "1l" as "11")
+                      // standalone 1 -> 1l
+          
           itemsWithPositions.push({
-            name: entity.mentionText?.trim() || '',
+            name: correctedName,
             position: position
           });
         } else if (entity.type === 'prices') {
@@ -144,16 +151,7 @@ export default async function handler(req, res) {
       itemsWithPositions.sort((a, b) => a.position - b.position);
       pricesWithPositions.sort((a, b) => a.position - b.position);
 
-      console.log('Items detected:', itemsWithPositions.map(item => `${item.name} (pos: ${item.position.toFixed(3)})`));
-      console.log('Prices detected:', pricesWithPositions.map(price => `${price.price}€ (pos: ${price.position.toFixed(3)})`));
-      
-      // DEBUG: Show all detected entities for analysis
-      console.log('\n=== ALL DETECTED ENTITIES ===');
-      for (const entity of document.entities) {
-        const position = entity.pageAnchor?.pageRefs?.[0]?.boundingPoly?.normalizedVertices?.[0]?.y || 0;
-        console.log(`${entity.type}: "${entity.mentionText?.trim()}" at position ${position.toFixed(3)}`);
-      }
-      console.log('=== END ENTITIES ===\n');
+      console.log(`Processing: ${itemsWithPositions.length} items, ${pricesWithPositions.length} prices detected`);
       
       // Smart filtering: merge items that are very close together (split item names)
       const mergedItems = [];
@@ -164,7 +162,6 @@ export default async function handler(req, res) {
         if (nextItem && Math.abs(currentItem.position - nextItem.position) < 0.005) {
           // Items are very close, likely split parts of the same item
           const mergedName = `${nextItem.name} ${currentItem.name}`;
-          console.log(`Merging close items: "${nextItem.name}" + "${currentItem.name}" = "${mergedName}"`);
           
           mergedItems.push({
             name: mergedName,
@@ -178,7 +175,6 @@ export default async function handler(req, res) {
       }
       
       console.log(`Merged items: ${itemsWithPositions.length} -> ${mergedItems.length}`);
-      mergedItems.forEach(item => console.log(`  - ${item.name}`));
       
       // Match items with prices by array position (first item with first price, etc.)
       const maxItems = Math.max(mergedItems.length, pricesWithPositions.length);
@@ -192,8 +188,6 @@ export default async function handler(req, res) {
           const price = priceData.price;
           
           if (name && price !== undefined) {
-            console.log(`Matched by position: "${name}" with €${price}`);
-            
             // Edge case: if item name is present but price is negative, it's a discount
             if (price < 0) {
               discounts.push({
@@ -214,10 +208,9 @@ export default async function handler(req, res) {
             }
           }
         } else if (itemData && !priceData) {
-          console.log(`Item without price: "${itemData.name}"`);
+          // Item without price - could be a header or description
         } else if (!itemData && priceData) {
-          console.log(`Price without item: €${priceData.price}`);
-          // Handle standalone prices (might be discounts or additional fees)
+          // Price without item - might be discounts or additional fees
           if (priceData.price < 0) {
             discounts.push({
               id: `discount_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -247,15 +240,6 @@ export default async function handler(req, res) {
     }
 
     console.log(`Processing complete: ${items.length} items extracted, ${discounts.length} discounts found, total: €${totalAmount.toFixed(2)}`);
-
-    // Log results for debugging
-    items.forEach((item, index) => {
-      console.log(`Item ${index + 1}: ${item.name} - €${item.price}`);
-    });
-
-    discounts.forEach((discount, index) => {
-      console.log(`Discount ${index + 1}: ${discount.name} - €${discount.amount}`);
-    });
 
     return res.status(200).json({
       items: items,
