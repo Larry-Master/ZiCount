@@ -309,16 +309,19 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
         </div>
 
         {currentReceipt.items && currentReceipt.items.some(it => it.tags?.includes('detected')) && (
-          <div className="mt-6 grid gap-3">
-            {currentReceipt.items.filter(it => it.tags?.includes('detected')).map(item => (
-              <ItemCard
-                key={item.id}
-                item={getItemStatus(item)}
-                currentUserId={currentUserId}
-                onClaim={() => handleClaimClick(item)}
-                onUnclaim={() => handleUnclaim(item)}
-              />
-            ))}
+          <div className="mt-6">
+            <h3 className="text-sm font-medium text-gray-700 mb-3">Items</h3>
+            <div className="grid gap-3 sm:gap-4">
+              {currentReceipt.items.filter(it => it.tags?.includes('detected')).map(item => (
+                <ItemCard
+                  key={item.id}
+                  item={getItemStatus(item)}
+                  currentUserId={currentUserId}
+                  onClaim={() => handleClaimClick(item)}
+                  onUnclaim={() => handleUnclaim(item)}
+                />
+              ))}
+            </div>
           </div>
         )}
 
@@ -336,15 +339,10 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
                       </div>
                       <div className="flex-shrink-0 text-right ml-2">
                         <div className="text-sm font-medium text-red-600">-{formatCurrency(discount.amount)}</div>
-                        <div className="mt-1 text-xs text-gray-500">Nicht anteilbar</div>
                       </div>
                     </div>
                   </div>
-                  <div className="ml-4 flex-shrink-0">
-                    <span className="px-3 py-1.5 rounded-md text-sm font-semibold bg-gray-100 text-gray-500 cursor-default">
-                      Rabatt
-                    </span>
-                  </div>
+                 
                 </div>
               ))}
             </div>

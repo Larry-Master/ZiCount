@@ -209,7 +209,14 @@ export default function HomePage() {
   <div className="relative mb-6">
     <nav className="nav-tabs">
       {['receipts','upload','receipt','claims','people','schulden'].map(view => {
-        const labels = { receipts:'📋 All Receipts', upload:'📷 Upload', receipt:'🧾 Current Receipt', claims:'💰 My Claims', people:'👥 People', schulden:'💸 Schulden' };
+        const labels = { 
+          receipts:'📋 Receipts', 
+          upload:'📷 Upload', 
+          receipt:'🧾 Receipt', 
+          claims:'💰 Claims', 
+          people:'👥 People', 
+          schulden:'💸 Debts' 
+        };
         if(view==='receipt' && !savedReceipt) return null;
         return (
           <button
@@ -259,7 +266,7 @@ export default function HomePage() {
             <input ref={inputRef} type="file" accept="image/*" capture="environment" onChange={e => onFile(e.target.files?.[0])} className="hidden" />
             <div className="text-4xl mb-2">📱</div>
             <p className="text-gray-700 mb-1">{selectedImage ? selectedImage.name : isDragging ? 'Drop image here' : 'Tap to take photo or select image'}</p>
-            <p className="text-sm text-gray-400">Supports JPG, PNG • Max 10MB</p>
+            <p className="text-sm text-gray-400">Supports JPG, PNG • Max 20MB</p>
           </div>
 
           {/* Participant selection */}

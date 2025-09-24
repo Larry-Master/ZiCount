@@ -66,41 +66,62 @@ export default function MyClaims({ userId, onClaimsUpdated, refreshKey }) {
   }, {});
 
   return (
-    <div className="container">
-      <div className="app-header">
-        <h2 className="title">My Claims</h2>
-        <div>Total: {formatCurrency(totalClaimed)}</div>
-      </div>
-
-      <div className="card">
-        <div className="nav-tabs">
-          <div>
-            <span>{claims.length} Items</span>
+    <div className="p-4 sm:p-6">
+      {/* Header section */}
+      <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100 mb-6">
+        <h2 className="text-xl font-bold text-gray-900 mb-2">My Claims</h2>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div className="flex items-center gap-4 text-sm text-gray-600">
+            <div className="flex items-center gap-1">
+              <span className="font-medium">{claims.length}</span>
+              <span>Items</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="font-medium">{Object.keys(claimsByReceipt).length}</span>
+              <span>Receipts</span>
+            </div>
           </div>
-          <div>
-            <span>{Object.keys(claimsByReceipt).length} Receipts</span>
-          </div>
-        </div>
-      </div>
-
-      {Object.values(claimsByReceipt).map(receipt => (
-        <div key={receipt.receiptId} className="card">
-          <div className="title">{receipt.receiptName}</div>
-          <div>Total: {formatCurrency(receipt.total)}</div>
-
-          <div className="grid gap-3 mt-4">
-            {receipt.items.map(item => (
-              <ItemCard
-                key={item.id}
-                item={{ ...item, claimedBy: item.claimedBy || userId }}
-                currentUserId={userId}
-                onUnclaim={handleUnclaim}
-                isMyClaimsContext={true} // Ensure only 'Unclaim' is shown
-              />
-            ))}
+          <div className="text-right">
+            <div className="text-sm text-gray-500">Total Claimed</div>
+            <div className="text-xl font-bold text-indigo-600">{formatCurrency(totalClaimed)}</div>
           </div>
         </div>
-      ))}
+      </div>
+
+      {/* Claims by receipt */}
+      <div className="space-y-4">
+        {Object.values(claimsByReceipt).map(receipt => (
+          <div key={receipt.receiptId} className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+            {/* Receipt header */}
+            <div className="bg-gray-50 px-4 py-3 border-b border-gray-100">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                <h3 className="font-semibold text-gray-900 truncate">
+                  {receipt.receiptName}
+                </h3>
+                <div className="text-sm">
+                  <span className="text-gray-500">Receipt Total: </span>
+                  <span className="font-medium text-gray-900">{formatCurrency(receipt.total)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Items grid */}
+            <div className="p-4">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {receipt.items.map(item => (
+                  <ItemCard
+                    key={item.id}
+                    item={{ ...item, claimedBy: item.claimedBy || userId }}
+                    currentUserId={userId}
+                    onUnclaim={handleUnclaim}
+                    isMyClaimsContext={true}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

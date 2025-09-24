@@ -5,9 +5,81 @@
 /* Remove Tailwind directives if not using Tailwind build tools */
 /* If you want to use Tailwind, make sure to build your CSS with PostCSS and Tailwind */
 
-/* Base resets */
+/* Universal mobile improvements */
 * {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Prevent horizontal overflow issues */
+html, body {
+  overflow-x: hidden;
+  width: 100%;
+}
+
+/* Improve touch scrolling on all mobile devices */
+body {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: none;
+}
+
+/* Mobile-first responsive design */
+@media (max-width: 640px) {
+  /* Ensure proper spacing and sizing */
+  .min-h-screen {
+    padding: 0.75rem;
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+  
+  /* Header adjustments */
+  header {
+    margin-bottom: 1rem;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+  }
+  
+  header h1 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    text-align: center;
+  }
+  
+  /* Button improvements */
+  button {
+    min-height: 44px; /* iOS touch target minimum */
+    touch-action: manipulation;
+    max-width: 100%;
+  }
+  
+  /* Form improvements */
+  input, select, textarea {
+    font-size: 16px; /* Prevents zoom on iOS */
+    min-height: 44px;
+    max-width: 100%;
+  }
+  
+  /* Modal improvements */
+  .fixed.inset-0 .relative {
+    margin: 1rem;
+    max-height: calc(100vh - 2rem);
+    width: calc(100vw - 2rem);
+    max-width: calc(100vw - 2rem);
+  }
+  
+  /* Prevent any element from causing horizontal overflow */
+  * {
+    max-width: 100%;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .min-h-screen {
+    padding: 1.25rem;
+  }
 }
 
 /* Theme variables (light defaults) */
@@ -56,50 +128,62 @@ body {
   min-height: 100vh;
 }
 
-@media (max-width: 768px) {
-  .container {
-    max-width: 100%;
-    padding: 1rem;
+/* Main app container - mobile first */
+.min-h-screen {
+  padding: 1rem;
+}
+
+@media (min-width: 640px) {
+  .min-h-screen {
+    padding: 1.5rem;
   }
 }
 
-/* App Header */
-.app-header {
-  background: var(--card-bg);
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  position: sticky;
-  top: 20px;
-  z-index: 100;
-}
-
-.title {
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--text);
-  margin-bottom: 1rem;
-  text-align: center;
-}
-
-.header-controls {
-  margin-bottom: 1rem;
-}
-
-/* Make the page header and header controls responsive on small screens */
-header {
-  width: 100%;
-  box-sizing: border-box;
-  padding-inline: 0.5rem;
-}
-
+/* Responsive header improvements */
 .header-controls {
   display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  overflow-x: auto; /* allow horizontal scroll if content is wide */
-  -webkit-overflow-scrolling: touch;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+@media (min-width: 640px) {
+  .header-controls {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+  }
+}
+
+/* Mobile-friendly buttons */
+.add-receipt-btn {
+  width: 100%;
+  padding: 0.875rem 1.25rem;
+  font-size: 0.9rem;
+  border-radius: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+@media (min-width: 640px) {
+  .add-receipt-btn {
+    width: auto;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+  }
+}
+
+/* Mobile modal improvements */
+@media (max-width: 640px) {
+  .fixed.inset-0 {
+    padding: 1rem;
+  }
+  
+  .fixed.inset-0 > div {
+    margin: auto;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+  }
 }
 
 /* Navigation Tabs */
@@ -130,17 +214,27 @@ header {
   display: none;
 }
 
-/* Add fade indicators for mobile scrolling - only show on mobile */
+/* Mobile navigation improvements */
 @media (max-width: 768px) {
   .nav-tabs {
     gap: 0.5rem;
-    padding: 0.75rem 0.5rem;
+    padding: 0.75rem 1rem;
     margin-bottom: 0.5rem;
+    /* Ensure proper touch scrolling */
+    -webkit-overflow-scrolling: touch;
   }
   
   .nav-tabs button {
-    padding: 0.6rem 0.8rem;
+    padding: 0.75rem 1rem;
     font-size: 0.8rem;
+    /* Minimum touch target for better usability */
+    min-height: 44px;
+    min-width: max-content;
+    flex-shrink: 0;
+    /* Better text wrapping control */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   
   .nav-tabs::before,
@@ -149,31 +243,31 @@ header {
     position: absolute;
     top: 0;
     bottom: 0;
-    width: 16px;
+    width: 12px;
     pointer-events: none;
-    z-index: 3;
+    z-index: 1;
     transition: opacity 0.3s ease;
   }
 
   .nav-tabs::before {
     left: 0;
-    background: linear-gradient(to right, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.6) 60%, transparent 100%);
+    background: linear-gradient(to right, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 60%, transparent 100%);
     border-radius: 16px 0 0 16px;
   }
 
   .nav-tabs::after {
     right: 0;
-    background: linear-gradient(to left, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.6) 60%, transparent 100%);
+    background: linear-gradient(to left, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 60%, transparent 100%);
     border-radius: 0 16px 16px 0;
   }
 
   /* Dark mode gradient adjustments */
   .dark .nav-tabs::before {
-    background: linear-gradient(to right, rgba(15, 23, 36, 0.8) 0%, rgba(15, 23, 36, 0.6) 60%, transparent 100%);
+    background: linear-gradient(to right, rgba(15, 23, 36, 0.8) 0%, rgba(15, 23, 36, 0.4) 60%, transparent 100%);
   }
 
   .dark .nav-tabs::after {
-    background: linear-gradient(to left, rgba(15, 23, 36, 0.8) 0%, rgba(15, 23, 36, 0.6) 60%, transparent 100%);
+    background: linear-gradient(to left, rgba(15, 23, 36, 0.8) 0%, rgba(15, 23, 36, 0.4) 60%, transparent 100%);
   }
 }
 
@@ -183,6 +277,8 @@ header {
   white-space: nowrap;
   -webkit-overflow-scrolling: touch;
   scroll-snap-align: start;
+  position: relative;
+  z-index: 2; /* Ensure buttons are above gradient overlays */
 }
 
 .nav-tabs button {
@@ -199,6 +295,7 @@ header {
   min-width: max-content;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
   position: relative;
+  z-index: 2; /* Ensure buttons are above gradient overlays */
 }
 
 .nav-tabs button:hover {
@@ -476,38 +573,158 @@ input:focus, textarea:focus, select:focus { box-shadow: 0 6px 18px rgba(59,130,2
 }
 
 
-/* Responsive */
+/* Item card mobile improvements */
+.item-card {
+  padding: 0.875rem;
+  border-radius: 8px;
+  border: 1px solid rgba(229, 231, 235, 1);
+  background: white;
+  transition: all 0.2s ease;
+  touch-action: manipulation;
+}
+
+.item-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+@media (max-width: 640px) {
+  .item-card {
+    padding: 0.75rem;
+  }
+  
+  .item-card .item-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+  
+  .item-card .item-price {
+    font-size: 1rem;
+    font-weight: 700;
+  }
+  
+  .item-card button {
+    padding: 0.5rem 0.875rem;
+    font-size: 0.8rem;
+    border-radius: 6px;
+    font-weight: 600;
+    min-height: 36px;
+    width: 100%;
+    /* Prevent button overflow */
+    max-width: 100%;
+    word-break: break-word;
+  }
+  
+  /* Ensure buttons don't cause horizontal scroll */
+  .item-card .flex {
+    max-width: 100%;
+    overflow: hidden;
+  }
+  
+  .item-card .truncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+}
+
+/* Debt solver mobile improvements */
+.debt-solver {
+  padding: 1rem;
+}
+
+@media (max-width: 640px) {
+  .debt-solver {
+    padding: 0.75rem;
+  }
+  
+  .debt-solver .debt-card {
+    padding: 0.875rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .debt-solver .person-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+  
+  .debt-solver .debt-amount {
+    font-size: 1rem;
+    font-weight: 700;
+  }
+}
+/* Mobile-specific navigation fixes */
 @media (max-width: 640px) {
   .title {
     font-size: 1.5rem;
+    margin-bottom: 1rem;
+    text-align: center;
   }
 
   .nav-tabs {
-    /* Add padding to sides for better touch scrolling */
-    padding-left: 1rem;
-    padding-right: 1rem;
-    /* Make sure there's enough space to see fade indicators */
-    margin-left: -1rem;
-    margin-right: -1rem;
-    /* Add a subtle shadow to indicate scrollability */
-    box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+    /* Better mobile padding */
+    padding: 0.875rem 1rem;
+    margin-left: -0.5rem;
+    margin-right: -0.5rem;
+    /* Improved scrolling */
+    scroll-padding-inline: 1rem;
   }
 
   .nav-tabs button {
-    padding: 0.6rem 1rem;
-    font-size: 0.875rem;
-    /* Ensure minimum touch target size */
+    padding: 0.75rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    /* Ensure proper touch targets */
     min-height: 44px;
     min-width: max-content;
-    /* Add more space between text and edges for better readability */
-    padding-left: 1.25rem;
-    padding-right: 1.25rem;
+    flex-shrink: 0;
+    /* Better text handling */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    /* Enhanced touch experience */
+    touch-action: manipulation;
+  }
+  
+  /* Improved gradient overlays */
+  .nav-tabs::before {
+    background: linear-gradient(to right, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.8) 70%, transparent 100%);
+    width: 20px;
   }
 
-  .container { padding: 12px; }
-  .card { padding: 1rem; }
-  .people-list { grid-template-columns: 1fr; }
-  .app-header { top: 10px; padding: 1rem; }
+  .nav-tabs::after {
+    background: linear-gradient(to left, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.8) 70%, transparent 100%);
+    width: 20px;
+  }
+
+  /* Dark mode improvements */
+  .dark .nav-tabs::before {
+    background: linear-gradient(to right, rgba(15, 23, 36, 0.95) 0%, rgba(15, 23, 36, 0.8) 70%, transparent 100%);
+  }
+
+  .dark .nav-tabs::after {
+    background: linear-gradient(to left, rgba(15, 23, 36, 0.95) 0%, rgba(15, 23, 36, 0.8) 70%, transparent 100%);
+  }
+  
+  /* General mobile improvements */
+  .container { 
+    padding: 12px; 
+  }
+  
+  .card { 
+    padding: 1rem; 
+  }
+  
+  .people-list { 
+    grid-template-columns: 1fr; 
+  }
+  
+  .app-header { 
+    top: 10px; 
+    padding: 1rem; 
+  }
 }
 
 /* Small helper utilities */
