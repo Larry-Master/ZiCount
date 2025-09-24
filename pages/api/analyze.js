@@ -81,17 +81,25 @@ export default async function handler(req, res) {
 
     const document = result.document;
     const items = [];
+    const discounts = [];
     let totalAmount = 0;
 
-    // Extract data using your custom processor structure
+    // Extract data directly from Document AI entities
     if (document.entities) {
-      const itemNames = [];
-      const itemPrices = [];
+      const itemsWithPositions = [];
+      const pricesWithPositions = [];
+      const discountTitles = [];
+      const discountAmounts = [];
       
-      // Collect all items and prices
+      // Collect all entities with their positions
       for (const entity of document.entities) {
+        const position = entity.pageAnchor?.pageRefs?.[0]?.boundingPoly?.normalizedVertices?.[0]?.y || 0;
+        
         if (entity.type === 'items') {
-          itemNames.push(entity.mentionText?.trim() || '');
+          itemsWithPositions.push({
+            name: entity.mentionText?.trim() || '',
+            position: position
+          });
         } else if (entity.type === 'prices') {
           let price = 0;
           if (entity.normalizedValue?.moneyValue) {
@@ -99,50 +107,159 @@ export default async function handler(req, res) {
             const nanos = parseFloat(entity.normalizedValue.moneyValue.nanos || 0) / 1000000000;
             price = units + nanos;
           } else {
-            // Fallback to parsing the mention text
             const priceText = entity.mentionText?.replace(',', '.');
             price = parseFloat(priceText) || 0;
           }
-          itemPrices.push(price);
+          
+          pricesWithPositions.push({
+            price: price,
+            position: position
+          });
+        } else if (entity.type === 'discount_title') {
+          discountTitles.push(entity.mentionText?.trim() || 'Rabatt');
+        } else if (entity.type === 'discount_amount') {
+          let discountAmount = 0;
+          if (entity.normalizedValue?.moneyValue) {
+            const units = parseFloat(entity.normalizedValue.moneyValue.units || 0);
+            const nanos = parseFloat(entity.normalizedValue.moneyValue.nanos || 0) / 1000000000;
+            discountAmount = units + nanos;
+          } else {
+            const discountText = entity.mentionText?.replace(',', '.');
+            discountAmount = parseFloat(discountText) || 0;
+          }
+          discountAmounts.push(Math.abs(discountAmount));
         } else if (entity.type === 'sum') {
           if (entity.normalizedValue?.moneyValue) {
             const units = parseFloat(entity.normalizedValue.moneyValue.units || 0);
             const nanos = parseFloat(entity.normalizedValue.moneyValue.nanos || 0) / 1000000000;
             totalAmount = units + nanos;
           } else {
-            // Fallback to parsing the mention text
             const sumText = entity.mentionText?.replace(',', '.');
             totalAmount = parseFloat(sumText) || 0;
           }
         }
       }
       
-      // Match items with prices 1:1
-      const maxLength = Math.max(itemNames.length, itemPrices.length);
-      for (let i = 0; i < maxLength; i++) {
-        const name = itemNames[i];
-        const price = itemPrices[i];
+      // Sort by position to match items with their corresponding prices
+      itemsWithPositions.sort((a, b) => a.position - b.position);
+      pricesWithPositions.sort((a, b) => a.position - b.position);
+
+      console.log('Items detected:', itemsWithPositions.map(item => `${item.name} (pos: ${item.position.toFixed(3)})`));
+      console.log('Prices detected:', pricesWithPositions.map(price => `${price.price}€ (pos: ${price.position.toFixed(3)})`));
+      
+      // DEBUG: Show all detected entities for analysis
+      console.log('\n=== ALL DETECTED ENTITIES ===');
+      for (const entity of document.entities) {
+        const position = entity.pageAnchor?.pageRefs?.[0]?.boundingPoly?.normalizedVertices?.[0]?.y || 0;
+        console.log(`${entity.type}: "${entity.mentionText?.trim()}" at position ${position.toFixed(3)}`);
+      }
+      console.log('=== END ENTITIES ===\n');
+      
+      // Smart filtering: merge items that are very close together (split item names)
+      const mergedItems = [];
+      for (let i = 0; i < itemsWithPositions.length; i++) {
+        const currentItem = itemsWithPositions[i];
+        const nextItem = itemsWithPositions[i + 1];
         
-        if (name && price > 0) {
-          items.push({
-            id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            name: name,
-            price: price,
-            claimed: false
+        if (nextItem && Math.abs(currentItem.position - nextItem.position) < 0.005) {
+          // Items are very close, likely split parts of the same item
+          const mergedName = `${nextItem.name} ${currentItem.name}`;
+          console.log(`Merging close items: "${nextItem.name}" + "${currentItem.name}" = "${mergedName}"`);
+          
+          mergedItems.push({
+            name: mergedName,
+            position: currentItem.position // Use first item's position
+          });
+          
+          i++; // Skip the next item since we merged it
+        } else {
+          mergedItems.push(currentItem);
+        }
+      }
+      
+      console.log(`Merged items: ${itemsWithPositions.length} -> ${mergedItems.length}`);
+      mergedItems.forEach(item => console.log(`  - ${item.name}`));
+      
+      // Match items with prices by array position (first item with first price, etc.)
+      const maxItems = Math.max(mergedItems.length, pricesWithPositions.length);
+      
+      for (let i = 0; i < maxItems; i++) {
+        const itemData = mergedItems[i];
+        const priceData = pricesWithPositions[i];
+        
+        if (itemData && priceData) {
+          const name = itemData.name;
+          const price = priceData.price;
+          
+          if (name && price !== undefined) {
+            console.log(`Matched by position: "${name}" with €${price}`);
+            
+            // Edge case: if item name is present but price is negative, it's a discount
+            if (price < 0) {
+              discounts.push({
+                id: `discount_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                name: name,
+                amount: Math.abs(price),
+                type: 'discount'
+              });
+            } else if (price > 0) {
+              // Regular item
+              items.push({
+                id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                name: name,
+                price: price,
+                claimed: false,
+                tags: ['detected']
+              });
+            }
+          }
+        } else if (itemData && !priceData) {
+          console.log(`Item without price: "${itemData.name}"`);
+        } else if (!itemData && priceData) {
+          console.log(`Price without item: €${priceData.price}`);
+          // Handle standalone prices (might be discounts or additional fees)
+          if (priceData.price < 0) {
+            discounts.push({
+              id: `discount_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              name: 'Rabatt',
+              amount: Math.abs(priceData.price),
+              type: 'discount'
+            });
+          }
+        }
+      }
+
+      // Process explicit discount entities
+      const maxDiscountLength = Math.max(discountTitles.length, discountAmounts.length);
+      for (let i = 0; i < maxDiscountLength; i++) {
+        const title = discountTitles[i] || 'Rabatt';
+        const amount = discountAmounts[i];
+        
+        if (amount > 0) {
+          discounts.push({
+            id: `discount_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            name: title,
+            amount: amount,
+            type: 'discount'
           });
         }
       }
     }
 
-    // If no total was found, calculate from items
-    if (totalAmount === 0 && items.length > 0) {
-      totalAmount = items.reduce((sum, item) => sum + item.price, 0);
-    }
+    console.log(`Processing complete: ${items.length} items extracted, ${discounts.length} discounts found, total: €${totalAmount.toFixed(2)}`);
 
-    console.log(`Processing complete: ${items.length} items extracted, total: €${totalAmount.toFixed(2)}`);
+    // Log results for debugging
+    items.forEach((item, index) => {
+      console.log(`Item ${index + 1}: ${item.name} - €${item.price}`);
+    });
+
+    discounts.forEach((discount, index) => {
+      console.log(`Discount ${index + 1}: ${discount.name} - €${discount.amount}`);
+    });
 
     return res.status(200).json({
       items: items,
+      discounts: discounts,
       totalAmount: totalAmount,
       currency: 'EUR'
     });

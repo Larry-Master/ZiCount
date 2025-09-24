@@ -59,13 +59,6 @@ export default function ItemCard({ item, currentUserId, onClaim, onUnclaim, isMy
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 pr-2">
             <h4 className="text-sm font-semibold text-gray-900 truncate">{item.name}</h4>
-            {item.tags && item.tags.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-2">
-                {item.tags.map(tag => (
-                  <span key={tag} className="text-[11px] px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full">{tag}</span>
-                ))}
-              </div>
-            )}
             {item.confidence && (
               <div className="mt-2 text-xs text-gray-500">Confidence: {Math.round(item.confidence * 100)}%</div>
             )}

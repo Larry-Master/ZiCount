@@ -14,9 +14,19 @@ export default function ReceiptList({ receipts, onReceiptSelect, loading }) {
     );
   }
 
-  // Calculate total value: sum of all items (manual and uploaded receipts)
+  // Calculate total value: sum of all receipts (use API totalAmount when available)
   const totalOverall = receipts.reduce((sum, receipt) => {
-    // If receipt has participants and items, sum per participant cost
+    // Use API totalAmount if available, otherwise calculate from items
+    if (receipt.totalAmount !== undefined) {
+      // Optional: Double-check API total against calculated total for validation
+      const calculatedTotal = calculateTotal(receipt.items || []);
+      if (Math.abs(receipt.totalAmount - calculatedTotal) > 0.01) {
+        console.warn(`Receipt ${receipt.id}: API total (${receipt.totalAmount}) differs from calculated total (${calculatedTotal})`);
+      }
+      return sum + receipt.totalAmount;
+    }
+    
+    // Fallback to manual calculation for older receipts
     if (receipt.participants && receipt.participants.length > 0) {
       // Manual receipts: items have participant field
       if (receipt.items && receipt.items.every(it => it.participant)) {
@@ -66,7 +76,8 @@ export default function ReceiptList({ receipts, onReceiptSelect, loading }) {
 
       <div className="grid gap-3">
         {receipts.map(receipt => {
-          const totalAmount = calculateTotal(receipt.items || []);
+          // Use API totalAmount if available, otherwise calculate from items
+          const totalAmount = receipt.totalAmount !== undefined ? receipt.totalAmount : calculateTotal(receipt.items || []);
           const claimedAmount = (receipt.items || [])
             .filter(item => item.claimedBy)
             .reduce((sum, item) => {

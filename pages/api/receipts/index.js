@@ -28,6 +28,7 @@ export default async function handler(req, res) {
             ...receipt,
             id: receipt._id.toString(),
             items: receiptItems,
+            discounts: receipt.discounts || [],
             claimedItems: claims.length
           };
         })
@@ -49,6 +50,8 @@ export default async function handler(req, res) {
         createdAt: body.createdAt ? new Date(body.createdAt) : new Date(),
         imageUrl: body.imageUrl,
         items: body.items || [],
+        discounts: body.discounts || [],
+        totalAmount: body.totalAmount,
         uploadedBy: body.uploadedBy || 'anonymous',
         // persist participants if provided (used for Teilnehmerliste)
         participants: body.participants || [],

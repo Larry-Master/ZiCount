@@ -132,6 +132,8 @@ export default function HomePage() {
           claimedBy: null,
           claimedAt: null
         })),
+        discounts: data.discounts || [],
+        totalAmount: data.totalAmount,
         participants: selectedParticipants,
         text: data.text
       };

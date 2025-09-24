@@ -36,6 +36,7 @@ export default async function handler(req, res) {
         ...receipt,
         id: receipt._id.toString(),
         items: receiptItems,
+        discounts: receipt.discounts || [],
         claimedItems: claims.length
       };
 

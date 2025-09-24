@@ -26,7 +26,8 @@ function computeSettlements(receipts = [], people = []) {
   (receipts || []).forEach((r) => {
     // Defensive: ensure items is array
     const items = Array.isArray(r?.items) ? r.items : [];
-    const total = calculateTotal(items || []);
+    // Use API totalAmount if available, otherwise calculate from items
+    const total = r?.totalAmount !== undefined ? r.totalAmount : calculateTotal(items || []);
     const totalCents = toCents(total);
     const payer = r?.uploadedBy;
     if (!payer) return;

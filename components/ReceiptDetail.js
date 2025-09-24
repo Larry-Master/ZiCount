@@ -53,7 +53,8 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
     return optimistic || item;
   };
 
-  const totalAmount = calculateTotal(currentReceipt.items || []);
+  // Use totalAmount from receipt data (from API) instead of calculating
+  const totalAmount = currentReceipt.totalAmount || calculateTotal(currentReceipt.items || []);
   const claimedAmount = (currentReceipt.items || [])
     .filter(item => getItemStatus(item).claimedBy)
     .reduce((sum, item) => {
@@ -188,6 +189,35 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
                 onUnclaim={() => handleUnclaim(item)}
               />
             ))}
+          </div>
+        )}
+
+        {currentReceipt.discounts && currentReceipt.discounts.length > 0 && (
+          <div className="mt-6">
+            <h3 className="text-sm font-medium text-gray-700 mb-3">Rabatte & Nachlässe</h3>
+            <div className="grid gap-3">
+              {currentReceipt.discounts.map(discount => (
+                <div key={discount.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 pr-2">
+                        <h4 className="text-sm font-semibold text-gray-700">{discount.name}</h4>
+                        <span className="text-xs px-2 py-0.5 bg-gray-200 text-gray-600 rounded-full mt-2 inline-block">Rabatt</span>
+                      </div>
+                      <div className="flex-shrink-0 text-right ml-2">
+                        <div className="text-sm font-medium text-red-600">-{formatCurrency(discount.amount)}</div>
+                        <div className="mt-1 text-xs text-gray-500">Nicht anteilbar</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="ml-4 flex-shrink-0">
+                    <span className="px-3 py-1.5 rounded-md text-sm font-semibold bg-gray-100 text-gray-500 cursor-default">
+                      Rabatt
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
