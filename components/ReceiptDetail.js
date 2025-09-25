@@ -397,15 +397,16 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
         {currentReceipt.items && currentReceipt.items.some(it => it.tags?.includes('detected')) && (
           <div className="mt-6">
             <h3 className="text-sm font-medium text-gray-700 mb-3">Items</h3>
-            <div className="grid gap-3 sm:gap-4">
+            <div className="flex flex-col items-center gap-3 sm:gap-4 max-w-2xl mx-auto">
               {currentReceipt.items.filter(it => it.tags?.includes('detected')).map(item => (
-                <ItemCard
-                  key={item.id}
-                  item={getItemStatus(item)}
-                  currentUserId={currentUserId}
-                  onClaim={() => handleClaimClick(item)}
-                  onUnclaim={() => handleUnclaim(item)}
-                />
+                <div key={item.id} className="w-full max-w-lg">
+                  <ItemCard
+                    item={getItemStatus(item)}
+                    currentUserId={currentUserId}
+                    onClaim={() => handleClaimClick(item)}
+                    onUnclaim={() => handleUnclaim(item)}
+                  />
+                </div>
               ))}
             </div>
           </div>

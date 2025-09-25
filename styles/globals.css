@@ -424,6 +424,8 @@ body {
   transition: all 0.2s ease;
   max-width: 100%;
   box-sizing: border-box;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .item-card:hover {
@@ -437,6 +439,8 @@ body {
     padding: 0.75rem;
     border-radius: 8px;
     font-size: 0.875rem;
+    max-width: 95vw;
+    margin: 0 auto;
   }
   
   .item-card .text-sm {
