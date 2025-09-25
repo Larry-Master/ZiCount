@@ -248,7 +248,7 @@ export default function HomePage() {
         return (
           <button
             key={view}
-            className={`px-3 py-2 rounded-lg ${currentView===view?'bg-indigo-600 text-white':'bg-gray-200 text-gray-700'}`}
+            className={`nav-btn ${currentView===view ? 'nav-btn-active' : 'nav-btn-inactive'}`}
             onClick={() => {
               setCurrentView(view);
               setError(null); // Clear any existing errors when switching views
@@ -351,7 +351,7 @@ export default function HomePage() {
             </div>
           )}
 
-          <button onClick={analyzeReceipt} disabled={!selectedImage || analyzing} className="w-full py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+          <button onClick={analyzeReceipt} disabled={!selectedImage || analyzing} className="btn-primary w-full">
             {analyzing ? '🔄 Analyzing...' : '🔍 Analyze Receipt'}
           </button>
         </div>

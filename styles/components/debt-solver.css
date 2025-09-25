@@ -97,7 +97,9 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 100px;
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 150px;
 }
 
 .debt-arrow {
@@ -112,7 +114,7 @@
   font-size: 1rem;
   color: var(--primary);
   text-align: right;
-  min-width: 80px;
+  flex: 0 0 80px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -403,7 +405,7 @@
   }
   
   .debt-person-name {
-    max-width: 80px;
+    max-width: 160px;
   }
   
   /* Mobile bar graph adjustments */
@@ -420,6 +422,7 @@
   .debt-amount {
     align-self: flex-end;
     font-size: 1.125rem;
+    flex: 0 0 80px;
   }
   
   .settlement-summary {
@@ -447,13 +450,14 @@
   }
   
   .debt-person-name {
-    max-width: 60px;
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
+    flex: 1 1 0;
+    min-width: 0;
   }
   
   .debt-amount {
-    font-size: 1rem;
-    min-width: 70px;
+    font-size: 0.875rem;
+    flex: 0 0 85px;
   }
   
   .debt-arrow {

@@ -66,13 +66,13 @@ class ErrorBoundary extends React.Component {
             <div className="mt-4 flex gap-3 justify-center">
               <button 
                 onClick={() => this.setState({ hasError: false, error: null, errorInfo: null })}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm"
+                className="btn-primary btn-sm"
               >
                 Try again
               </button>
               <button 
                 onClick={() => window.location.reload()}
-                className="px-4 py-2 border rounded-md text-sm"
+                className="btn-secondary btn-sm"
               >
                 Reload page
               </button>

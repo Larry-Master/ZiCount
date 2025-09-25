@@ -54,7 +54,7 @@ export default function ItemCard({ item, currentUserId, onClaim, onUnclaim, isMy
   };
 
   return (
-    <div className={`p-4 bg-white rounded-lg shadow-sm ${isPending ? 'opacity-70' : 'hover:shadow-md'} transition`}>
+    <div className={`item-card ${isPending ? 'opacity-70' : ''}`}>
       {/* Mobile-first responsive layout */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         {/* Main content area */}

@@ -20,12 +20,27 @@ export default async function handler(req, res) {
       const { name } = req.body || {};
       if (!name || !name.trim()) return res.status(400).json({ error: 'Name is required' });
 
+      const baseName = name.trim();
+      let finalName = baseName;
+      
+      // Check for duplicates and append numbers if needed
+      const existingUsers = await db.collection('people').find({}, { projection: { name: 1 } }).toArray();
+      const existingNames = existingUsers.map(user => user.name);
+      
+      if (existingNames.includes(finalName)) {
+        let counter = 2;
+        while (existingNames.includes(`${baseName} ${counter}`)) {
+          counter++;
+        }
+        finalName = `${baseName} ${counter}`;
+      }
+
       // pick a color based on count
       const count = await db.collection('people').countDocuments();
       const color = COLORS[count % COLORS.length];
 
-      const result = await db.collection('people').insertOne({ name: name.trim(), color, createdAt: new Date() });
-      const created = { id: result.insertedId.toString(), name: name.trim(), color };
+      const result = await db.collection('people').insertOne({ name: finalName, color, createdAt: new Date() });
+      const created = { id: result.insertedId.toString(), name: finalName, color };
       res.status(201).json(created);
     } catch (err) {
       console.error('POST /api/users error', err);

@@ -263,7 +263,7 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId,
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-colors"
+        className="btn-primary w-full"
       >
         {loading ? (isEditing ? 'Aktualisieren...' : 'Speichern...') : (isEditing ? 'Beleg aktualisieren' : 'Beleg hinzufügen')}
       </button>

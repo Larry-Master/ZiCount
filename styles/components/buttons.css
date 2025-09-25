@@ -118,6 +118,43 @@ button:disabled {
   border-radius: 0.375rem;
 }
 
+/* Extra small button variant for compact UIs */
+.btn-xs {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  border-radius: 0.25rem;
+  font-weight: 500;
+}
+
+/* Primary small button */
+.btn-primary.btn-xs {
+  padding: 0.375rem 0.75rem;
+}
+
+/* Navigation buttons */
+.nav-btn {
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.nav-btn-active {
+  background: var(--primary);
+  color: white;
+}
+
+.nav-btn-inactive {
+  background: rgba(156, 163, 175, 0.1);
+  color: #4b5563;
+}
+
+.nav-btn-inactive:hover {
+  background: rgba(156, 163, 175, 0.15);
+}
+
 /* Large button variant */
 .btn-lg {
   padding: 1rem 2rem;
@@ -341,6 +378,21 @@ button:disabled {
 
 .dark .btn-link:hover:not(:disabled) {
   color: #3b82f6;
+}
+
+/* Dark mode navigation buttons */
+.dark .nav-btn-active {
+  background: #60a5fa;
+  color: #0f172a;
+}
+
+.dark .nav-btn-inactive {
+  background: rgba(156, 163, 175, 0.08);
+  color: #9ca3af;
+}
+
+.dark .nav-btn-inactive:hover {
+  background: rgba(156, 163, 175, 0.12);
 }
 
 /* Responsive adjustments */

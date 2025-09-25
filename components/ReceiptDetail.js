@@ -358,13 +358,13 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
                     <div className="flex gap-2">
                       <button
                         onClick={saveParticipants}
-                        className="px-3 py-1 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700"
+                        className="btn-primary btn-xs"
                       >
                         Speichern
                       </button>
                       <button
                         onClick={cancelEditingParticipants}
-                        className="px-3 py-1 bg-gray-300 text-gray-700 text-sm rounded hover:bg-gray-400"
+                        className="btn-secondary btn-xs"
                       >
                         Abbrechen
                       </button>

@@ -56,10 +56,10 @@ export default function ClaimModal({ item, onClaim, onCancel, currentUserId }) {
           </div>
 
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <button type="button" onClick={onCancel} disabled={loading} className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-white text-sm font-medium">
+            <button type="button" onClick={onCancel} disabled={loading} className="btn-secondary w-full">
               Cancel
             </button>
-            <button type="submit" disabled={loading || !selectedUserId} className="w-full px-4 py-3 rounded-lg bg-indigo-600 text-white text-sm font-semibold">
+            <button type="submit" disabled={loading || !selectedUserId} className="btn-primary w-full">
               {loading ? 'Claiming...' : `Claim for ${selectedPerson?.name || 'User'}`}
             </button>
           </div>

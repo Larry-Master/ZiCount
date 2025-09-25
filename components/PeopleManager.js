@@ -85,11 +85,12 @@ export default function PeopleManager({ currentUserId, onCurrentUserChange, onDa
               <input
                 type="text"
                 value={newPersonName}
-                onChange={(e) => setNewPersonName(e.target.value)}
+                onChange={(e) => setNewPersonName(e.target.value.substring(0, 15))}
                 placeholder="Person name"
                 className="person-name-input"
                 autoFocus
                 disabled={isAdding}
+                maxLength={15}
               />
               <div className="form-actions">
                 <button type="submit" disabled={!newPersonName.trim() || isAdding}>
@@ -175,11 +176,12 @@ export default function PeopleManager({ currentUserId, onCurrentUserChange, onDa
                 id="person-name"
                 type="text"
                 value={newPersonName}
-                onChange={(e) => setNewPersonName(e.target.value)}
+                onChange={(e) => setNewPersonName(e.target.value.substring(0, 15))}
                 placeholder="Enter name"
                 className="person-name-input"
                 autoFocus
                 disabled={isAdding}
+                maxLength={15}
               />
             </div>
             <div className="form-actions">
