@@ -90,15 +90,15 @@ export default function ItemCard({ item, currentUserId, onClaim, onUnclaim, isMy
           <button
             onClick={handleClick}
             disabled={isPending || (isMyClaimsContext && !isClaimed)}
-            className={`w-full py-3 rounded-lg font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 ${
+            className={`w-full px-3 py-2 text-xs font-medium rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-offset-1 ${
               isClaimed 
                 ? (canUnclaim 
-                  ? 'bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-500'
-                  : 'bg-gray-100 text-gray-500 cursor-default border border-gray-300'
+                  ? 'item-btn-unclaim focus:ring-red-500'
+                  : 'item-btn-disabled'
                 ) 
                 : (isMyClaimsContext 
-                  ? 'bg-gray-100 text-gray-500 cursor-default border border-gray-300' 
-                  : 'bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-500'
+                  ? 'item-btn-disabled' 
+                  : 'item-btn-claim focus:ring-indigo-500'
                 )
             }`}
           >

@@ -381,3 +381,69 @@ button:disabled {
     padding: 0.625rem 1rem;
   }
 }
+
+/* Custom Item Card Button Styles */
+/* Modern, smaller buttons for claim/unclaim actions */
+
+/* Claim button (positive action) */
+.item-btn-claim {
+  background: rgba(79, 70, 229, 0.06);
+  color: #4f46e5;
+  border: 1px solid rgba(79, 70, 229, 0.15);
+}
+
+.item-btn-claim:hover:not(:disabled) {
+  background: rgba(79, 70, 229, 0.1);
+  border-color: rgba(79, 70, 229, 0.25);
+  transform: translateY(-1px);
+}
+
+/* Unclaim button (negative action) */
+.item-btn-unclaim {
+  background: rgba(239, 68, 68, 0.06);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.15);
+}
+
+.item-btn-unclaim:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.25);
+  transform: translateY(-1px);
+}
+
+/* Disabled state */
+.item-btn-disabled {
+  background: rgba(156, 163, 175, 0.06);
+  color: #9ca3af;
+  border: 1px solid rgba(156, 163, 175, 0.15);
+  cursor: not-allowed;
+}
+
+/* Dark mode styles for item buttons */
+.dark .item-btn-claim {
+  background: rgba(129, 140, 248, 0.08);
+  color: #818cf8;
+  border-color: rgba(129, 140, 248, 0.2);
+}
+
+.dark .item-btn-claim:hover:not(:disabled) {
+  background: rgba(129, 140, 248, 0.12);
+  border-color: rgba(129, 140, 248, 0.3);
+}
+
+.dark .item-btn-unclaim {
+  background: rgba(248, 113, 113, 0.08);
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.2);
+}
+
+.dark .item-btn-unclaim:hover:not(:disabled) {
+  background: rgba(248, 113, 113, 0.12);
+  border-color: rgba(248, 113, 113, 0.3);
+}
+
+.dark .item-btn-disabled {
+  background: rgba(156, 163, 175, 0.08);
+  color: #6b7280;
+  border-color: rgba(156, 163, 175, 0.15);
+}

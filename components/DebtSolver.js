@@ -166,6 +166,11 @@ export default function DebtSolver() {
 
   const getName = (id) => (people || []).find((p) => p.id === id)?.name || id;
 
+  // Calculate total amount from all receipts for bar scaling
+  const totalFromAllReceipts = (receipts || []).reduce((sum, receipt) => {
+    return sum + (receipt.totalAmount || 0);
+  }, 0);
+
   // Sorted people by balance (descending)
   const sortedPeopleByBalance = (people || [])
     .slice()
@@ -183,14 +188,29 @@ export default function DebtSolver() {
             {sortedPeopleByBalance.map((p, index) => {
               const amt = balances[p.id] || 0;
               const cls = amt > 0 ? 'text-green-600' : amt < 0 ? 'text-red-600' : 'text-gray-600';
+              
+              // Calculate bar width based on total from all receipts for meaningful scale
+              const barWidth = totalFromAllReceipts > 0 ? (Math.abs(amt) / totalFromAllReceipts) * 100 : 0;
+              const isPositive = amt > 0;
+              const isNegative = amt < 0;
 
               return (
                 <div
                   key={p.id}
-                  className="debt-person-item flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                  className="debt-person-item p-3 bg-gray-50 rounded-lg"
                 >
-                  <span className="debt-person-name">{p.name}</span>
-                  <span className={`debt-amount font-medium ${cls}`}>{formatCurrency(amt)}</span>
+                  <div className="debt-person-header flex items-center justify-between mb-2">
+                    <span className="debt-person-name">{p.name}</span>
+                    <span className={`debt-amount font-medium ${cls}`}>{formatCurrency(amt)}</span>
+                  </div>
+                  {(isPositive || isNegative) && (
+                    <div className="debt-bar-container">
+                      <div 
+                        className={`debt-bar ${isPositive ? 'debt-bar-positive' : 'debt-bar-negative'}`}
+                        style={{ width: `${barWidth}%` }}
+                      ></div>
+                    </div>
+                  )}
                 </div>
               );
             })}

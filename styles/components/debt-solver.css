@@ -118,6 +118,43 @@
   white-space: nowrap;
 }
 
+/* Debt person item layout adjustments for bar graph */
+.debt-person-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.debt-person-header {
+  width: 100%;
+}
+
+/* Debt bar graph */
+.debt-bar-container {
+  width: 100%;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+.debt-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease-in-out;
+}
+
+.debt-bar-positive {
+  background: linear-gradient(90deg, #10b981, #059669);
+  box-shadow: 0 1px 3px rgba(16, 185, 129, 0.3);
+}
+
+.debt-bar-negative {
+  background: linear-gradient(90deg, #ef4444, #dc2626);
+  box-shadow: 0 1px 3px rgba(239, 68, 68, 0.3);
+}
+
 /* Debt description */
 .debt-description {
   flex: 1;
@@ -275,6 +312,21 @@
   color: var(--text);
 }
 
+/* Dark mode bar graph styles */
+.dark .debt-bar-container {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.dark .debt-bar-positive {
+  background: linear-gradient(90deg, #10b981, #047857);
+  box-shadow: 0 1px 3px rgba(16, 185, 129, 0.4);
+}
+
+.dark .debt-bar-negative {
+  background: linear-gradient(90deg, #ef4444, #b91c1c);
+  box-shadow: 0 1px 3px rgba(239, 68, 68, 0.4);
+}
+
 .dark .settlement-summary {
   background: rgba(96, 165, 250, 0.08);
   border-color: rgba(96, 165, 250, 0.2);
@@ -354,6 +406,12 @@
     max-width: 80px;
   }
   
+  /* Mobile bar graph adjustments */
+  .debt-bar-container {
+    height: 10px;
+    margin-top: 10px;
+  }
+  
   .debt-description {
     text-align: left;
     padding: 0;
@@ -400,6 +458,13 @@
   
   .debt-arrow {
     font-size: 0.875rem;
+  }
+  
+  /* Small mobile bar graph adjustments */
+  .debt-bar-container {
+    height: 12px;
+    margin-top: 12px;
+    border-radius: 6px;
   }
 }
 
