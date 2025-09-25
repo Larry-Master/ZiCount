@@ -131,28 +131,53 @@ button:disabled {
   padding: 0.375rem 0.75rem;
 }
 
-/* Navigation buttons */
-.nav-btn {
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  border: 1px solid transparent;
+/* Enhanced nav-tabs styling */
+.nav-tabs button {
+  flex: 0 0 auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-align: start;
+  background: var(--card-bg);
+  border: 1px solid rgba(156, 163, 175, .2);
+  padding: .75rem 1rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: .875rem;
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all .2s ease;
+  min-width: -moz-max-content;
+  min-width: max-content;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .08), 0 1px 2px rgba(0, 0, 0, .06);
+  position: relative;
+  z-index: 2;
 }
 
-.nav-btn-active {
-  background: var(--primary);
-  color: white;
+.nav-tabs button.active, 
+.nav-tabs button[class*=bg-indigo-600],
+.nav-tabs button.nav-btn-active {
+  background: linear-gradient(135deg, #4f46e5, #3b82f6);
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: 0 4px 14px rgba(79, 70, 229, .25), 0 2px 6px rgba(79, 70, 229, .15);
+  transform: translateY(-1px);
+  position: relative;
 }
 
-.nav-btn-inactive {
-  background: rgba(156, 163, 175, 0.1);
-  color: #4b5563;
-}
-
-.nav-btn-inactive:hover {
-  background: rgba(156, 163, 175, 0.15);
+.nav-tabs button.active:before,
+.nav-tabs button[class*=bg-indigo-600]:before,
+.nav-tabs button.nav-btn-active:before {
+  content: "";
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(135deg, #4f46e5, #3b82f6, #06b6d4);
+  border-radius: 14px;
+  z-index: -1;
+  opacity: .6;
+  filter: blur(4px);
 }
 
 /* Large button variant */
@@ -380,19 +405,10 @@ button:disabled {
   color: #3b82f6;
 }
 
-/* Dark mode navigation buttons */
-.dark .nav-btn-active {
-  background: #60a5fa;
-  color: #0f172a;
-}
-
-.dark .nav-btn-inactive {
-  background: rgba(156, 163, 175, 0.08);
-  color: #9ca3af;
-}
-
-.dark .nav-btn-inactive:hover {
-  background: rgba(156, 163, 175, 0.12);
+/* Dark mode nav-tabs styling */
+.dark .nav-tabs button:not(.active):not(.nav-btn-active):not([class*=bg-indigo-600]) {
+  background: #071426 !important;
+  color: #9ca3af !important;
 }
 
 /* Responsive adjustments */
