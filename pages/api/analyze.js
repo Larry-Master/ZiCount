@@ -54,12 +54,20 @@ export default async function handler(req, res) {
 
     // Read the uploaded file into memory
     const filePath = uploadedFile.filepath || uploadedFile.path;
-    const buffer = await fs.readFile(filePath);
+    let buffer = await fs.readFile(filePath);
     const originalName = uploadedFile.originalFilename || uploadedFile.name || 'upload.jpg';
 
     // Determine MIME type based on file extension
     const ext = originalName.split('.').pop().toLowerCase();
     const mimeType = ext === 'png' ? 'image/png' : 'image/jpeg';
+
+    // Check if image exceeds 20MB limit
+    const maxSize = 20 * 1024 * 1024; // 20MB in bytes
+    if (buffer.length > maxSize) {
+      return res.status(400).json({ 
+        error: `File too large (${Math.round(buffer.length / 1024 / 1024)}MB). Maximum size is 20MB. Please compress your image or use a smaller file.` 
+      });
+    }
 
     // Initialize Google Cloud Document AI client
     const client = new DocumentProcessorServiceClient();

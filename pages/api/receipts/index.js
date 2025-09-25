@@ -1,5 +1,15 @@
 import { connectToDatabase } from '@/lib/db/mongodb';
 
+// Increase timeout and body size limits for large receipt data
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '50mb',
+    },
+    responseLimit: '50mb',
+  },
+};
+
 export default async function handler(req, res) {
   const { db } = await connectToDatabase();
 
