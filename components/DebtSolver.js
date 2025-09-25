@@ -1,16 +1,42 @@
+/**
+ * DebtSolver Component
+ * 
+ * Advanced debt calculation and settlement system for shared expenses.
+ * This component analyzes all receipts and claims to determine who owes
+ * money to whom, then calculates the minimum number of transactions
+ * needed to settle all debts.
+ * 
+ * Key Features:
+ * - Precise cent-based calculations to avoid floating point errors
+ * - Handles both individually claimed items and shared expenses  
+ * - Calculates optimal settlement transactions (minimal transfers)
+ * - Supports partial participants (not everyone splits everything)
+ * - Deterministic remainder distribution for exact splits
+ * 
+ * Algorithm:
+ * 1. Calculate individual balances (what each person owes/is owed)
+ * 2. Sort people by debt amounts (creditors vs debtors)
+ * 3. Match largest creditor with largest debtor iteratively
+ * 4. Generate minimal set of settlement transactions
+ */
+
 import React, { useMemo } from 'react';
 import { useReceipts } from '@/lib/hooks/useReceipts';
 import { usePeople } from '@/lib/hooks/usePeople';
 import { formatCurrency } from '@/lib/utils/currency';
 
 /**
- * Debt solver / settlement computation (cents-based for exact math)
- *
- * - Works entirely in integer cents to avoid floating point drift.
- * - Derives participants from r.participants and item.claimedBy, ensures payer included.
- * - Splits remainders deterministically (participants sorted by id).
- * - Accounts for solo claimed items separately from shared items.
- * - Returns { settlements: [{from,to,amount}], balances: { personId: amountInCurrency } }
+ * Core debt settlement computation engine
+ * 
+ * Uses cent-based integer arithmetic for precision and deterministic results.
+ * Handles complex scenarios including:
+ * - Mixed individual and shared expenses
+ * - Variable participant groups per receipt
+ * - Remainder distribution for uneven splits
+ * 
+ * @param {Array} receipts - All receipt data with items and claims
+ * @param {Array} people - All registered people/users
+ * @returns {Object} Settlement plan with transactions and final balances
  */
 
 function computeSettlements(receipts = [], people = []) {

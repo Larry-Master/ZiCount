@@ -1,7 +1,8 @@
 import { promises as fs } from 'fs';
-import formidable from 'formidable';
 import path from 'path';
 import { connectToDatabase } from '@/lib/db/mongodb';
+import { parseFormData } from '@/lib/utils/formData';
+import { checkMethod, errorResponse } from '@/lib/utils/apiHelpers';
 
 export const config = {
   api: {
@@ -9,29 +10,14 @@ export const config = {
   },
 };
 
-// Parse FormData (same as analyze.js)
-function parseFormData(req) {
-  return new Promise((resolve, reject) => {
-    const form = formidable({
-      maxFileSize: 10 * 1024 * 1024, // 10MB limit
-      keepExtensions: true,
-    });
 
-    form.parse(req, (err, fields, files) => {
-      if (err) reject(err);
-      else resolve({ fields, files });
-    });
-  });
-}
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  if (!checkMethod(req, res, 'POST')) return;
 
   try {
     // Parse uploaded file
-    const { files } = await parseFormData(req);
+    const { files } = await parseFormData(req, { maxFileSize: 10 * 1024 * 1024 });
     const uploadedFile = Array.isArray(files.file) ? files.file[0] : files.file;
     
     if (!uploadedFile) {
@@ -72,7 +58,6 @@ export default async function handler(req, res) {
       id: result.insertedId.toString()
     });
   } catch (error) {
-    console.error('Upload error:', error);
-    res.status(500).json({ error: 'Upload failed' });
+    errorResponse(res, error, 'Upload failed');
   }
 }

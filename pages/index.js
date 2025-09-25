@@ -1,3 +1,19 @@
+/**
+ * ZiCount - Receipt Sharing & Expense Tracking App
+ * Main Page Component
+ * 
+ * This is the primary interface for the receipt sharing application.
+ * Users can upload receipt images, view analyzed items, claim items,
+ * manage people, and track shared expenses.
+ * 
+ * Key Features:
+ * - Receipt image upload with drag & drop
+ * - Google Cloud Document AI integration for receipt analysis
+ * - Item claiming system for shared expenses
+ * - Debt calculation and settlement
+ * - Multi-user support with local storage persistence
+ */
+
 import { useRef, useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useReceipts } from '@/lib/hooks/useReceipts';
@@ -5,7 +21,7 @@ import { apiClient } from '@/lib/api/client';
 import ManualReceiptForm from '@/components/ManualReceiptForm';
 import { usePeople } from '@/lib/hooks/usePeople';
 
-// Dynamic components with loading spinners
+// Dynamic component imports with loading states for better UX
 const ReceiptDetail = dynamic(() => import('@/components/ReceiptDetail'), {
   loading: () => <div className="flex justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>
 });
@@ -23,26 +39,29 @@ const DebtSolver = dynamic(() => import('@/components/DebtSolver'), {
 });
 
 export default function HomePage() {
+  // Custom hooks for data management
   const { people } = usePeople();
   const { receipts, loading: receiptsLoading, refetch: refetchReceipts } = useReceipts();
 
+  // File input reference for programmatic access
   const inputRef = useRef(null);
 
-  // State management
-  const [selectedImage, setSelectedImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [savedReceipt, setSavedReceipt] = useState(null);
-  const [error, setError] = useState(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [currentView, setCurrentView] = useState('receipts'); // 'upload', 'receipts', 'receipt', 'claims', 'people', 'schulden'
-  // SSR-safe initializer: read persisted selection from localStorage on client
+  // Component state management
+  const [selectedImage, setSelectedImage] = useState(null);     // Currently selected image file
+  const [imagePreview, setImagePreview] = useState(null);       // Base64 preview of selected image
+  const [analyzing, setAnalyzing] = useState(false);            // Loading state for receipt analysis
+  const [savedReceipt, setSavedReceipt] = useState(null);       // Processed and saved receipt data
+  const [error, setError] = useState(null);                     // Error state for user feedback
+  const [isDragging, setIsDragging] = useState(false);          // Drag & drop visual feedback
+  const [currentView, setCurrentView] = useState('receipts');   // Current active view/tab
+  
+  // SSR-safe user selection with localStorage persistence
   const [currentUserId, setCurrentUserId] = useState(() => {
     if (typeof window === 'undefined') return 'user1';
     return localStorage.getItem('currentUserId') || 'user1';
   });
 
-  // wrapper that persists selection to localStorage
+  // Wrapper function to persist user selection to localStorage
   const handleSetCurrentUser = (id) => {
     setCurrentUserId(id);
     try {

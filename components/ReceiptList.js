@@ -1,10 +1,28 @@
+/**
+ * ReceiptList Component
+ * 
+ * Displays a comprehensive list of all receipts with summary statistics
+ * and interactive selection capabilities. Shows both individual receipt
+ * details and aggregate totals across all receipts.
+ * 
+ * Features:
+ * - Receipt cards with key information (date, amount, items, claims)
+ * - Total value calculation across all receipts
+ * - Claimed vs unclaimed amount tracking
+ * - Responsive design for mobile and desktop
+ * - Loading states and empty state handling
+ * - Click-to-view receipt details
+ */
+
 import { formatCurrency } from '@/lib/utils/currency';
 
 export default function ReceiptList({ receipts, onReceiptSelect, loading }) {
+  // Display loading spinner while fetching data
   if (loading) {
     return <div className="p-6 text-center text-gray-500">Loading receipts...</div>;
   }
 
+  // Handle empty state with helpful message
   if (!receipts?.length) {
     return (
       <div className="p-6 text-center">
@@ -14,7 +32,7 @@ export default function ReceiptList({ receipts, onReceiptSelect, loading }) {
     );
   }
 
-  // Calculate total value: sum of all receipts using API totalAmount
+  // Calculate total value across all receipts using API-provided totalAmount
   const totalOverall = receipts.reduce((sum, receipt) => {
     // Use API totalAmount if available, otherwise fallback to 0
     if (receipt.totalAmount !== undefined) {
@@ -23,7 +41,7 @@ export default function ReceiptList({ receipts, onReceiptSelect, loading }) {
     return sum;
   }, 0);
 
-  // Total claimed: only claimed items
+  // Calculate total claimed amount (only items with claimedBy field)
   const totalClaimedOverall = receipts.reduce((sum, receipt) => {
     const claimedAmount = (receipt.items || [])
       .filter(item => item.claimedBy)
