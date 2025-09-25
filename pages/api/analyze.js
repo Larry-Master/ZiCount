@@ -37,8 +37,8 @@ export default async function handler(req, res) {
 
   try {
     // Validate required environment variables for Google Cloud Document AI
-    if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-      return res.status(500).json({ error: 'Missing GOOGLE_APPLICATION_CREDENTIALS' });
+    if (!process.env.GOOGLE_APPLICATION_CREDENTIALS && !process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+      return res.status(500).json({ error: 'Missing Google Cloud credentials. Please set either GOOGLE_APPLICATION_CREDENTIALS or GOOGLE_APPLICATION_CREDENTIALS_JSON' });
     }
     if (!process.env.DOC_AI_PROJECT_ID || !process.env.DOC_AI_PROCESSOR_ID) {
       return res.status(500).json({ error: 'Missing DOC_AI_PROJECT_ID or DOC_AI_PROCESSOR_ID' });
@@ -70,7 +70,19 @@ export default async function handler(req, res) {
     }
 
     // Initialize Google Cloud Document AI client
-    const client = new DocumentProcessorServiceClient();
+    let client;
+    
+    if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+      // For Vercel deployment - use service account key from environment variable
+      const serviceAccountKey = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+      client = new DocumentProcessorServiceClient({
+        credentials: serviceAccountKey,
+        projectId: serviceAccountKey.project_id
+      });
+    } else {
+      // For local development - use GOOGLE_APPLICATION_CREDENTIALS file path
+      client = new DocumentProcessorServiceClient();
+    }
     
     // Build processor resource name using environment variables
     const location = process.env.DOC_AI_LOCATION || 'us';
