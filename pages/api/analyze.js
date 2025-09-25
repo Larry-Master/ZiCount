@@ -22,6 +22,9 @@ import { checkMethod, errorResponse } from '@/lib/utils/apiHelpers';
 export const config = {
   api: {
     bodyParser: false,
+    // Set reasonable limits for phone images
+    responseLimit: '50mb',
+    sizeLimit: '50mb',
   },
 };
 
@@ -65,7 +68,7 @@ export default async function handler(req, res) {
     const maxSize = 20 * 1024 * 1024; // 20MB in bytes
     if (buffer.length > maxSize) {
       return res.status(400).json({ 
-        error: `File too large (${Math.round(buffer.length / 1024 / 1024)}MB). Maximum size is 20MB. Please compress your image or use a smaller file.` 
+        error: `Image too large (${Math.round(buffer.length / 1024 / 1024)}MB). Maximum size is 20MB. Please try taking a photo with lower resolution or use image editing software to reduce the file size without losing quality.` 
       });
     }
 

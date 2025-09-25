@@ -142,28 +142,36 @@ export default function ReceiptList({ receipts, onReceiptSelect, loading, curren
                 {/* Main content area */}
                 <div className="flex-1 min-w-0">
                   {/* Receipt header */}
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-base font-semibold text-gray-900 truncate flex-1 mr-3">
-                      {receipt.name || `Receipt #${receipt.id}`}
-                    </h3>
-                    <div className="flex-shrink-0">
-                      <span className="text-lg font-bold text-indigo-600">
-                        {formatCurrency(totalAmount)}
-                      </span>
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1 min-w-0 mr-3">
+                      <div className="flex items-baseline gap-4 mb-1">
+                        <h3 className="text-base font-semibold text-gray-900 truncate">
+                          {receipt.name || `Receipt #${receipt.id}`}
+                        </h3>
+                        <span className="text-lg font-bold text-indigo-600">
+                          {formatCurrency(totalAmount)}
+                        </span>
+                      </div>
+                      {receipt.createdAt && (
+                        <div className="text-xs text-gray-500">
+                          {new Date(receipt.createdAt).toLocaleDateString('de-DE')}
+                        </div>
+                      )}
                     </div>
                   </div>
                   
                   {/* Receipt details */}
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600">
-                    {!isManualReceipt && (
+                    {!isManualReceipt ? (
                       <>
                         <div>Items: <span className="font-medium">{receipt.items?.length || 0}</span></div>
-                        <div>Claimed: <span className="font-medium">{claimedCount}</span></div>
-                        <div>Claimed Amount: <span className="font-medium text-indigo-600">{formatCurrency(claimedAmount)}</span></div>
+                        <div>Participants: <span className="font-medium">{receipt.participants?.length || 0}</span></div>
                       </>
-                    )}
-                    {isManualReceipt && (
-                      <div className="text-blue-600 font-medium">Manual Receipt</div>
+                    ) : (
+                      <>
+                        <div className="text-blue-600 font-medium">Manual Receipt</div>
+                        <div>Participants: <span className="font-medium">{receipt.participants?.length || 0}</span></div>
+                      </>
                     )}
                   </div>
                 </div>
@@ -172,10 +180,10 @@ export default function ReceiptList({ receipts, onReceiptSelect, loading, curren
                 {!isManualReceipt && (
                   <div className="flex-shrink-0 w-full sm:w-32 mt-2 sm:mt-0">
                     <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-                      <div className="bg-indigo-500 h-2 transition-all duration-300" style={{ width: `${totalAmount > 0 ? (claimedAmount / totalAmount) * 100 : 0}%` }} />
+                      <div className="bg-indigo-500 h-2 transition-all duration-300" style={{ width: `${Math.min(100, totalAmount > 0 ? (claimedAmount / totalAmount) * 100 : 0)}%` }} />
                     </div>
                     <div className="mt-1 text-xs text-gray-500 text-right">
-                      {Math.round(totalAmount > 0 ? (claimedAmount / totalAmount) * 100 : 0)}% claimed
+                      {Math.min(100, Math.round(totalAmount > 0 ? (claimedAmount / totalAmount) * 100 : 0))}% claimed
                     </div>
                   </div>
                 )}

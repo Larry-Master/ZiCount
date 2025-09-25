@@ -18,6 +18,7 @@ export default function UploadedReceiptForm({ receipt, currentUserId, onSave, on
   };
 
   const handleSave = async () => {
+
     try {
       const totalValue = parseFloat((editingTotalAmount || '0').toString().replace(',', '.')) || 0;
       
@@ -130,13 +131,19 @@ export default function UploadedReceiptForm({ receipt, currentUserId, onSave, on
             </div>
           ))}
         </div>
+        {editingParticipants.length === 0 && (
+          <div className="mt-2 text-sm text-red-500 bg-red-50 dark:bg-red-900/20 p-2 rounded border border-red-200 dark:border-red-800">
+            ⚠️ Keine Personen ausgewählt. Wähle mindestens eine Person für die Aufteilung aus.
+          </div>
+        )}
       </div>
 
       {/* Action Buttons */}
       <div className="flex gap-3">
         <button
           onClick={handleSave}
-          className="btn-primary"
+          className={`btn-primary ${editingParticipants.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+          disabled={editingParticipants.length === 0}
         >
           Save Changes
         </button>

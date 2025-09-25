@@ -8,16 +8,23 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId,
   const [selectedPeople, setSelectedPeople] = useState(initialData?.participants || []);
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(initialData?.imageUrl || null);
-  const [paidBy, setPaidBy] = useState(initialData?.uploadedBy || currentUserId || (typeof window !== 'undefined' ? localStorage.getItem('currentUserId') || 'user1' : 'user1'));
+  const [paidBy, setPaidBy] = useState(initialData?.uploadedBy || currentUserId || (typeof window !== 'undefined' ? localStorage.getItem('currentUserId') || null : null));
   // date is no longer collected from the user; use current date automatically
   const [loading, setLoading] = useState(false);
 
   const { people } = usePeople();
   // prefer prop currentUserId, fallback to localStorage
-  const runtimeCurrentUserId = currentUserId || (typeof window !== 'undefined' ? localStorage.getItem('currentUserId') || 'user1' : 'user1');
+  const runtimeCurrentUserId = currentUserId || (typeof window !== 'undefined' ? localStorage.getItem('currentUserId') || null : null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validation: Ensure at least one participant is selected
+    if (selectedPeople.length === 0) {
+      alert('Bitte wähle mindestens eine Person für die Aufteilung aus.');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -117,35 +124,40 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId,
     }
   };
 
-  const handleImageSelect = (e) => {
+  const handleImageSelect = async (e) => {
     const file = e.target.files?.[0];
-    if (file) {
-      // Compress image before setting it
-      compressImage(file).then(compressedFile => {
-        setSelectedImage(compressedFile);
-        const reader = new FileReader();
-        reader.onload = (e) => setImagePreview(e.target.result);
-        reader.readAsDataURL(compressedFile);
-      }).catch(err => {
-        console.error('Image compression failed:', err);
-        // Fall back to original file if compression fails
-        setSelectedImage(file);
-        const reader = new FileReader();
-        reader.onload = (e) => setImagePreview(e.target.result);
-        reader.readAsDataURL(file);
-      });
+    if (!file) return;
+    
+    try {
+      console.log(`Original file size: ${Math.round(file.size / 1024)}KB`);
+      
+      // Compress image for database storage (manual receipts only)
+      const compressedFile = await compressImageForStorage(file);
+      
+      setSelectedImage(compressedFile);
+      const reader = new FileReader();
+      reader.onload = (e) => setImagePreview(e.target.result);
+      reader.readAsDataURL(compressedFile);
+      
+    } catch (error) {
+      console.error('Image compression failed:', error);
+      // Fall back to original file if compression fails
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onload = (e) => setImagePreview(e.target.result);
+      reader.readAsDataURL(file);
     }
   };
 
-  // Helper function to compress images
-  const compressImage = (file) => {
+  // Helper function to compress images for database storage
+  const compressImageForStorage = (file) => {
     return new Promise((resolve) => {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       const img = new Image();
       
       img.onload = () => {
-        // Calculate new dimensions (max width/height of 1920px)
+        // Calculate new dimensions (max width/height of 1920px for storage)
         let { width, height } = img;
         const maxSize = 1920;
         
@@ -164,18 +176,18 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId,
         canvas.width = width;
         canvas.height = height;
         
-        // Draw and compress
+        // Draw and compress for storage
         ctx.drawImage(img, 0, 0, width, height);
         
         // Convert to blob with compression
         canvas.toBlob((blob) => {
-          // Create a new File object from the compressed blob
           const compressedFile = new File([blob], file.name, {
             type: 'image/jpeg',
             lastModified: Date.now()
           });
+          console.log(`Compressed for storage: ${Math.round(file.size / 1024)}KB → ${Math.round(compressedFile.size / 1024)}KB`);
           resolve(compressedFile);
-        }, 'image/jpeg', 0.8); // 80% quality
+        }, 'image/jpeg', 0.8); // 80% quality for storage
       };
       
       img.src = URL.createObjectURL(file);
@@ -309,17 +321,23 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId,
             <div className="participant-info">
               <span className="participant-name">{p.name}</span>
               {p.id === paidBy && (
-                <span className="participant-badge">(Sie bezahlen)</span>
+                <span className="participant-badge">(bezahlt)</span>
               )}
             </div>
           </div>
         ))}
       </div>
 
+      {selectedPeople.length === 0 && (
+        <div className="mb-4 text-sm text-red-500 bg-red-50 dark:bg-red-900/20 p-2 rounded border border-red-200 dark:border-red-800">
+          ⚠️ Keine Personen ausgewählt. Wähle mindestens eine Person für die Aufteilung aus.
+        </div>
+      )}
+
       <button
         type="submit"
-        disabled={loading}
-        className="btn-primary w-full"
+        disabled={loading || selectedPeople.length === 0}
+        className={`btn-primary w-full ${selectedPeople.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
       >
         {loading ? (isEditing ? 'Aktualisieren...' : 'Speichern...') : (isEditing ? 'Beleg aktualisieren' : 'Beleg hinzufügen')}
       </button>

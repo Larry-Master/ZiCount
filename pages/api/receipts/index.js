@@ -63,7 +63,7 @@ export default async function handler(req, res) {
         discounts: body.discounts || [],
         // Only use totalAmount from request, never calculate fallback
         totalAmount: body.totalAmount || 0,
-        uploadedBy: body.uploadedBy || 'anonymous',
+        uploadedBy: body.uploadedBy || null,
         // persist participants if provided (used for Teilnehmerliste)
         participants: body.participants || [],
         text: body.text || ''

@@ -1,5 +1,13 @@
 {
   "version": 2,
+  "functions": {
+    "pages/api/analyze.js": {
+      "maxDuration": 30
+    },
+    "pages/api/upload.js": {
+      "maxDuration": 15
+    }
+  },
   "routes": [
     { "handle": "filesystem" },
     { "src": "/api/(.*)", "dest": "/api/$1" },

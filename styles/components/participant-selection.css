@@ -1,5 +1,5 @@
 /* Participant Selection Components */
-/* Reusable styles for participant cards, checkboxes, and related elements */
+/* Simplified with only two states: unselected and selected */
 
 /* Participant cards for receipt creation and editing */
 .participant-card {
@@ -16,18 +16,12 @@
   min-height: 60px;
 }
 
-.participant-card:hover {
-  border-color: rgba(59, 130, 246, 0.3);
-  background: rgba(59, 130, 246, 0.02);
-}
-
 .participant-card-selected {
-  border-color: rgba(59, 130, 246, 0.4);
-  background: rgba(59, 130, 246, 0.05);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
 }
 
-/* Custom checkbox styling for dark theme */
+/* Custom checkbox styling */
 .participant-checkbox {
   position: absolute;
   top: 50%;
@@ -54,10 +48,6 @@
   background-size: 14px 14px !important;
   background-position: center !important;
   background-repeat: no-repeat !important;
-}
-
-.participant-checkbox:hover:not(:checked) {
-  border-color: rgba(156, 163, 175, 0.5);
 }
 
 /* Participant avatar */
@@ -108,15 +98,9 @@
   border-color: rgba(255,255,255,0.08);
 }
 
-.dark .participant-card:hover {
-  border-color: rgba(96, 165, 250, 0.3);
-  background: rgba(96, 165, 250, 0.02);
-}
-
 .dark .participant-card-selected {
-  border-color: rgba(96, 165, 250, 0.4);
-  background: rgba(96, 165, 250, 0.08);
-  box-shadow: 0 4px 12px rgba(96, 165, 250, 0.15);
+  border-color: #60a5fa;
+  background: rgba(96, 165, 250, 0.15);
 }
 
 .dark .participant-checkbox {
@@ -127,10 +111,6 @@
 .dark .participant-checkbox:checked {
   background: #60a5fa !important;
   border-color: #60a5fa !important;
-}
-
-.dark .participant-checkbox:hover:not(:checked) {
-  border-color: rgba(156, 163, 175, 0.5);
 }
 
 .dark .participant-name {
@@ -186,7 +166,7 @@
   }
 }
 
-/* Legacy participant checkbox labels for backward compatibility */
+/* Legacy participant checkbox labels - simplified */
 .participant-checkbox-label {
   padding: 0.5rem;
   border-radius: 0.5rem;
@@ -196,14 +176,9 @@
   cursor: pointer;
 }
 
-.participant-checkbox-label:hover {
-  background: var(--muted-bg);
-  border-color: rgba(99, 102, 241, 0.2);
-}
-
 .participant-checkbox-label:has(input:checked) {
-  background: rgba(59, 130, 246, 0.05);
-  border-color: rgba(59, 130, 246, 0.2);
+  background: rgba(59, 130, 246, 0.1);
+  border-color: #3b82f6;
 }
 
 .dark .participant-checkbox-label {
@@ -211,12 +186,7 @@
   border-color: rgba(255,255,255,0.06);
 }
 
-.dark .participant-checkbox-label:hover {
-  background: rgba(255,255,255,0.02);
-  border-color: rgba(255,255,255,0.1);
-}
-
 .dark .participant-checkbox-label:has(input:checked) {
-  background: rgba(96, 165, 250, 0.08);
-  border-color: rgba(96, 165, 250, 0.2);
+  background: rgba(96, 165, 250, 0.15);
+  border-color: #60a5fa;
 }

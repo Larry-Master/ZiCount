@@ -58,8 +58,8 @@ export default function HomePage() {
   
   // SSR-safe user selection with localStorage persistence
   const [currentUserId, setCurrentUserId] = useState(() => {
-    if (typeof window === 'undefined') return 'user1';
-    return localStorage.getItem('currentUserId') || 'user1';
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem('currentUserId') || null;
   });
 
   // Wrapper function to persist user selection to localStorage
@@ -119,6 +119,14 @@ export default function HomePage() {
 
   const onFile = (file) => {
     if (!file) return;
+    
+    // Check file size before processing
+    const maxSize = 20 * 1024 * 1024; // 20MB limit
+    if (file.size > maxSize) {
+      setError(`Image too large (${Math.round(file.size / 1024 / 1024)}MB). Please use an image smaller than 20MB. Try taking a new photo with lower resolution or use image editing software to reduce the file size.`);
+      return;
+    }
+    
     setSelectedImage(file);
     setImagePreview(null);
     setError(null);
@@ -130,6 +138,11 @@ export default function HomePage() {
   const analyzeReceipt = async () => {
     if (!selectedImage) return setError('Please select an image first');
     if (!selectedParticipants.length) return setError('Bitte Teilnehmer auswählen');
+
+    // Additional client-side size check before upload
+    if (selectedImage.size > 20 * 1024 * 1024) {
+      return setError(`Image too large (${Math.round(selectedImage.size / 1024 / 1024)}MB). Please use an image smaller than 20MB.`);
+    }
 
     setAnalyzing(true); setError(null);
     try {
@@ -145,7 +158,13 @@ export default function HomePage() {
       let data;
       try { data = JSON.parse(text); } catch { data = { raw: text }; }
 
-      if (!response.ok) throw new Error(data.error || data.raw || `Request failed: ${response.status}`);
+      if (!response.ok) {
+        // Handle specific error cases
+        if (response.status === 413 || text.includes('FUNCTION_PAYLOAD_TOO_LARGE')) {
+          throw new Error('Image file is too large for processing. Please try taking a new photo with lower resolution or use image editing software to reduce the file size to under 4MB.');
+        }
+        throw new Error(data.error || data.raw || `Request failed: ${response.status}`);
+      }
 
       const receipt = {
         name: receiptTitle,
@@ -297,6 +316,14 @@ export default function HomePage() {
             <div className="text-4xl mb-2">📱</div>
             <p className="text-gray-700 mb-1">{selectedImage ? selectedImage.name : isDragging ? 'Drop image here' : 'Tap to take photo or select image'}</p>
             <p className="text-sm text-gray-400">Supports JPG, PNG • Max 20MB</p>
+            {selectedImage && selectedImage.size > 0 && (
+              <p className="text-xs text-gray-500 mt-1">
+                File size: {Math.round(selectedImage.size / 1024)}KB
+                {selectedImage.size > 4 * 1024 * 1024 && (
+                  <span className="text-amber-600 ml-1">⚠️ Large file - may cause upload issues</span>
+                )}
+              </p>
+            )}
           </div>
 
           {/* Receipt title input */}

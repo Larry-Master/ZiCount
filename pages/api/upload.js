@@ -7,9 +7,9 @@ import { checkMethod, errorResponse } from '@/lib/utils/apiHelpers';
 export const config = {
   api: {
     bodyParser: false,
-    // Increase body size limit to 20MB for image uploads
-    responseLimit: '20mb',
-    sizeLimit: '20mb',
+    // Consistent limits with analyze endpoint
+    responseLimit: '10mb',
+    sizeLimit: '10mb',
   },
 };
 
@@ -19,8 +19,8 @@ export default async function handler(req, res) {
   if (!checkMethod(req, res, 'POST')) return;
 
   try {
-    // Parse uploaded file
-    const { files } = await parseFormData(req, { maxFileSize: 20 * 1024 * 1024 });
+    // Parse uploaded file with consistent size limit
+    const { files } = await parseFormData(req, { maxFileSize: 10 * 1024 * 1024 });
     const uploadedFile = Array.isArray(files.file) ? files.file[0] : files.file;
     
     if (!uploadedFile) {
@@ -29,6 +29,14 @@ export default async function handler(req, res) {
 
     const filePath = uploadedFile.filepath || uploadedFile.path;
     const buffer = await fs.readFile(filePath);
+    
+    // Additional size check after reading file
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (buffer.length > maxSize) {
+      return res.status(400).json({ 
+        error: `Image too large (${Math.round(buffer.length / 1024 / 1024)}MB). Maximum size is 10MB. Please use image compression before uploading.` 
+      });
+    }
     
     // Convert to base64 for database storage
     const base64Data = buffer.toString('base64');
