@@ -5,6 +5,7 @@ import ManualReceiptForm from '@/components/ManualReceiptForm';
 import { formatCurrency } from '@/lib/utils/currency';
 import { useClaims, useReceipt } from '@/lib/hooks/useReceipts';
 import { usePeople } from '@/lib/hooks/usePeople';
+import { getAvatarDisplay } from '@/lib/utils/avatar';
 
 export default function ReceiptDetail({ receipt, receiptId, currentUserId, onItemClaimed, onItemUnclaimed, onBack, onClaimsUpdated, onDelete }) {
   const [showParticipants, setShowParticipants] = useState(false);
@@ -343,7 +344,7 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
                             className="participant-checkbox"
                           />
                           <div className="participant-avatar" style={{ backgroundColor: person.color }}>
-                            {person.name.charAt(0).toUpperCase()}
+                            {getAvatarDisplay(person)}
                           </div>
                           <div className="participant-info">
                             <span className="participant-name">{person.name}</span>

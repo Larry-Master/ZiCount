@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { usePeople } from '@/lib/hooks/usePeople';
+import { getAvatarDisplay } from '@/lib/utils/avatar';
 
 export default function PeopleManager({ currentUserId, onCurrentUserChange, onDataChanged, compact = false }) {
   const { people, addPerson, removePerson } = usePeople();
@@ -133,7 +134,7 @@ export default function PeopleManager({ currentUserId, onCurrentUserChange, onDa
                 className="person-avatar"
                 style={{ backgroundColor: person.color }}
               >
-                {person.name.charAt(0).toUpperCase()}
+                {getAvatarDisplay(person)}
               </div>
               <div className="person-details">
                 <span className="person-name">{person.name}</span>

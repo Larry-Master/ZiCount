@@ -18,6 +18,7 @@ import { useRef, useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useReceipts } from '@/lib/hooks/useReceipts';
 import { apiClient } from '@/lib/api/client';
+import { getAvatarDisplay } from '@/lib/utils/avatar';
 import ManualReceiptForm from '@/components/ManualReceiptForm';
 import { usePeople } from '@/lib/hooks/usePeople';
 
@@ -331,7 +332,7 @@ export default function HomePage() {
                     className="participant-checkbox"
                   />
                   <div className="participant-avatar" style={{ backgroundColor: p.color }}>
-                    {p.name.charAt(0).toUpperCase()}
+                    {getAvatarDisplay(p)}
                   </div>
                   <div className="participant-info">
                     <span className="participant-name">{p.name}</span>

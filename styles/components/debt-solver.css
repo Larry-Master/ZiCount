@@ -443,12 +443,6 @@
 }
 
 @media (max-width: 480px) {
-  .debt-person-avatar {
-    width: 28px;
-    height: 28px;
-    font-size: 0.75rem;
-  }
-  
   .debt-person-name {
     font-size: 0.875rem;
     flex: 1 1 0;

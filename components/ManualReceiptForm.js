@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { usePeople } from '@/lib/hooks/usePeople';
+import { getAvatarDisplay } from '@/lib/utils/avatar';
 
 export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId, isEditing = false, initialData = null }) {
   const [name, setName] = useState(initialData?.name || '');
@@ -248,7 +249,7 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId,
               className="participant-checkbox"
             />
             <div className="participant-avatar" style={{ backgroundColor: p.color }}>
-              {p.name.charAt(0).toUpperCase()}
+              {getAvatarDisplay(p)}
             </div>
             <div className="participant-info">
               <span className="participant-name">{p.name}</span>
