@@ -58,7 +58,7 @@ export default function HomePage() {
   const [currentView, setCurrentView] = useState('receipts');   // Current active view/tab
 
   // Simple image optimization for Vercel compatibility
-  const optimizeImageForVercel = (file, maxSizeMB = 2) => {
+  const optimizeImageForVercel = (file, maxSizeMB = 4) => {
     return new Promise((resolve, reject) => {
       if (file.size <= maxSizeMB * 1024 * 1024) {
         resolve(file);
@@ -73,8 +73,8 @@ export default function HomePage() {
         try {
           let { width, height } = img;
           
-          // Reduce dimensions to fit size limit
-          const maxDimension = 1600;
+          // Less aggressive dimension reduction for better OCR
+          const maxDimension = 2400; // Increased from 1600
           if (width > height) {
             if (width > maxDimension) {
               height = (height * maxDimension) / width;
@@ -89,9 +89,13 @@ export default function HomePage() {
           
           canvas.width = width;
           canvas.height = height;
+          
+          // Better quality settings for OCR
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
           ctx.drawImage(img, 0, 0, width, height);
           
-          // Try different quality levels
+          // Start with higher quality and reduce only if needed
           const tryCompress = (quality) => {
             canvas.toBlob((blob) => {
               if (!blob) {
@@ -99,8 +103,9 @@ export default function HomePage() {
                 return;
               }
 
-              if (blob.size > maxSizeMB * 1024 * 1024 && quality > 0.3) {
-                tryCompress(quality - 0.1);
+              // Only reduce quality if still too large
+              if (blob.size > maxSizeMB * 1024 * 1024 && quality > 0.6) {
+                tryCompress(quality - 0.05); // Smaller steps
                 return;
               }
 
@@ -109,11 +114,12 @@ export default function HomePage() {
                 lastModified: Date.now()
               });
               
+              console.log(`Image optimized: ${Math.round(file.size / 1024)}KB → ${Math.round(optimizedFile.size / 1024)}KB`);
               resolve(optimizedFile);
             }, 'image/jpeg', quality);
           };
           
-          tryCompress(0.8);
+          tryCompress(0.92); // Start with higher quality
         } catch (error) {
           reject(error);
         }
@@ -201,11 +207,11 @@ export default function HomePage() {
       
       let processedFile = file;
       
-      // For Vercel deployment: Be more aggressive with optimization
-      // Optimize if larger than 2MB to ensure it works with Vercel's 4.5MB limit
-      if (file.size > 2 * 1024 * 1024) {
+      // For Vercel deployment: Optimize only if larger than 3.5MB
+      // This gives us better OCR quality while staying under Vercel's 4.5MB limit
+      if (file.size > 3.5 * 1024 * 1024) {
         console.log(`Large image detected (${Math.round(file.size / 1024)}KB), optimizing for Vercel deployment...`);
-        processedFile = await optimizeImageForVercel(file, 2); // 2MB limit
+        processedFile = await optimizeImageForVercel(file, 3.5); // 3.5MB limit for better quality
       }
       
       setSelectedImage(processedFile);
@@ -278,9 +284,9 @@ export default function HomePage() {
           console.log(`Uploading image separately: ${Math.round(selectedImage.size / 1024)}KB`);
           
           // For Vercel: If image is too large, skip upload to prevent failures
-          if (selectedImage.size > 3 * 1024 * 1024) { // 3MB limit for Vercel
+          if (selectedImage.size > 4 * 1024 * 1024) { // 4MB limit for Vercel (leaving 0.5MB buffer)
             console.warn('Image too large for Vercel upload, skipping image storage');
-            alert('Image too large for upload to Vercel (>3MB). Receipt will be saved without image. Consider using smaller images.');
+            alert('Image too large for upload to Vercel (>4MB). Receipt will be saved without image. The image was optimized but is still too large.');
           } else {
             const uploadFormData = new FormData();
             uploadFormData.append('file', selectedImage);
@@ -517,9 +523,9 @@ export default function HomePage() {
               <p className="text-xs text-gray-500 mt-1">
                 File size: {Math.round(selectedImage.size / 1024)}KB
                 {selectedImage.size < 4 * 1024 * 1024 ? (
-                  <span className="text-green-600 ml-1">✓ Optimized for upload</span>
+                  <span className="text-green-600 ml-1">✓ Optimized for upload & OCR</span>
                 ) : (
-                  <span className="text-amber-600 ml-1">⚠️ Large file</span>
+                  <span className="text-amber-600 ml-1">⚠️ Large file - may save without image</span>
                 )}
               </p>
             )}
