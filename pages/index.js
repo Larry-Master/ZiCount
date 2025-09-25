@@ -234,85 +234,21 @@ export default function HomePage() {
     if (!selectedImage) return setError('Please select an image first');
     if (!selectedParticipants.length) return setError('Bitte Teilnehmer auswählen');
 
-    // Additional client-side size check before upload
+    // Check Google's 20MB limit
     if (selectedImage.size > 20 * 1024 * 1024) {
       return setError(`Image too large (${Math.round(selectedImage.size / 1024 / 1024)}MB). Please use an image smaller than 20MB.`);
     }
 
     setAnalyzing(true); setError(null);
     try {
-      // Smart image optimization for OCR while maintaining quality
-      const optimizeImageForOCR = (file) => {
-        return new Promise((resolve, reject) => {
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          const img = new Image();
-          
-          img.onload = () => {
-            // Calculate optimal dimensions for OCR (max 2048px on longest side)
-            const maxDimension = 2048;
-            let { width, height } = img;
-            
-            if (Math.max(width, height) > maxDimension) {
-              const ratio = maxDimension / Math.max(width, height);
-              width = Math.floor(width * ratio);
-              height = Math.floor(height * ratio);
-            }
-            
-            canvas.width = width;
-            canvas.height = height;
-            
-            // Draw with high quality settings for text clarity
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
-            ctx.drawImage(img, 0, 0, width, height);
-            
-            // Convert to JPEG with quality optimized for OCR (0.85 maintains text sharpness)
-            canvas.toBlob(resolve, 'image/jpeg', 0.85);
-          };
-          
-          img.onerror = reject;
-          img.src = URL.createObjectURL(file);
-        });
-      };
-
-      // Optimize image if it's larger than 3MB (accounting for base64 expansion)
-      let processedImage = selectedImage;
-      if (selectedImage.size > 3 * 1024 * 1024) {
-        console.log(`Optimizing large image: ${Math.round(selectedImage.size / 1024)}KB`);
-        processedImage = await optimizeImageForOCR(selectedImage);
-        console.log(`Optimized to: ${Math.round(processedImage.size / 1024)}KB`);
-      }
-
-      // Convert optimized image to base64
-      const base64Promise = new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const base64Data = reader.result.split(',')[1]; // Remove data:image/...;base64, prefix
-          resolve(base64Data);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(processedImage);
-      });
-
-      const imageData = await base64Promise;
+      // Use original FormData approach - no compression needed with Netlify
+      const formData = new FormData();
+      formData.append('file', selectedImage);
       
-      // Calculate base64 size (33% larger than binary)
-      const base64SizeMB = (imageData.length * 0.75) / (1024 * 1024);
-      console.log(`Base64 payload size: ${base64SizeMB.toFixed(2)}MB`);
-      
-      // Use new base64 API endpoint instead of FormData
-      const response = await fetch('/api/analyze-base64', {
+      const response = await fetch('/api/analyze', {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'x-file-name': selectedImage.name || `upload_${Date.now()}.jpg` 
-        },
-        body: JSON.stringify({
-          imageData: imageData,
-          mimeType: processedImage.type || 'image/jpeg',
-          filename: selectedImage.name || `upload_${Date.now()}.jpg`
-        }),
+        headers: { 'x-file-name': selectedImage.name || `upload_${Date.now()}.jpg` },
+        body: formData,
       });
 
       const text = await response.text();
@@ -320,12 +256,12 @@ export default function HomePage() {
       try { data = JSON.parse(text); } catch { data = { raw: text }; }
 
       if (!response.ok) {
-        // Handle specific error cases
+        // Handle error cases
         if (response.status === 413 || text.includes('FUNCTION_PAYLOAD_TOO_LARGE') || text.includes('Request Entity Too Large')) {
-          throw new Error(`Upload failed due to file size. Processed size: ${base64SizeMB.toFixed(2)}MB (original: ${Math.round(selectedImage.size / 1024)}KB). The image was optimized but is still too large. Please try taking a photo with lower resolution or use a different image.`);
+          throw new Error(`Upload failed due to file size (${Math.round(selectedImage.size / 1024)}KB). Please try a smaller image.`);
         }
         if (response.status === 504 || text.includes('timeout')) {
-          throw new Error('Processing timeout. The image might be too complex or large. Please try a simpler image or reduce the file size.');
+          throw new Error('Processing timeout. Please try again or use a different image.');
         }
         throw new Error(data.error || data.raw || `Request failed: ${response.status}`);
       }
@@ -333,63 +269,41 @@ export default function HomePage() {
       // Debug: Check what data we got from analyze API
       console.log('Analyze API response size:', text.length, 'characters');
       console.log('Analyze API data keys:', Object.keys(data));
-      if (data.items) {
-        console.log('Items count:', data.items.length);
-        console.log('Largest item name length:', Math.max(...data.items.map(item => (item.name || '').length)));
-      }
-
-      // Show debug info in UI for mobile testing
-      if (text.length > 1000000) { // 1MB of response text
-        alert(`Large analyze response: ${Math.round(text.length / 1024)}KB`);
-      }
 
       // Upload the image separately to avoid MongoDB document size limits
       let imageUrl = null;
       if (selectedImage) {
         try {
-          console.log(`Uploading image separately: ${Math.round(selectedImage.size / 1024)}KB`);
+          console.log(`Uploading image: ${Math.round(selectedImage.size / 1024)}KB`);
           
-          // For Vercel: If image is too large, skip upload to prevent failures
-          if (selectedImage.size > 4 * 1024 * 1024) { // 4MB limit for Vercel (leaving 0.5MB buffer)
-            console.warn('Image too large for Vercel upload, skipping image storage');
-            alert('Image too large for upload to Vercel (>4MB). Receipt will be saved without image. The image was optimized but is still too large.');
+          const uploadFormData = new FormData();
+          uploadFormData.append('file', selectedImage);
+          
+          const uploadResponse = await fetch('/api/upload', {
+            method: 'POST',
+            body: uploadFormData,
+          });
+          
+          if (uploadResponse.ok) {
+            const uploadData = await uploadResponse.json();
+            imageUrl = uploadData.url;
+            console.log('Image upload successful');
           } else {
-            const uploadFormData = new FormData();
-            uploadFormData.append('file', selectedImage);
-            
-            const uploadResponse = await fetch('/api/upload', {
-              method: 'POST',
-              body: uploadFormData,
-            });
-            
-            if (uploadResponse.ok) {
-              const uploadData = await uploadResponse.json();
-              imageUrl = uploadData.url;
-              console.log('Image upload successful, URL length:', imageUrl?.length || 0);
-            } else {
-              const errorText = await uploadResponse.text();
-              console.error('Image upload failed:', errorText);
-              console.warn('Image upload failed, storing without image');
-              // Show upload failure in UI for mobile debugging
-              alert(`Image upload failed: ${uploadResponse.status} - Will save receipt without image`);
-            }
+            const errorText = await uploadResponse.text();
+            console.error('Image upload failed:', errorText);
           }
         } catch (uploadError) {
           console.error('Image upload error:', uploadError);
-          console.warn('Image upload failed:', uploadError);
-          alert('Image upload failed due to connection issue - Will save receipt without image');
-          // Continue without image rather than failing completely
         }
       }
 
       const receipt = {
         name: receiptTitle,
         uploadedBy: paidBy,
-        // CRITICAL: Ensure no base64 data is ever stored in receipt
-        imageUrl: (imageUrl && !imageUrl.startsWith('data:')) ? imageUrl : null,
+        imageUrl: imageUrl,
         items: (data.items || []).map((item, idx) => ({
           id: `item_${Date.now()}_${idx}`,
-          name: (item.name || 'Unknown item').substring(0, 200), // Limit item names
+          name: item.name || 'Unknown item',
           price: typeof item.price === 'object' ? item.price.value : item.price,
           priceEUR: typeof item.price === 'object' ? item.price.value : item.price,
           confidence: item.confidence,
@@ -400,40 +314,8 @@ export default function HomePage() {
         discounts: data.discounts || [],
         totalAmount: data.totalAmount,
         participants: selectedParticipants,
-        // Limit text size to prevent document size issues (first 1000 chars only)
-        text: (data.text || '').substring(0, 1000)
+        text: data.text || ''
       };
-
-      // Debug: Check the size of the receipt data being sent
-      const receiptJson = JSON.stringify(receipt);
-      const receiptSizeMB = receiptJson.length / (1024 * 1024);
-      console.log(`Receipt data size: ${receiptSizeMB.toFixed(2)}MB`);
-      console.log('Receipt data breakdown:', {
-        imageUrlType: typeof receipt.imageUrl,
-        imageUrlLength: receipt.imageUrl?.length || 0,
-        imageUrlIsDataUrl: receipt.imageUrl?.startsWith('data:') || false,
-        itemsCount: receipt.items?.length || 0,
-        textLength: receipt.text?.length || 0,
-        totalCharacters: receiptJson.length
-      });
-      
-      // Show debug info in UI for mobile testing
-      const debugInfo = {
-        sizeMB: receiptSizeMB.toFixed(2),
-        imageUrlLength: receipt.imageUrl?.length || 0,
-        isDataUrl: receipt.imageUrl?.startsWith('data:') || false,
-        itemsCount: receipt.items?.length || 0,
-        imageUploadWorked: !!imageUrl
-      };
-      
-      if (receiptSizeMB > 5) { // Show warning for large data
-        alert(`Large receipt data: ${JSON.stringify(debugInfo, null, 2)}`);
-      }
-      
-      if (receiptSizeMB > 15) {
-        console.error('Receipt data too large - preventing save');
-        throw new Error(`Receipt data too large (${receiptSizeMB.toFixed(2)}MB). This is likely due to large image data. Please try a smaller image.`);
-      }
 
       const saveResponse = await fetch('/api/receipts', {
         method: 'POST',
@@ -445,17 +327,7 @@ export default function HomePage() {
         const errorText = await saveResponse.text();
         let errorData;
         try { errorData = JSON.parse(errorText); } catch { errorData = { raw: errorText }; }
-        
-        // Show detailed error info for mobile debugging
-        const errorInfo = `Save failed: ${saveResponse.status}\nError: ${errorData.error || errorData.raw || 'Unknown error'}\nReceipt size: ${receiptSizeMB.toFixed(2)}MB\nImage URL length: ${receipt.imageUrl?.length || 0}`;
-        
-        if (saveResponse.status === 413) {
-          throw new Error(`Receipt data too large to save (${receiptSizeMB.toFixed(2)}MB). This might be due to many items or large image data.\n\nDebug info:\n${errorInfo}`);
-        }
-        if (saveResponse.status === 500) {
-          throw new Error(`Database error while saving receipt.\n\nDebug info:\n${errorInfo}`);
-        }
-        throw new Error(`Failed to save receipt (${saveResponse.status})\n\nDebug info:\n${errorInfo}`);
+        throw new Error(errorData.error || errorData.raw || `Failed to save receipt: ${saveResponse.status}`);
       }
       const saved = await saveResponse.json();
       saved.items = saved.items.map(item => ({ ...item, receiptId: saved.id }));
