@@ -6,6 +6,7 @@
   NODE_ENV = "production"
   NODE_VERSION = "18"
   NEXT_TELEMETRY_DISABLED = "1"
+  SECRETS_SCAN_OMIT_KEYS = "NODE_ENV,MONGODB_URI"
 
 # Redirect API routes to Netlify functions
 [[redirects]]
