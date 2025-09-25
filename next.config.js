@@ -13,16 +13,19 @@ const nextConfig = {
   // Enable React Strict Mode for better development experience
   reactStrictMode: true,
   
-  // Image optimization configuration for receipt handling
+  // Image optimization configuration
   images: {
-    domains: ['localhost'],     // Allow images from localhost during development
-    unoptimized: true,         // Disable optimization for faster dev builds
+    domains: ['localhost'],
+    unoptimized: true,
   },
+  
+  // Netlify deployment configuration
+  trailingSlash: true,
   
   // Environment variables accessible on client-side
   env: {
-    OCR_REMOTE_URL: process.env.OCR_REMOTE_URL,   // External OCR service endpoint (if used)
-    MONGODB_URI: process.env.MONGODB_URI,         // Database connection string
+    OCR_REMOTE_URL: process.env.OCR_REMOTE_URL,
+    MONGODB_URI: process.env.MONGODB_URI,
   }
 }
 

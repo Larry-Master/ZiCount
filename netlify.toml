@@ -11,7 +11,9 @@
   status = 200
 
 [functions]
-  # Increase function timeout for Document AI processing
-  timeout = 30
-  # Set memory limit for large image processing
-  memory = 1024
+  # Directory for Netlify functions
+  directory = "netlify/functions"
+
+[functions."*"]
+  # Increase function timeout for Document AI processing (max 30s for free tier)
+  timeout = "30s"
