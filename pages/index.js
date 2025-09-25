@@ -21,6 +21,7 @@ import { apiClient } from '@/lib/api/client';
 import { getAvatarDisplay } from '@/lib/utils/avatar';
 import ManualReceiptForm from '@/components/ManualReceiptForm';
 import { usePeople } from '@/lib/hooks/usePeople';
+import { optimizeImageForOCR, needsOptimization } from '@/lib/utils/imageOptimization';
 
 // Dynamic component imports with loading states for better UX
 const ReceiptDetail = dynamic(() => import('@/components/ReceiptDetail'), {
@@ -51,6 +52,7 @@ export default function HomePage() {
   const [selectedImage, setSelectedImage] = useState(null);     // Currently selected image file
   const [imagePreview, setImagePreview] = useState(null);       // Base64 preview of selected image
   const [analyzing, setAnalyzing] = useState(false);            // Loading state for receipt analysis
+  const [optimizing, setOptimizing] = useState(false);          // Loading state for image optimization
   const [savedReceipt, setSavedReceipt] = useState(null);       // Processed and saved receipt data
   const [error, setError] = useState(null);                     // Error state for user feedback
   const [isDragging, setIsDragging] = useState(false);          // Drag & drop visual feedback
@@ -117,22 +119,46 @@ export default function HomePage() {
     if (file) onFile(file);
   };
 
-  const onFile = (file) => {
+  const onFile = async (file) => {
     if (!file) return;
     
-    // Check file size before processing
-    const maxSize = 20 * 1024 * 1024; // 20MB limit
-    if (file.size > maxSize) {
-      setError(`Image too large (${Math.round(file.size / 1024 / 1024)}MB). Please use an image smaller than 20MB. Try taking a new photo with lower resolution or use image editing software to reduce the file size.`);
-      return;
-    }
-    
-    setSelectedImage(file);
-    setImagePreview(null);
     setError(null);
-    const reader = new FileReader();
-    reader.onload = (e) => setImagePreview(e.target.result);
-    reader.readAsDataURL(file);
+    setOptimizing(true);
+    
+    try {
+      // Check if file is too large even for Google's limits
+      const maxGoogleSize = 20 * 1024 * 1024; // 20MB Google limit
+      if (file.size > maxGoogleSize) {
+        setError(`Image too large (${Math.round(file.size / 1024 / 1024)}MB). Maximum supported size is 20MB. Please use image editing software to reduce the file size.`);
+        return;
+      }
+      
+      let processedFile = file;
+      
+      // Optimize for Vercel's 4.5MB limit while maintaining OCR quality
+      if (needsOptimization(file, 4)) {
+        console.log(`Large image detected (${Math.round(file.size / 1024)}KB), optimizing for OCR...`);
+        processedFile = await optimizeImageForOCR(file, {
+          maxDimension: 2048,  // Keep high resolution for OCR
+          quality: 0.9,        // High quality for text recognition
+          maxFileSize: 4       // Vercel's practical limit
+        });
+      }
+      
+      setSelectedImage(processedFile);
+      setImagePreview(null);
+      
+      // Generate preview
+      const reader = new FileReader();
+      reader.onload = (e) => setImagePreview(e.target.result);
+      reader.readAsDataURL(processedFile);
+      
+    } catch (error) {
+      console.error('Image processing failed:', error);
+      setError('Failed to process image. Please try a different image.');
+    } finally {
+      setOptimizing(false);
+    }
   };
 
   const analyzeReceipt = async () => {
@@ -160,8 +186,11 @@ export default function HomePage() {
 
       if (!response.ok) {
         // Handle specific error cases
-        if (response.status === 413 || text.includes('FUNCTION_PAYLOAD_TOO_LARGE')) {
-          throw new Error('Image file is too large for processing. Please try taking a new photo with lower resolution or use image editing software to reduce the file size to under 4MB.');
+        if (response.status === 413 || text.includes('FUNCTION_PAYLOAD_TOO_LARGE') || text.includes('Request Entity Too Large')) {
+          throw new Error(`Upload failed due to file size. Current size: ${Math.round(selectedImage.size / 1024)}KB. Please try taking a new photo with lower resolution settings on your camera, or use image editing software to reduce the file size.`);
+        }
+        if (response.status === 504 || text.includes('timeout')) {
+          throw new Error('Processing timeout. The image might be too complex or large. Please try a simpler image or reduce the file size.');
         }
         throw new Error(data.error || data.raw || `Request failed: ${response.status}`);
       }
@@ -312,15 +341,21 @@ export default function HomePage() {
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
           >
-            <input ref={inputRef} type="file" accept="image/*" capture="environment" onChange={e => onFile(e.target.files?.[0])} className="hidden" />
+            <input ref={inputRef} type="file" accept="image/*" capture="environment" onChange={e => onFile(e.target.files?.[0])} className="hidden" disabled={optimizing} />
             <div className="text-4xl mb-2">📱</div>
-            <p className="text-gray-700 mb-1">{selectedImage ? selectedImage.name : isDragging ? 'Drop image here' : 'Tap to take photo or select image'}</p>
+            {optimizing ? (
+              <p className="text-gray-700 mb-1">🔄 Optimizing image for OCR...</p>
+            ) : (
+              <p className="text-gray-700 mb-1">{selectedImage ? selectedImage.name : isDragging ? 'Drop image here' : 'Tap to take photo or select image'}</p>
+            )}
             <p className="text-sm text-gray-400">Supports JPG, PNG • Max 20MB</p>
             {selectedImage && selectedImage.size > 0 && (
               <p className="text-xs text-gray-500 mt-1">
                 File size: {Math.round(selectedImage.size / 1024)}KB
-                {selectedImage.size > 4 * 1024 * 1024 && (
-                  <span className="text-amber-600 ml-1">⚠️ Large file - may cause upload issues</span>
+                {selectedImage.size < 4 * 1024 * 1024 ? (
+                  <span className="text-green-600 ml-1">✓ Optimized for upload</span>
+                ) : (
+                  <span className="text-amber-600 ml-1">⚠️ Large file</span>
                 )}
               </p>
             )}
@@ -392,8 +427,8 @@ export default function HomePage() {
             </div>
           )}
 
-          <button onClick={analyzeReceipt} disabled={!selectedImage || analyzing} className="btn-primary w-full">
-            {analyzing ? '🔄 Analyzing...' : '🔍 Analyze Receipt'}
+          <button onClick={analyzeReceipt} disabled={!selectedImage || analyzing || optimizing} className="btn-primary w-full">
+            {optimizing ? '🔄 Optimizing...' : analyzing ? '🔄 Analyzing...' : '🔍 Analyze Receipt'}
           </button>
         </div>
       )}

@@ -22,9 +22,9 @@ import { checkMethod, errorResponse } from '@/lib/utils/apiHelpers';
 export const config = {
   api: {
     bodyParser: false,
-    // Set reasonable limits for phone images
-    responseLimit: '50mb',
-    sizeLimit: '50mb',
+    // Set limits that work with Vercel's constraints
+    responseLimit: '20mb',
+    sizeLimit: '20mb',
   },
 };
 
