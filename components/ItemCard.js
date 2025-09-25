@@ -1,5 +1,6 @@
 import { formatCurrency, parsePrice } from '@/lib/utils/currency';
 import { usePeople } from '@/lib/hooks/usePeople';
+import { getAvatarDisplay } from '@/lib/utils/avatar';
 
 export default function ItemCard({ item, currentUserId, onClaim, onUnclaim, isMyClaimsContext = false }) {
   const { getPerson } = usePeople();
@@ -56,19 +57,19 @@ export default function ItemCard({ item, currentUserId, onClaim, onUnclaim, isMy
   return (
     <div className={`item-card ${isPending ? 'opacity-70' : ''}`}>
       {/* Mobile-first responsive layout */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-2 sm:gap-3 sm:flex-row sm:items-center sm:justify-between">
         {/* Main content area */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2 sm:gap-3">
-            <div className="flex-1 pr-2 min-w-0">
-              <h4 className="text-sm font-semibold text-gray-900 truncate">{item.name}</h4>
+        <div className="flex-1 min-w-0 overflow-hidden">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0 pr-2">
+              <h4 className="text-sm font-semibold text-gray-900 truncate leading-tight">{item.name}</h4>
               {item.confidence && (
                 <div className="mt-1 text-xs text-gray-500">Confidence: {Math.round(item.confidence * 100)}%</div>
               )}
             </div>
 
             <div className="flex-shrink-0 text-right">
-              <div className="text-sm font-medium text-gray-900">{formatCurrency(parsedPrice)}</div>
+              <div className="text-sm font-medium text-gray-900 whitespace-nowrap">{formatCurrency(parsedPrice)}</div>
             </div>
           </div>
           
@@ -77,8 +78,8 @@ export default function ItemCard({ item, currentUserId, onClaim, onUnclaim, isMy
             <div className="text-xs text-gray-500 flex-1 min-w-0 truncate">{getStatusText()}</div>
             {claimedByPerson && (
               <div className="flex items-center gap-1 flex-shrink-0">
-                <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium text-white" style={{ backgroundColor: claimedByPerson.color }}>
-                  {claimedByPerson.name.charAt(0).toUpperCase()}
+                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg flex items-center justify-center text-xs font-medium text-white" style={{ backgroundColor: claimedByPerson.color }}>
+                  {getAvatarDisplay(claimedByPerson)}
                 </div>
               </div>
             )}
@@ -90,7 +91,7 @@ export default function ItemCard({ item, currentUserId, onClaim, onUnclaim, isMy
           <button
             onClick={handleClick}
             disabled={isPending || (isMyClaimsContext && !isClaimed)}
-            className={`w-full px-3 py-2 text-xs font-medium rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-offset-1 ${
+            className={`w-full sm:w-auto px-3 py-2 text-xs font-medium rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-offset-1 truncate ${
               isClaimed 
                 ? (canUnclaim 
                   ? 'item-btn-unclaim focus:ring-red-500'
