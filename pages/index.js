@@ -241,12 +241,31 @@ export default function HomePage() {
 
     setAnalyzing(true); setError(null);
     try {
-      const formData = new FormData();
-      formData.append('file', selectedImage);
-      const response = await fetch('/api/analyze', {
+      // Convert image to base64 client-side to bypass FormData size limits
+      const base64Promise = new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64Data = reader.result.split(',')[1]; // Remove data:image/...;base64, prefix
+          resolve(base64Data);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(selectedImage);
+      });
+
+      const imageData = await base64Promise;
+      
+      // Use new base64 API endpoint instead of FormData
+      const response = await fetch('/api/analyze-base64', {
         method: 'POST',
-        headers: { 'x-file-name': selectedImage.name || `upload_${Date.now()}.jpg` },
-        body: formData,
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-file-name': selectedImage.name || `upload_${Date.now()}.jpg` 
+        },
+        body: JSON.stringify({
+          imageData: imageData,
+          mimeType: selectedImage.type || 'image/jpeg',
+          filename: selectedImage.name || `upload_${Date.now()}.jpg`
+        }),
       });
 
       const text = await response.text();
