@@ -3,6 +3,7 @@
   publish = ".next"
 
 [build.environment]
+  NODE_ENV = "production"
   NODE_VERSION = "18"
   NEXT_TELEMETRY_DISABLED = "1"
 
