@@ -7,6 +7,9 @@ import { checkMethod, errorResponse } from '@/lib/utils/apiHelpers';
 export const config = {
   api: {
     bodyParser: false,
+    // Increase body size limit to 20MB for image uploads
+    responseLimit: '20mb',
+    sizeLimit: '20mb',
   },
 };
 
@@ -17,7 +20,7 @@ export default async function handler(req, res) {
 
   try {
     // Parse uploaded file
-    const { files } = await parseFormData(req, { maxFileSize: 10 * 1024 * 1024 });
+    const { files } = await parseFormData(req, { maxFileSize: 20 * 1024 * 1024 });
     const uploadedFile = Array.isArray(files.file) ? files.file[0] : files.file;
     
     if (!uploadedFile) {

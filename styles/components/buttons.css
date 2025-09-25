@@ -60,6 +60,20 @@ button:disabled {
   transform: translateY(-1px);
 }
 
+/* Dark mode for secondary button */
+@media (prefers-color-scheme: dark) {
+  .btn-secondary {
+    background: rgba(156, 163, 175, 0.1);
+    color: #d1d5db;
+    border-color: rgba(156, 163, 175, 0.2);
+  }
+
+  .btn-secondary:hover:not(:disabled) {
+    background: rgba(156, 163, 175, 0.15);
+    border-color: rgba(156, 163, 175, 0.3);
+  }
+}
+
 /* Success button */
 .btn-success {
   background: rgba(34, 197, 94, 0.1);
@@ -92,6 +106,20 @@ button:disabled {
   background: rgba(239, 68, 68, 0.15);
   border-color: rgba(239, 68, 68, 0.3);
   transform: translateY(-1px);
+}
+
+/* Dark mode for danger button */
+@media (prefers-color-scheme: dark) {
+  .btn-danger {
+    background: rgba(248, 113, 113, 0.1);
+    color: #f87171;
+    border-color: rgba(248, 113, 113, 0.2);
+  }
+
+  .btn-danger:hover:not(:disabled) {
+    background: rgba(248, 113, 113, 0.15);
+    border-color: rgba(248, 113, 113, 0.3);
+  }
 }
 
 /* Warning button */
@@ -403,6 +431,28 @@ button:disabled {
 
 .dark .btn-link:hover:not(:disabled) {
   color: #3b82f6;
+}
+
+.dark .btn-outline {
+  background: transparent;
+  color: #60a5fa;
+  border-color: #60a5fa;
+}
+
+.dark .btn-outline:hover:not(:disabled) {
+  background: #60a5fa;
+  color: #0f172a;
+}
+
+.dark .btn-danger {
+  background: rgba(248, 113, 113, 0.15);
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.3);
+}
+
+.dark .btn-danger:hover:not(:disabled) {
+  background: rgba(248, 113, 113, 0.2);
+  border-color: rgba(248, 113, 113, 0.4);
 }
 
 /* Dark mode nav-tabs styling */

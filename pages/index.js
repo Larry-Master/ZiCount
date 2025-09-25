@@ -99,6 +99,7 @@ export default function HomePage() {
   const [showManualForm, setShowManualForm] = useState(false);
   const [selectedParticipants, setSelectedParticipants] = useState([]);
   const [paidBy, setPaidBy] = useState(currentUserId || '');
+  const [receiptTitle, setReceiptTitle] = useState(`Receipt ${new Date().toLocaleDateString('de-DE')}`);
 
   // Update paidBy when currentUserId changes
   useEffect(() => {
@@ -147,7 +148,7 @@ export default function HomePage() {
       if (!response.ok) throw new Error(data.error || data.raw || `Request failed: ${response.status}`);
 
       const receipt = {
-        name: `Receipt ${new Date().toLocaleDateString('de-DE')}`,
+        name: receiptTitle,
         uploadedBy: paidBy,
         imageUrl: imagePreview,
         items: (data.items || []).map((item, idx) => ({
@@ -298,6 +299,18 @@ export default function HomePage() {
             <p className="text-sm text-gray-400">Supports JPG, PNG • Max 20MB</p>
           </div>
 
+          {/* Receipt title input */}
+          <div className="mt-4 mb-4">
+            <label className="block mb-2 font-semibold text-gray-700">Beleg Titel</label>
+            <input
+              type="text"
+              value={receiptTitle}
+              onChange={(e) => setReceiptTitle(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="z.B. Einkauf Supermarkt"
+            />
+          </div>
+
           {/* Paid by dropdown */}
           <div className="mt-4 mb-4">
             <label className="block mb-2 font-semibold text-gray-700">Bezahlt von</label>
@@ -320,7 +333,7 @@ export default function HomePage() {
             <div className="grid grid-cols-2 gap-2">
               {people.map(p => (
                 <div 
-                  key={p.id} 
+                  key={`${p.id}-${paidBy}`}
                   className={`participant-card ${selectedParticipants.includes(p.id) ? 'participant-card-selected' : ''}`}
                   onClick={() => setSelectedParticipants(selectedParticipants.includes(p.id) ? selectedParticipants.filter(id => id!==p.id) : [...selectedParticipants, p.id])}
                 >
@@ -336,8 +349,8 @@ export default function HomePage() {
                   </div>
                   <div className="participant-info">
                     <span className="participant-name">{p.name}</span>
-                    {p.id === currentUserId && (
-                      <span className="participant-badge">(Sie bezahlen)</span>
+                    {p.id === paidBy && (
+                      <span className="participant-badge">(bezahlt)</span>
                     )}
                   </div>
                 </div>

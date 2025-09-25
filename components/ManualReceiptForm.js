@@ -120,11 +120,66 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId,
   const handleImageSelect = (e) => {
     const file = e.target.files?.[0];
     if (file) {
-      setSelectedImage(file);
-      const reader = new FileReader();
-      reader.onload = (e) => setImagePreview(e.target.result);
-      reader.readAsDataURL(file);
+      // Compress image before setting it
+      compressImage(file).then(compressedFile => {
+        setSelectedImage(compressedFile);
+        const reader = new FileReader();
+        reader.onload = (e) => setImagePreview(e.target.result);
+        reader.readAsDataURL(compressedFile);
+      }).catch(err => {
+        console.error('Image compression failed:', err);
+        // Fall back to original file if compression fails
+        setSelectedImage(file);
+        const reader = new FileReader();
+        reader.onload = (e) => setImagePreview(e.target.result);
+        reader.readAsDataURL(file);
+      });
     }
+  };
+
+  // Helper function to compress images
+  const compressImage = (file) => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      
+      img.onload = () => {
+        // Calculate new dimensions (max width/height of 1920px)
+        let { width, height } = img;
+        const maxSize = 1920;
+        
+        if (width > height) {
+          if (width > maxSize) {
+            height = (height * maxSize) / width;
+            width = maxSize;
+          }
+        } else {
+          if (height > maxSize) {
+            width = (width * maxSize) / height;
+            height = maxSize;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        // Draw and compress
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Convert to blob with compression
+        canvas.toBlob((blob) => {
+          // Create a new File object from the compressed blob
+          const compressedFile = new File([blob], file.name, {
+            type: 'image/jpeg',
+            lastModified: Date.now()
+          });
+          resolve(compressedFile);
+        }, 'image/jpeg', 0.8); // 80% quality
+      };
+      
+      img.src = URL.createObjectURL(file);
+    });
   };
 
   const handleImageRemove = () => {
@@ -223,7 +278,7 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId,
       <div className="grid grid-cols-2 gap-2 mb-6">
         {people.map((p) => (
           <div 
-            key={p.id}
+            key={`${p.id}-${paidBy}`}
             className={`participant-card ${selectedPeople.includes(p.id) ? 'participant-card-selected' : ''}`}
             onClick={() => {
               if (selectedPeople.includes(p.id)) {
@@ -253,7 +308,7 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId,
             </div>
             <div className="participant-info">
               <span className="participant-name">{p.name}</span>
-              {p.id === runtimeCurrentUserId && (
+              {p.id === paidBy && (
                 <span className="participant-badge">(Sie bezahlen)</span>
               )}
             </div>

@@ -456,3 +456,35 @@ legend {
     padding: 0.625rem;
   }
 }
+
+/* Paid by dropdown - ensures dropdown arrow is visible */
+.paid-by-dropdown {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid rgba(209, 213, 219, 1);
+  border-radius: 0.5rem;
+  background: white;
+  color: #374151;
+  font-size: 1rem;
+  appearance: auto; /* Ensures native dropdown arrow is shown */
+  cursor: pointer;
+}
+
+.paid-by-dropdown:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-color: var(--primary);
+}
+
+.dark .paid-by-dropdown {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+  color-scheme: dark; /* Ensures native dropdown arrow uses dark styling */
+}
+
+.dark .paid-by-dropdown:focus {
+  outline-color: var(--primary);
+  border-color: var(--primary);
+}
+

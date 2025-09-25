@@ -2,6 +2,7 @@ import { useState } from 'react';
 import ItemCard from '@/components/ItemCard';
 import ClaimModal from '@/components/ClaimModal';
 import ManualReceiptForm from '@/components/ManualReceiptForm';
+import UploadedReceiptForm from '@/components/UploadedReceiptForm';
 import { formatCurrency } from '@/lib/utils/currency';
 import { useClaims, useReceipt } from '@/lib/hooks/useReceipts';
 import { usePeople } from '@/lib/hooks/usePeople';
@@ -12,8 +13,6 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
   const [selectedItem, setSelectedItem] = useState(null);
   const [showClaimModal, setShowClaimModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [editingParticipants, setEditingParticipants] = useState(false);
-  const [selectedParticipants, setSelectedParticipants] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   const { claimItem, unclaimItem, optimisticClaims } = useClaims();
@@ -29,44 +28,7 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
   const isManualReceipt = currentReceipt.items && currentReceipt.items.length > 0 && 
     currentReceipt.items[0].tags?.includes('manual');
 
-  // If editing, show the form
-  if (isEditing && isManualReceipt) {
-    return (
-      <div className="p-4 sm:p-6">
-        <div className="flex items-center justify-between mb-4">
-          <button 
-            className="text-sm text-indigo-600 hover:underline" 
-            onClick={() => setIsEditing(false)}
-          >
-            ← Cancel Edit
-          </button>
-        </div>
-        
-        <ManualReceiptForm
-          isEditing={true}
-          initialData={{
-            id: currentReceipt.id,
-            name: currentReceipt.name,
-            totalAmount: currentReceipt.totalAmount,
-            participants: currentReceipt.participants || [],
-            imageUrl: currentReceipt.imageUrl,
-            createdAt: currentReceipt.createdAt
-          }}
-          currentUserId={currentUserId}
-          onCreated={(updatedReceipt) => {
-            setIsEditing(false);
-            if (refetchReceipt) refetchReceipt();
-            if (onClaimsUpdated) onClaimsUpdated();
-          }}
-          onRefresh={() => {
-            if (refetchReceipt) refetchReceipt();
-            if (onClaimsUpdated) onClaimsUpdated();
-          }}
-        />
-      </div>
-    );
-  }
-
+  // Handler functions
   const handleClaimClick = (item) => {
     setSelectedItem(item);
     setShowClaimModal(true);
@@ -96,68 +58,76 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
     }
   };
 
-  const startEditingParticipants = () => {
-    const currentParticipants = Array.isArray(currentReceipt.participants) && currentReceipt.participants.length > 0
-      ? currentReceipt.participants
-      : [];
-    
-    // If no participants, derive from items (for manual receipts)
-    if (currentParticipants.length === 0 && currentReceipt.items) {
-      const derived = Array.from(new Set((currentReceipt.items || []).map(it => it.participant).filter(Boolean)));
-      setSelectedParticipants(derived);
-    } else {
-      // Use exactly the current participants (don't auto-include payer)
-      setSelectedParticipants(currentParticipants);
-    }
-    setEditingParticipants(true);
-    setShowParticipants(true); // Auto-open the participants list when editing
-  };
-
-  const saveParticipants = async () => {
-    try {
-      const response = await fetch(`/api/receipts/${receiptId || currentReceipt._id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          participants: selectedParticipants,
-          // Recalculate items for manual receipts
-          ...(currentReceipt.items?.[0]?.tags?.includes('manual') && {
-            recalculateItems: true,
-            totalAmount: currentReceipt.totalAmount
-          })
-        })
-      });
-      
-      if (!response.ok) throw new Error('Failed to update participants');
-      
-      await refetchReceipt();
-      setEditingParticipants(false);
-      setShowParticipants(false); // Auto-close the participants list when done editing
-      if (onClaimsUpdated) onClaimsUpdated();
-    } catch (error) {
-      console.error('Failed to update participants:', error);
-      alert('Failed to update participants');
-    }
-  };
-
-  const cancelEditingParticipants = () => {
-    setEditingParticipants(false);
-    setShowParticipants(false); // Auto-close when canceling
-    setSelectedParticipants([]);
-  };
-
-  const toggleParticipant = (personId) => {
-    setSelectedParticipants(prev => 
-      prev.includes(personId) 
-        ? prev.filter(id => id !== personId)
-        : [...prev, personId]
-    );
-  };
-
   const getItemStatus = (item) => {
     const optimistic = optimisticClaims?.get ? optimisticClaims.get(item.id) : undefined;
     return optimistic || item;
   };
+
+  // If editing manual receipt, show the form
+  if (isEditing && isManualReceipt) {
+    return (
+      <div className="p-4 sm:p-6">
+        <div className="flex items-center justify-between mb-4">
+          <button 
+            className="text-sm text-indigo-600 hover:underline" 
+            onClick={() => setIsEditing(false)}
+          >
+            ← Cancel Edit
+          </button>
+        </div>
+        
+        <ManualReceiptForm
+          isEditing={true}
+          initialData={{
+            id: currentReceipt.id,
+            name: currentReceipt.name,
+            totalAmount: currentReceipt.totalAmount,
+            participants: currentReceipt.participants || [],
+            uploadedBy: currentReceipt.uploadedBy,
+            imageUrl: currentReceipt.imageUrl,
+            createdAt: currentReceipt.createdAt
+          }}
+          currentUserId={currentUserId}
+          onCreated={(updatedReceipt) => {
+            setIsEditing(false);
+            if (refetchReceipt) refetchReceipt();
+            if (onClaimsUpdated) onClaimsUpdated();
+          }}
+          onRefresh={() => {
+            if (refetchReceipt) refetchReceipt();
+            if (onClaimsUpdated) onClaimsUpdated();
+          }}
+        />
+      </div>
+    );
+  }
+
+  // If editing uploaded receipt, show the edit form
+  if (isEditing && !isManualReceipt) {
+    return (
+      <div className="p-4 sm:p-6">
+        <div className="flex items-center justify-between mb-4">
+          <button 
+            className="text-sm text-indigo-600 hover:underline" 
+            onClick={() => setIsEditing(false)}
+          >
+            ← Cancel Edit
+          </button>
+        </div>
+        
+        <UploadedReceiptForm
+          receipt={currentReceipt}
+          currentUserId={currentUserId}
+          onSave={() => {
+            setIsEditing(false);
+            if (refetchReceipt) refetchReceipt();
+            if (onClaimsUpdated) onClaimsUpdated();
+          }}
+          onCancel={() => setIsEditing(false)}
+        />
+      </div>
+    );
+  }
 
   // Use totalAmount from receipt data (from API)
   const totalAmount = currentReceipt.totalAmount || 0;
@@ -219,42 +189,41 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
 
   return (
     <div className="p-4 sm:p-6">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-6">
         {onBack && (
           <button className="text-sm text-indigo-600 hover:underline" onClick={onBack}>
             ← Back to Receipts
           </button>
         )}
+      </div>
 
-        <div className="flex items-center gap-3">
-          {isManualReceipt && (
-            <button
-              className="text-sm text-indigo-600 hover:underline"
-              onClick={() => setIsEditing(true)}
-            >
-              Edit Receipt
-            </button>
-          )}
-          <button
-            className="text-sm text-red-600 hover:underline"
-            onClick={async () => {
-              if (typeof onDelete !== 'function') return;
-              setDeleting(true);
-              try {
-                await onDelete();
-                if (onBack) onBack();
-              } catch (err) {
-                console.error('Delete failed:', err);
-                alert(err?.message || 'Delete failed');
-              } finally {
-                setDeleting(false);
-              }
-            }}
-            disabled={deleting}
-          >
-            {deleting ? 'Deleting...' : 'Delete Receipt'}
-          </button>
-        </div>
+      {/* Action buttons */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        <button
+          className="btn-secondary btn-sm"
+          onClick={() => setIsEditing(true)}
+        >
+          Edit Receipt
+        </button>
+        <button
+          className="btn-danger btn-sm"
+          onClick={async () => {
+            if (typeof onDelete !== 'function') return;
+            setDeleting(true);
+            try {
+              await onDelete();
+              if (onBack) onBack();
+            } catch (err) {
+              console.error('Delete failed:', err);
+              alert(err?.message || 'Delete failed');
+            } finally {
+              setDeleting(false);
+            }
+          }}
+          disabled={deleting}
+        >
+          {deleting ? 'Deleting...' : 'Delete Receipt'}
+        </button>
       </div>
 
       <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
@@ -280,96 +249,39 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
 
             {participantCosts.length > 0 && (
               <div className="mt-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <button className="text-sm text-indigo-600 hover:underline" onClick={() => setShowParticipants(v => !v)}>
-                    {showParticipants ? 'Teilnehmerliste ausblenden' : 'Teilnehmerliste anzeigen'}
-                  </button>
-                  {!editingParticipants && (
-                    <button 
-                      className="text-sm text-indigo-600 hover:underline"
-                      onClick={startEditingParticipants}
-                    >
-                      Bearbeiten
-                    </button>
-                  )}
-                </div>
+                <button 
+                  className="btn-secondary btn-sm mb-3"
+                  onClick={() => setShowParticipants(v => !v)}
+                >
+                  {showParticipants ? 'Teilnehmerliste ausblenden' : 'Teilnehmerliste anzeigen'}
+                </button>
 
-                {showParticipants && !editingParticipants && (
-                  <div className="mt-3 bg-gray-50 rounded-lg p-4">
-                    <h3 className="text-sm font-medium mb-2">Teilnehmerliste</h3>
-                    <div className="text-sm text-gray-700 mb-2">
+                {showParticipants && (
+                  <div className="mt-3 bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                    <h3 className="text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">Teilnehmerliste</h3>
+                    <div className="text-sm text-gray-700 dark:text-gray-300 mb-2">
                       <span className="font-semibold">Bezahlt von:</span> {uploaderName} <span className="font-semibold">({formatCurrency(totalAmount)})</span>
                     </div>
                     
                     {participantCosts.length > 0 ? (
                       <div>
-                        <div className="text-sm font-medium text-gray-600 mb-1">Anteilskosten:</div>
-                        <ul className="list-disc ml-5 text-sm text-gray-700">
+                        <div className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Anteilskosten:</div>
+                        <ul className="list-disc ml-5 text-sm text-gray-700 dark:text-gray-300">
                           {participantCosts.map(p => (
                             <li key={p.id}>
                               {p.name}: {formatCurrency(p.cost)}
                               {p.id === currentReceipt.uploadedBy && (
-                                <span className="ml-1 text-xs text-gray-500">(hat bereits bezahlt)</span>
+                                <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">(hat bereits bezahlt)</span>
                               )}
                             </li>
                           ))}
                         </ul>
                       </div>
                     ) : (
-                      <div className="text-sm text-gray-600 italic">
+                      <div className="text-sm text-gray-600 dark:text-gray-400 italic">
                         Keine Teilnehmer ausgewählt.
                       </div>
                     )}
-                  </div>
-                )}
-
-                {showParticipants && editingParticipants && (
-                  <div className="mt-3 bg-gray-50 rounded-lg p-4">
-                    <h3 className="text-sm font-medium mb-3">Teilnehmer bearbeiten</h3>
-                    <div className="text-sm text-gray-700 mb-3">
-                      Wählen Sie alle Personen aus, die an diesem Beleg beteiligt sind:
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-2 mb-4">
-                      {people.map(person => (
-                        <div 
-                          key={person.id}
-                          className={`participant-card ${selectedParticipants.includes(person.id) ? 'participant-card-selected' : ''}`}
-                          onClick={() => toggleParticipant(person.id)}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={selectedParticipants.includes(person.id)}
-                            readOnly
-                            className="participant-checkbox"
-                          />
-                          <div className="participant-avatar" style={{ backgroundColor: person.color }}>
-                            {getAvatarDisplay(person)}
-                          </div>
-                          <div className="participant-info">
-                            <span className="participant-name">{person.name}</span>
-                            {person.id === currentReceipt.uploadedBy && (
-                              <span className="participant-badge">(Bezahler)</span>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="flex gap-2">
-                      <button
-                        onClick={saveParticipants}
-                        className="btn-primary btn-xs"
-                      >
-                        Speichern
-                      </button>
-                      <button
-                        onClick={cancelEditingParticipants}
-                        className="btn-secondary btn-xs"
-                      >
-                        Abbrechen
-                      </button>
-                    </div>
                   </div>
                 )}
               </div>

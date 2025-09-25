@@ -23,7 +23,7 @@ const nextConfig = {
   env: {
     OCR_REMOTE_URL: process.env.OCR_REMOTE_URL,   // External OCR service endpoint (if used)
     MONGODB_URI: process.env.MONGODB_URI,         // Database connection string
-  },
+  }
 }
 
 module.exports = nextConfig
