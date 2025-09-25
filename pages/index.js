@@ -195,10 +195,34 @@ export default function HomePage() {
         throw new Error(data.error || data.raw || `Request failed: ${response.status}`);
       }
 
+      // Upload the image separately to avoid MongoDB document size limits
+      let imageUrl = null;
+      if (selectedImage) {
+        try {
+          const uploadFormData = new FormData();
+          uploadFormData.append('file', selectedImage);
+          
+          const uploadResponse = await fetch('/api/upload', {
+            method: 'POST',
+            body: uploadFormData,
+          });
+          
+          if (uploadResponse.ok) {
+            const uploadData = await uploadResponse.json();
+            imageUrl = uploadData.url;
+          } else {
+            console.warn('Image upload failed, storing without image');
+          }
+        } catch (uploadError) {
+          console.warn('Image upload failed:', uploadError);
+          // Continue without image rather than failing completely
+        }
+      }
+
       const receipt = {
         name: receiptTitle,
         uploadedBy: paidBy,
-        imageUrl: imagePreview,
+        imageUrl: imageUrl,
         items: (data.items || []).map((item, idx) => ({
           id: `item_${Date.now()}_${idx}`,
           name: item.name,
@@ -220,7 +244,20 @@ export default function HomePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(receipt),
       });
-      if (!saveResponse.ok) throw new Error('Failed to save receipt');
+      
+      if (!saveResponse.ok) {
+        const errorText = await saveResponse.text();
+        let errorData;
+        try { errorData = JSON.parse(errorText); } catch { errorData = { raw: errorText }; }
+        
+        if (saveResponse.status === 413) {
+          throw new Error('Receipt data too large to save. This might be due to many items or large image data.');
+        }
+        if (saveResponse.status === 500) {
+          throw new Error('Database error while saving receipt. Please try again.');
+        }
+        throw new Error(errorData.error || errorData.raw || `Failed to save receipt (${saveResponse.status})`);
+      }
       const saved = await saveResponse.json();
       saved.items = saved.items.map(item => ({ ...item, receiptId: saved.id }));
       setSavedReceipt(saved);

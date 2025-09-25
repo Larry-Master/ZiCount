@@ -81,7 +81,16 @@ export default async function handler(req, res) {
       res.status(200).json(savedReceipt);
     } catch (error) {
       console.error('Create receipt error:', error);
-      res.status(500).json({ error: 'Internal server error' });
+      
+      // Handle specific MongoDB errors
+      if (error.code === 10334 || error.message?.includes('document too large')) {
+        return res.status(413).json({ error: 'Receipt data too large. This usually happens with high-resolution images. Please try compressing the image.' });
+      }
+      if (error.code === 11000) {
+        return res.status(409).json({ error: 'Duplicate receipt data detected.' });
+      }
+      
+      res.status(500).json({ error: 'Database error while saving receipt. Please try again.' });
     }
 
   } else {
