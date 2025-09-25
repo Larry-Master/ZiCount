@@ -68,7 +68,7 @@ export default function MyClaims({ userId, onClaimsUpdated, refreshKey }) {
   return (
     <div className="p-4 sm:p-6">
       {/* Header section */}
-      <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100 mb-6">
+      <div className="bg-white rounded-lg p-4 shadow-sm mb-6">
         <h2 className="text-xl font-bold text-gray-900 mb-2">My Claims</h2>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div className="flex items-center gap-4 text-sm text-gray-600">
@@ -91,9 +91,9 @@ export default function MyClaims({ userId, onClaimsUpdated, refreshKey }) {
       {/* Claims by receipt */}
       <div className="space-y-4">
         {Object.values(claimsByReceipt).map(receipt => (
-          <div key={receipt.receiptId} className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+          <div key={receipt.receiptId} className="bg-white rounded-lg shadow-sm overflow-hidden">
             {/* Receipt header */}
-            <div className="bg-gray-50 px-4 py-3 border-b border-gray-100">
+            <div className="bg-gray-50 px-4 py-3">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
                 <h3 className="font-semibold text-gray-900 truncate">
                   {receipt.receiptName}

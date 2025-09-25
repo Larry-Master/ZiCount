@@ -169,6 +169,14 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
 
   const uploaderName = currentReceipt.uploadedBy ? getPerson(currentReceipt.uploadedBy)?.name || 'Unknown' : 'Unknown';
 
+  // Calculate personal costs for current user
+  const personalClaimedCosts = (currentReceipt.items || [])
+    .filter(item => getItemStatus(item).claimedBy === currentUserId)
+    .reduce((sum, item) => {
+      const price = typeof item.price === 'object' ? item.price.value : item.price;
+      return sum + (parseFloat(price) || 0);
+    }, 0);
+
   let participantCosts = [];
   let participantsList = Array.isArray(currentReceipt.participants) && currentReceipt.participants.length > 0
     ? currentReceipt.participants
@@ -203,6 +211,10 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
       });
     }
   }
+
+  // Calculate personal participant costs for current user
+  const personalParticipantCosts = participantCosts.find(p => p.id === currentUserId)?.cost || 0;
+  const totalPersonalCosts = personalClaimedCosts + personalParticipantCosts;
 
   return (
     <div className="p-4 sm:p-6">
@@ -244,7 +256,7 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
         </div>
       </div>
 
-      <div className="bg-white border border-gray-100 rounded-lg p-4 sm:p-6 shadow-sm">
+      <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="flex-1">
             <h2 className="text-lg font-semibold text-gray-900">{currentReceipt.name || `Receipt #${currentReceipt.id}`}</h2>
@@ -282,7 +294,7 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
                 </div>
 
                 {showParticipants && !editingParticipants && (
-                  <div className="mt-3 bg-gray-50 border border-gray-100 rounded-lg p-4">
+                  <div className="mt-3 bg-gray-50 rounded-lg p-4">
                     <h3 className="text-sm font-medium mb-2">Teilnehmerliste</h3>
                     <div className="text-sm text-gray-700 mb-2">
                       <span className="font-semibold">Bezahlt von:</span> {uploaderName} <span className="font-semibold">({formatCurrency(totalAmount)})</span>
@@ -311,7 +323,7 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
                 )}
 
                 {showParticipants && editingParticipants && (
-                  <div className="mt-3 bg-gray-50 border border-gray-100 rounded-lg p-4">
+                  <div className="mt-3 bg-gray-50 rounded-lg p-4">
                     <h3 className="text-sm font-medium mb-3">Teilnehmer bearbeiten</h3>
                     <div className="text-sm text-gray-700 mb-3">
                       Wählen Sie alle Personen aus, die an diesem Beleg beteiligt sind:
@@ -319,20 +331,27 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
                     
                     <div className="grid grid-cols-2 gap-2 mb-4">
                       {people.map(person => (
-                        <label key={person.id} className="flex items-center space-x-2 p-2 border border-gray-200 rounded-lg hover:bg-gray-50">
+                        <div 
+                          key={person.id}
+                          className={`participant-card ${selectedParticipants.includes(person.id) ? 'participant-card-selected' : ''}`}
+                          onClick={() => toggleParticipant(person.id)}
+                        >
                           <input
                             type="checkbox"
                             checked={selectedParticipants.includes(person.id)}
-                            onChange={() => toggleParticipant(person.id)}
-                            className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                            readOnly
+                            className="participant-checkbox"
                           />
-                          <span className="text-sm text-gray-700">
-                            {person.name}
+                          <div className="participant-avatar" style={{ backgroundColor: person.color }}>
+                            {person.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="participant-info">
+                            <span className="participant-name">{person.name}</span>
                             {person.id === currentReceipt.uploadedBy && (
-                              <span className="ml-1 text-xs text-gray-500">(Bezahler)</span>
+                              <span className="participant-badge">(Bezahler)</span>
                             )}
-                          </span>
-                        </label>
+                          </div>
+                        </div>
                       ))}
                     </div>
 
@@ -364,6 +383,12 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
               <div className="text-lg font-semibold text-indigo-600">{formatCurrency(claimedAmount)}</div>
               <div className="text-sm text-gray-500 mt-2">Remaining</div>
               <div className="text-lg font-semibold">{formatCurrency(totalAmount - claimedAmount)}</div>
+              {totalPersonalCosts > 0 && (
+                <>
+                  <div className="text-sm text-gray-500 mt-2">Personal Costs</div>
+                  <div className="text-lg font-semibold text-purple-600">{formatCurrency(totalPersonalCosts)}</div>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -390,7 +415,7 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
             <h3 className="text-sm font-medium text-gray-700 mb-3">Rabatte & Nachlässe</h3>
             <div className="grid gap-3">
               {currentReceipt.discounts.map(discount => (
-                <div key={discount.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div key={discount.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 pr-2">

@@ -27,12 +27,12 @@ export default function ItemCard({ item, currentUserId, onClaim, onUnclaim, isMy
   const getButtonText = () => {
     if (isPending) return 'Processing...';
     if (isMyClaimsContext) {
-      return 'Unclaim';
+      return '× Unclaim';
     }
     if (isClaimed) {
-      return canUnclaim ? 'Unclaim' : 'Claimed';
+      return canUnclaim ? '× Unclaim' : 'Claimed';
     }
-    return 'Claim';
+    return '+ Claim';
   };
 
   const handleClick = () => {
@@ -54,7 +54,7 @@ export default function ItemCard({ item, currentUserId, onClaim, onUnclaim, isMy
   };
 
   return (
-    <div className={`p-4 bg-white rounded-lg shadow-sm border ${isClaimed ? 'border-indigo-200' : 'border-gray-100'} ${isPending ? 'opacity-70' : 'hover:shadow-md'} transition`}>
+    <div className={`p-4 bg-white rounded-lg shadow-sm ${isPending ? 'opacity-70' : 'hover:shadow-md'} transition`}>
       {/* Mobile-first responsive layout */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         {/* Main content area */}
@@ -90,7 +90,17 @@ export default function ItemCard({ item, currentUserId, onClaim, onUnclaim, isMy
           <button
             onClick={handleClick}
             disabled={isPending || (isMyClaimsContext && !isClaimed)}
-            className={`w-full sm:w-auto px-4 py-2 rounded-md text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-offset-1 min-h-[36px] ${isClaimed ? (canUnclaim ? 'bg-white text-indigo-600 border border-indigo-200 hover:bg-indigo-50' : 'bg-gray-100 text-gray-500 cursor-default') : (isMyClaimsContext ? 'bg-gray-100 text-gray-500 cursor-default' : 'bg-indigo-600 text-white hover:bg-indigo-700')}`}
+            className={`w-full py-3 rounded-lg font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 ${
+              isClaimed 
+                ? (canUnclaim 
+                  ? 'bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-500'
+                  : 'bg-gray-100 text-gray-500 cursor-default border border-gray-300'
+                ) 
+                : (isMyClaimsContext 
+                  ? 'bg-gray-100 text-gray-500 cursor-default border border-gray-300' 
+                  : 'bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-500'
+                )
+            }`}
           >
             {getButtonText()}
           </button>

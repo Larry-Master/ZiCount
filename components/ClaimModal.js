@@ -46,7 +46,7 @@ export default function ClaimModal({ item, onClaim, onCancel, currentUserId }) {
                 key={person.id}
                 type="button"
                 onClick={() => setSelectedUserId(person.id)}
-                className={`flex flex-col items-center gap-2 p-3 rounded-lg border ${selectedUserId === person.id ? 'border-indigo-500 bg-indigo-50' : 'border-gray-100 bg-white'} focus:outline-none`}
+                className={`person-select-btn ${selectedUserId === person.id ? 'person-select-btn-active' : ''} flex flex-col items-center gap-2 p-3 rounded-lg border focus:outline-none transition-all`}
               >
                 <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white" style={{ backgroundColor: person.color }}>{person.name.charAt(0).toUpperCase()}</div>
                 <div className="text-xs text-gray-700 truncate">{person.name}</div>

@@ -15,8 +15,10 @@
  */
 
 import { formatCurrency } from '@/lib/utils/currency';
+import { usePeople } from '@/lib/hooks/usePeople';
 
-export default function ReceiptList({ receipts, onReceiptSelect, loading }) {
+export default function ReceiptList({ receipts, onReceiptSelect, loading, currentUserId }) {
+  const { getPerson } = usePeople();
   // Display loading spinner while fetching data
   if (loading) {
     return <div className="p-6 text-center text-gray-500">Loading receipts...</div>;
@@ -52,6 +54,45 @@ export default function ReceiptList({ receipts, onReceiptSelect, loading }) {
     return sum + claimedAmount;
   }, 0);
 
+  // Calculate personal costs across all receipts for current user
+  const totalPersonalCosts = receipts.reduce((sum, receipt) => {
+    // Calculate personal claimed costs
+    const personalClaimedCosts = (receipt.items || [])
+      .filter(item => item.claimedBy === currentUserId)
+      .reduce((claimedSum, item) => {
+        const price = typeof item.price === 'object' ? item.price.value : item.price;
+        return claimedSum + (parseFloat(price) || 0);
+      }, 0);
+
+    // Calculate personal participant costs
+    let personalParticipantCosts = 0;
+    let participantsList = Array.isArray(receipt.participants) && receipt.participants.length > 0
+      ? receipt.participants
+      : [];
+
+    if ((!participantsList || participantsList.length === 0) && receipt.items) {
+      const derived = Array.from(new Set((receipt.items || []).map(it => it.participant).filter(Boolean)));
+      if (derived.length > 0) participantsList = derived;
+    }
+
+    if (participantsList && participantsList.length > 0) {
+      const totalAmount = receipt.totalAmount || 0;
+      const itemsHaveParticipant = receipt.items && receipt.items.length > 0 && receipt.items.every(it => it.participant);
+      
+      if (itemsHaveParticipant) {
+        const itemsForUser = (receipt.items || []).filter(it => it.participant === currentUserId);
+        personalParticipantCosts = itemsForUser.reduce((s, it) => {
+          const price = typeof it.price === 'object' ? it.price.value : it.price;
+          return s + (parseFloat(price) || 0);
+        }, 0);
+      } else if (participantsList.includes(currentUserId)) {
+        personalParticipantCosts = parseFloat((totalAmount / participantsList.length).toFixed(2));
+      }
+    }
+
+    return sum + personalClaimedCosts + personalParticipantCosts;
+  }, 0);
+
   return (
     <div className="p-4 sm:p-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
@@ -71,6 +112,12 @@ export default function ReceiptList({ receipts, onReceiptSelect, loading }) {
             <span className="text-gray-500 font-medium">Remaining:</span>
             <span className="font-semibold text-green-600">{formatCurrency(totalOverall - totalClaimedOverall)}</span>
           </div>
+          {totalPersonalCosts > 0 && (
+            <div className="flex items-center justify-between sm:justify-start gap-2 p-2 sm:p-0 bg-purple-50 sm:bg-transparent rounded-lg sm:rounded-none">
+              <span className="text-gray-500 font-medium">Your Total:</span>
+              <span className="font-semibold text-purple-600">{formatCurrency(totalPersonalCosts)}</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -90,7 +137,7 @@ export default function ReceiptList({ receipts, onReceiptSelect, loading }) {
           const isManualReceipt = receipt.items && receipt.items.length > 0 && receipt.items[0].tags?.includes('manual');
           
           return (
-            <button key={receipt.id} onClick={() => onReceiptSelect(receipt.id)} className="w-full text-left bg-white border border-gray-100 rounded-lg p-4 hover:shadow-md transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50">
+            <button key={receipt.id} onClick={() => onReceiptSelect(receipt.id)} className="w-full text-left bg-white rounded-lg p-4 hover:shadow-md transition-shadow duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50">
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                 {/* Main content area */}
                 <div className="flex-1 min-w-0">

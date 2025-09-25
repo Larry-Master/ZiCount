@@ -49,41 +49,18 @@ body {
   
   /* Button improvements */
   button {
-    min-height: 44px; /* iOS touch target minimum */
-    touch-action: manipulation;
-    max-width: 100%;
+    min-height: 44px; /* Better touch targets */
   }
   
   /* Form improvements */
   input, select, textarea {
-    font-size: 16px; /* Prevents zoom on iOS */
-    min-height: 44px;
-    max-width: 100%;
-  }
-  
-  /* Modal improvements */
-  .fixed.inset-0 .relative {
-    margin: 1rem;
-    max-height: calc(100vh - 2rem);
-    width: calc(100vw - 2rem);
-    max-width: calc(100vw - 2rem);
-  }
-  
-  /* Prevent any element from causing horizontal overflow */
-  * {
-    max-width: 100%;
+    min-height: 44px; /* Better touch targets */
   }
 }
 
-/* Tablet adjustments */
-@media (min-width: 641px) and (max-width: 1024px) {
-  .min-h-screen {
-    padding: 1.25rem;
-  }
-}
-
-/* Theme variables (light defaults) */
-:root {
+/* CSS Variables - Light theme (default) */
+body {
+  /* Light theme colors */
   --bg: #f5f5f5;
   --text: #111827;
   --muted: #6b7280;
@@ -91,12 +68,12 @@ body {
   --card-bg: #ffffff;
   --muted-bg: #f3f4f6;
   --input-bg: #ffffff;
-  --card-shadow: rgba(16,24,40,0.04);
+  --card-shadow: rgba(0,0,0,0.05);
 }
 
-/* Dark theme overrides applied when documentElement has .dark */
+/* Dark theme colors */
 .dark {
-  --bg: #0b1220;
+  --bg: #0f1720;
   --text: #e6eef8;
   --muted: #9ca3af;
   --primary: #60a5fa;
@@ -337,24 +314,6 @@ body {
   box-shadow: 0 6px 18px var(--card-shadow);
 }
 
-/* Button base to normalize look across components */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.6rem 1rem;
-  border-radius: 10px;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
-}
-
-.btn:active { transform: translateY(1px); }
-.btn-primary { background: var(--primary); color: #fff; }
-.btn-ghost { background: transparent; color: var(--muted); }
-
 /* Dark toggle (fixed, small) */
 .dark-toggle {
   position: fixed;
@@ -365,6 +324,7 @@ body {
   align-items: center;
   justify-content: center;
 }
+
 .dark-toggle .btn {
   width: 44px;
   height: 44px;
@@ -379,37 +339,13 @@ body {
   align-items: center;
   justify-content: center;
 }
-.dark .dark-toggle .btn { border-color: rgba(255,255,255,0.06); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
 
-/* Modern action buttons for PeopleManager */
-
-.add-person-btn:active { transform: translateY(1px); }
-.add-person-btn.compact {
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  border-radius: 12px;
-  background: linear-gradient(180deg, #60a5fa, #3b82f6);
-  box-shadow: 0 8px 20px rgba(59,130,246,0.18);
-  font-size: 1.25rem;
+.dark .dark-toggle .btn { 
+  border-color: rgba(255,255,255,0.06); 
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3); 
 }
 
-.add-person-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;          /* space between icon and text */
-  padding: 0.75rem 1rem; /* py-3 px-4 equivalent */
-  min-height: 44px;      /* touch target */
-  border-radius: 0.5rem; /* rounded-lg */
-  font-weight: 600;      /* font-semibold */
-  border: 2px solid #4f46e5; /* indigo-600 border */
-  color: #4f46e5;        /* indigo-600 text */
-  background-color: transparent; /* outlined */
-  cursor: pointer;
-  transition: color 150ms cubic-bezier(0.4,0,0.2,1),
-              background-color 150ms cubic-bezier(0.4,0,0.2,1);
-}
+/* Add receipt button specific styles */
 .add-receipt-btn {
   display: inline-flex;
   align-items: center;
@@ -448,104 +384,6 @@ body {
   box-shadow: 0 0 0 2px rgba(79,70,229,0.5); /* focus ring */
 }
 
-.form-actions {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  margin-top: 0.6rem;
-}
-.form-actions button {
-  flex: 1 1 auto;
-  min-height: 44px;
-  border-radius: 10px;
-  padding: 0.6rem 0.9rem;
-  font-weight: 700;
-}
-.form-actions button[type="submit"] { background: var(--primary); color: #fff; box-shadow: 0 6px 18px rgba(59,130,246,0.12); }
-.form-actions button[type="button"] { background: var(--muted-bg); color: var(--muted); }
-
-.switch-user-btn {
-  background: transparent;
-  border: 1px solid #e6edf8;
-  color: var(--primary);
-  padding: 0.4rem 0.65rem;
-  border-radius: 8px;
-  font-weight: 700;
-}
-.remove-person-btn {
-  background: transparent;
-  border: none;
-  color: #ef4444; /* red */
-  font-size: 1.15rem;
-  padding: 0.25rem 0.5rem;
-  border-radius: 8px;
-}
-
-/* Participant checkbox -> pill toggle styles (used in ManualReceiptForm and Upload participant list) */
-/* Relies on structure: <label> <input type="checkbox" /> <span>Label</span> </label> */
-label:has(> input[type="checkbox"]) {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.6rem 0.75rem;
-  border-radius: 12px;
-  border: 1px solid rgba(230,232,235,0.9);
-  background: var(--card-bg);
-  cursor: pointer;
-  transition: background-color 0.12s ease, box-shadow 0.12s ease, transform 0.08s ease;
-}
-label:has(> input[type="checkbox"]):active { transform: translateY(1px); }
-/* hide native checkbox but keep it accessible */
-label:has(> input[type="checkbox"]) input[type="checkbox"] {
-  position: absolute;
-  opacity: 0;
-  width: 1px;
-  height: 1px;
-  margin: 0;
-  padding: 0;
-}
-/* style the visible text and optional icon */
-label:has(> input[type="checkbox"]) span {
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 0.5rem;
-  color: #111827;
-  font-weight: 600;
-}
-/* checked state */
-label:has(> input[type="checkbox"]) input[type="checkbox"]:checked + span {
-  background: linear-gradient(180deg, #60a5fa, #3b82f6);
-  color: #fff;
-  padding: 0.25rem 0.5rem;
-  border-radius: 8px;
-  box-shadow: 0 8px 20px rgba(59,130,246,0.12);
-}
-/* ensure label spacing for inputs that used padding in markup */
-label:has(> input[type="checkbox"]) > input[type="checkbox"] + span { padding-left: 0; }
-
-/* Make participant pills full-width and stacked on small screens */
-@media (max-width: 640px) {
-  .grid > label:has(> input[type="checkbox"]) {
-    width: 100%;
-    display: flex;
-  }
-  .grid.grid-cols-2 { grid-template-columns: 1fr; }
-}
-
-/* Form elements */
-input[type="text"], input[type="search"], input[type="email"], input[type="number"], textarea, select {
-  width: 100%;
-  padding: 0.6rem 0.75rem;
-  border-radius: 10px;
-  border: 1px solid #e6e8eb;
-  background: #fff;
-  color: #111827;
-  outline: none;
-  transition: box-shadow 0.12s ease, border-color 0.12s ease;
-}
-input:focus, textarea:focus, select:focus { box-shadow: 0 6px 18px rgba(59,130,246,0.12); border-color: var(--primary); }
-
 /* Modal helpers */
 .modal-backdrop { background: rgba(0,0,0,0.45); }
 .modal { max-width: 720px; width: 100%; margin: 1rem; }
@@ -553,112 +391,161 @@ input:focus, textarea:focus, select:focus { box-shadow: 0 6px 18px rgba(59,130,2
 /* Image helpers */
 .img-responsive { width: 100%; height: auto; display: block; border-radius: 8px; }
 
-/* People manager responsive tweaks */
-.people-manager { display: flex; flex-direction: column; gap: 0.75rem; }
-.people-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.6rem; }
-.person-item { display:flex; align-items:center; justify-content:space-between; padding:0.5rem; border-radius:10px; background:var(--card-bg); border:1px solid rgba(241,243,245,0.6); }
-.person-avatar { width:36px; height:36px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; color:#fff; font-weight:700; }
-
-.person-item.current { box-shadow: 0 6px 18px rgba(59,130,246,0.06); border-color: rgba(59,130,246,0.12); }
-.person-details { margin-left: 0.6rem; display:flex; flex-direction:column; }
-.person-info { display:flex; align-items:center; }
-
-/* Small screens: stack actions and make inputs full-width */
-@media (max-width: 640px) {
-  .form-actions { flex-direction: column-reverse; gap: 0.5rem; }
-  .add-person-btn.compact { width:44px; height:44px; border-radius:12px; }
-  .people-list { grid-template-columns: 1fr; }
-  .person-avatar { width:44px; height:44px; border-radius:10px; font-size:1rem; }
-  .person-item { padding:0.75rem; }
+/* Receipt card styling */
+.receipt-card {
+  background: var(--card-bg);
+  border-radius: 12px;
+  border: 1px solid rgba(229, 231, 235, 1);
+  transition: all 0.2s ease;
+  overflow: hidden;
 }
 
+.receipt-card:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.08);
+  transform: translateY(-2px);
+}
 
-/* Item card mobile improvements */
+.dark .receipt-card {
+  border-color: rgba(255,255,255,0.08);
+}
+
+.dark .receipt-card:hover {
+  border-color: rgba(96, 165, 250, 0.3);
+  box-shadow: 0 8px 25px rgba(96, 165, 250, 0.12);
+}
+
+/* Item card styling */
 .item-card {
-  padding: 0.875rem;
-  border-radius: 8px;
+  background: var(--card-bg);
   border: 1px solid rgba(229, 231, 235, 1);
-  background: white;
+  border-radius: 12px;
+  padding: 1rem;
   transition: all 0.2s ease;
-  touch-action: manipulation;
 }
 
 .item-card:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border-color: rgba(99, 102, 241, 0.3);
+  border-color: rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08);
 }
 
+.dark .item-card {
+  border-color: rgba(255,255,255,0.08);
+}
+
+.dark .item-card:hover {
+  border-color: rgba(96, 165, 250, 0.3);
+  box-shadow: 0 4px 12px rgba(96, 165, 250, 0.12);
+}
+
+/* Text overflow prevention */
+.text-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.text-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Utility classes */
+.min-w-0 {
+  min-width: 0;
+}
+
+.flex-shrink-0 {
+  flex-shrink: 0;
+}
+
+.break-words {
+  word-break: break-word;
+}
+
+/* Make sure all interactive elements are accessible */
+button, [role="button"], input[type="submit"], input[type="button"] {
+  cursor: pointer;
+  min-height: 44px;
+}
+
+button:disabled, [role="button"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Responsive grid helpers */
 @media (max-width: 640px) {
-  .item-card {
-    padding: 0.75rem;
+  .grid-cols-2 {
+    grid-template-columns: 1fr !important;
   }
   
-  .item-card .item-name {
-    font-size: 0.9rem;
-    font-weight: 600;
-    line-height: 1.3;
-  }
-  
-  .item-card .item-price {
-    font-size: 1rem;
-    font-weight: 700;
-  }
-  
-  .item-card button {
-    padding: 0.5rem 0.875rem;
-    font-size: 0.8rem;
-    border-radius: 6px;
-    font-weight: 600;
-    min-height: 36px;
-    width: 100%;
-    /* Prevent button overflow */
-    max-width: 100%;
-    word-break: break-word;
-  }
-  
-  /* Ensure buttons don't cause horizontal scroll */
-  .item-card .flex {
-    max-width: 100%;
-    overflow: hidden;
-  }
-  
-  .item-card .truncate {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
+  .sm-full-width {
+    width: 100% !important;
   }
 }
 
-/* Dark mode form and input improvements */
-.dark input,
-.dark textarea,
-.dark select {
-  background-color: #374151;
-  border-color: #4b5563;
-  color: #ffffff;
+/* Dark theme improvements */
+.dark {
+  color-scheme: dark;
 }
 
-.dark input::placeholder,
-.dark textarea::placeholder {
-  color: #9ca3af;
+.dark body {
+  background-color: var(--bg);
+  color: var(--text);
 }
 
-.dark input:focus,
-.dark textarea:focus,
-.dark select:focus {
-  background-color: #374151;
-  border-color: #6366f1;
-  color: #ffffff;
+/* Dark theme for dark toggle button */
+.dark .dark-toggle .btn { 
+  border-color: rgba(255,255,255,0.06); 
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3); 
 }
 
-/* Ensure text is visible in dark theme */
+/* Dark theme for add receipt button */
+.dark .add-receipt-btn {
+  border-color: #818cf8;     /* indigo-400 in dark mode */
+  color: #818cf8;
+  background-color: transparent;
+}
+
+.dark .add-receipt-btn:hover {
+  background-color: #818cf8; /* hover fill in dark mode */
+  color: #000000;
+}
+
+/* Dark theme for receipt cards */
+.dark .receipt-card {
+  border-color: rgba(255,255,255,0.08);
+}
+
+.dark .receipt-card:hover {
+  border-color: rgba(96, 165, 250, 0.3);
+  box-shadow: 0 8px 25px rgba(96, 165, 250, 0.12);
+}
+
+/* Dark theme for item cards */
+.dark .item-card {
+  border-color: rgba(255,255,255,0.08);
+}
+
+.dark .item-card:hover {
+  border-color: rgba(96, 165, 250, 0.3);
+  box-shadow: 0 4px 12px rgba(96, 165, 250, 0.12);
+}
+
+/* Dark theme for text colors */
 .dark .text-gray-900 {
-  color: #ffffff !important;
+  color: #e6eef8 !important;
+}
+
+.dark .text-gray-800 {
+  color: #d1dbe8 !important;
 }
 
 .dark .text-gray-700 {
-  color: #d1d5db !important;
+  color: #9ca3af !important;
 }
 
 .dark .text-gray-600 {
@@ -668,227 +555,148 @@ input:focus, textarea:focus, select:focus { box-shadow: 0 6px 18px rgba(59,130,2
 .dark .text-gray-500 {
   color: #6b7280 !important;
 }
-.debt-solver {
-  padding: 1rem;
+
+.dark .text-gray-400 {
+  color: #6b7280 !important;
 }
 
-@media (max-width: 640px) {
-  .debt-solver {
-    padding: 0.75rem;
-  }
-  
-  .debt-solver .debt-card {
-    padding: 0.875rem;
-    margin-bottom: 0.75rem;
-  }
-  
-  .debt-solver .person-name {
-    font-size: 0.9rem;
-    font-weight: 600;
-  }
-  
-  .debt-solver .debt-amount {
-    font-size: 1rem;
-    font-weight: 700;
-  }
-}
-/* Mobile-specific navigation fixes */
-@media (max-width: 640px) {
-  .title {
-    font-size: 1.5rem;
-    margin-bottom: 1rem;
-    text-align: center;
-  }
-
-  .nav-tabs {
-    /* Better mobile padding */
-    padding: 0.875rem 1rem;
-    margin-left: -0.5rem;
-    margin-right: -0.5rem;
-    /* Improved scrolling */
-    scroll-padding-inline: 1rem;
-  }
-
-  .nav-tabs button {
-    padding: 0.75rem 1rem;
-    font-size: 0.85rem;
-    font-weight: 600;
-    /* Ensure proper touch targets */
-    min-height: 44px;
-    min-width: max-content;
-    flex-shrink: 0;
-    /* Better text handling */
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    /* Enhanced touch experience */
-    touch-action: manipulation;
-  }
-  
-  /* Improved gradient overlays */
-  .nav-tabs::before {
-    background: linear-gradient(to right, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.8) 70%, transparent 100%);
-    width: 20px;
-  }
-
-  .nav-tabs::after {
-    background: linear-gradient(to left, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.8) 70%, transparent 100%);
-    width: 20px;
-  }
-
-  /* Dark mode improvements */
-  .dark .nav-tabs::before {
-    background: linear-gradient(to right, rgba(15, 23, 36, 0.95) 0%, rgba(15, 23, 36, 0.8) 70%, transparent 100%);
-  }
-
-  .dark .nav-tabs::after {
-    background: linear-gradient(to left, rgba(15, 23, 36, 0.95) 0%, rgba(15, 23, 36, 0.8) 70%, transparent 100%);
-  }
-  
-  /* General mobile improvements */
-  .container { 
-    padding: 12px; 
-  }
-  
-  .card { 
-    padding: 1rem; 
-  }
-  
-  .people-list { 
-    grid-template-columns: 1fr; 
-  }
-  
-  .app-header { 
-    top: 10px; 
-    padding: 1rem; 
-  }
+/* Dark theme for background colors */
+.dark .bg-gray-50 {
+  background-color: rgba(255, 255, 255, 0.05) !important;
 }
 
-/* Small helper utilities */
-.muted { color: var(--muted); }
-.caps { text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.04em; }
-
-/* Minimal dark-mode overrides (non-invasive) - applied when documentElement has .dark */
-.dark body {
-  background: #0b1220;
-  color: #e6eef8;
-}
-.dark .card,
-.dark .app-header,
-.dark .person-item,
-.dark label:has(> input[type="checkbox"]) {
-  background: #0f1724;
-  color: #e6eef8;
-  border-color: rgba(255,255,255,0.04);
-}
-.dark input[type="text"],
-.dark input[type="search"],
-.dark input[type="email"],
-.dark input[type="number"],
-.dark textarea,
-.dark select {
-  background: #0b1220;
-  color: #e6eef8;
-  border-color: rgba(255,255,255,0.06);
-}
-.dark .nav-tabs button { background: #071426; color: #9ca3af; }
-.dark .nav-tabs button.active { background: #60a5fa; color: #031124; }
-
-/* Dark toggle button (fixed, small) */
-.dark-toggle {
-  position: fixed;
-  right: 12px;
-  bottom: 12px;
-  z-index: 60;
-}
-.dark-toggle .btn {
-  padding: 0.5rem 0.6rem;
-  font-size: 0.875rem;
-  border-radius: 9999px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+.dark .bg-gray-100 {
+  background-color: rgba(255, 255, 255, 0.08) !important;
 }
 
-/* Map common Tailwind utility classes to dark-mode equivalents */
-.dark .bg-white,
-.dark .bg-gray-50,
-.dark .bg-gray-100,
-.dark .bg-gray-200 {
+.dark .bg-white {
   background-color: var(--card-bg) !important;
 }
 
-.dark .bg-gray-50 { background-color: rgba(255,255,255,0.02) !important; }
-
-.dark .text-gray-900,
-.dark .text-gray-800,
-.dark .text-gray-700,
-.dark .text-gray-600,
-.dark .text-gray-500 {
-  color: var(--text) !important;
+/* Dark theme for borders */
+.dark .border-gray-200 {
+  border-color: rgba(255,255,255,0.08) !important;
 }
 
-.dark .text-gray-400,
-.dark .text-gray-300 {
+.dark .border-gray-300 {
+  border-color: rgba(255,255,255,0.12) !important;
+}
+
+/* Dark theme for form controls */
+.dark input,
+.dark textarea,
+.dark select {
+  background: var(--input-bg) !important;
+  color: var(--text) !important;
+  border-color: rgba(255,255,255,0.06) !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
   color: var(--muted) !important;
 }
 
-.dark .text-indigo-600 { color: #60a5fa !important; }
-.dark .text-green-600 { color: #34d399 !important; }
-.dark .text-red-600 { color: #f97373 !important; }
-
-.dark .border-gray-100,
-.dark .border-gray-200,
-.dark .border-gray-300,
-.dark .border-gray-400 {
-  border-color: rgba(255,255,255,0.04) !important;
+.dark input:focus,
+.dark textarea:focus,
+.dark select:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1) !important;
 }
 
-.dark .bg-indigo-50,
-.dark .bg-green-50,
+.dark select option {
+  background: var(--input-bg) !important;
+  color: var(--text) !important;
+}
+
+/* Dark theme for participant selection dropdowns */
+.dark .user-select {
+  background: var(--input-bg) !important;
+  color: var(--text) !important;
+  border-color: rgba(255,255,255,0.06) !important;
+}
+
+/* Dark theme for navigation buttons */
+.dark .nav-tabs button { 
+  background: #071426 !important; 
+  color: #9ca3af !important; 
+}
+
+.dark .nav-tabs button.active { 
+  background: #60a5fa !important; 
+  color: #031124 !important; 
+}
+
+/* Dark theme for modal buttons */
+.dark .fixed.inset-0 button[type="button"] {
+  background: rgba(75, 85, 99, 0.1) !important;
+  color: #9ca3af !important;
+  border-color: rgba(75, 85, 99, 0.2) !important;
+}
+
+.dark .fixed.inset-0 button[type="button"]:hover {
+  background: rgba(75, 85, 99, 0.15) !important;
+  border-color: rgba(75, 85, 99, 0.3) !important;
+}
+
+.dark .fixed.inset-0 .grid button[type="button"][class*="border-indigo-500"] {
+  background: rgba(96, 165, 250, 0.1) !important;
+  color: #60a5fa !important;
+  border-color: rgba(96, 165, 250, 0.3) !important;
+}
+
+/* Dark theme for colored amounts */
+.dark .text-indigo-600 {
+  color: #60a5fa !important;
+}
+
+.dark .text-purple-600 {
+  color: #c084fc !important;
+}
+
+.dark .text-green-600 {
+  color: #34d399 !important;
+}
+
+.dark .text-red-600 {
+  color: #f87171 !important;
+}
+
+/* Dark theme for colored backgrounds */
+.dark .bg-indigo-50 {
+  background-color: rgba(96, 165, 250, 0.08) !important;
+}
+
+.dark .bg-purple-50 {
+  background-color: rgba(192, 132, 252, 0.08) !important;
+}
+
+.dark .bg-green-50 {
+  background-color: rgba(52, 211, 153, 0.08) !important;
+}
+
 .dark .bg-red-50 {
-  background-color: rgba(255,255,255,0.02) !important;
+  background-color: rgba(248, 113, 113, 0.08) !important;
 }
 
-/* badges and small colored pills */
-.dark .bg-green-50 { background-color: rgba(16,185,129,0.08) !important; }
-.dark .bg-red-50 { background-color: rgba(239,68,68,0.08) !important; }
-
-/* card accent backgrounds used in ReceiptDetail */
-.dark .bg-gray-50 { background-color: #071426 !important; }
-
-/* More aggressive mappings for common utilities used across the app */
-.dark .min-h-screen,
-.dark .min-h-0,
-.dark .min-h-full {
-  background: var(--bg) !important;
+/* Dark theme debt coloring classes */
+.dark .debt-highest {
+  color: #f87171 !important; /* Red for highest debt */
 }
 
-.dark .bg-gray-100,
-.dark .bg-gray-200,
-.dark .bg-gray-300,
-.dark .bg-gray-400 {
-  background-color: #0b1220 !important;
+.dark .debt-lowest {
+  color: #34d399 !important; /* Green for lowest debt */
 }
 
-.dark .bg-indigo-50,
-.dark .bg-indigo-100 {
-  background-color: rgba(96,165,250,0.06) !important;
+.dark .settlement-amount {
+  color: #60a5fa !important; /* Blue for settlement amounts */
 }
 
-.dark .bg-white { background-color: var(--card-bg) !important; }
-
-.dark .text-white { color: #e6eef8 !important; }
-.dark .text-gray-500 { color: var(--muted) !important; }
-
-.dark .border-gray-300,
-.dark .border-gray-400,
-.dark .border-gray-500 {
-  border-color: rgba(255,255,255,0.04) !important;
+/* Ensure high-contrast for important UI elements in dark mode */
+.dark .add-receipt-btn { 
+  box-shadow: 0 6px 18px rgba(59,130,246,0.12); 
 }
-
-/* Ensure some high-contrast UI pieces remain visible */
-.dark .add-receipt-btn { box-shadow: 0 6px 18px rgba(59,130,246,0.12); }
-.dark .btn-primary { background: #2563eb !important; color: #fff !important; }
 
 /* Make muted small text more legible in dark backgrounds */
-.dark small, .dark .text-sm { color: var(--muted) !important; }
-
+.dark small, .dark .text-sm { 
+  color: var(--muted) !important; 
+}

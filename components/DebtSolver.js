@@ -171,9 +171,6 @@ export default function DebtSolver() {
     .slice()
     .sort((a, b) => (balances[b.id] || 0) - (balances[a.id] || 0));
 
-  const biggestCreditor = sortedPeopleByBalance.find((p) => (balances[p.id] || 0) > 0);
-  const biggestDebtor = [...sortedPeopleByBalance].reverse().find((p) => (balances[p.id] || 0) < 0);
-
   return (
     <div className="bg-white rounded-2xl shadow p-6">
       <h3 className="text-lg font-semibold mb-4">Schulden (Abrechnung)</h3>
@@ -181,59 +178,49 @@ export default function DebtSolver() {
 
       {!loading && (
         <>
-          <h4 className="text-md font-semibold mt-2 mb-2">Bilanzen</h4>
-          <ul className="space-y-1">
-            {sortedPeopleByBalance.map((p) => {
+          <h4 className="text-md font-semibold mt-2 mb-4">Bilanzen</h4>
+          <div className="space-y-2">
+            {sortedPeopleByBalance.map((p, index) => {
               const amt = balances[p.id] || 0;
               const cls = amt > 0 ? 'text-green-600' : amt < 0 ? 'text-red-600' : 'text-gray-600';
-              const isTopCreditor = biggestCreditor && biggestCreditor.id === p.id;
-              const isTopDebtor = biggestDebtor && biggestDebtor.id === p.id;
 
               return (
-                <li
+                <div
                   key={p.id}
-                  className="flex justify-between items-center text-sm p-2 rounded-md border"
+                  className="debt-person-item flex items-center justify-between p-3 bg-gray-50 rounded-lg"
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="font-medium">{p.name}</span>
-                    {isTopCreditor && (
-                      <span className="inline-block text-xs font-medium bg-green-50 text-green-800 px-2 py-0.5 rounded">
-                        Bezahlt alles &lt;3
-                      </span>
-                    )}
-                    {isTopDebtor && (
-                      <span className="inline-block text-xs font-medium bg-red-50 text-red-800 px-2 py-0.5 rounded">
-                        Vermutlich nie beim Einkauf dabei
-                      </span>
-                    )}
-                  </div>
-                  <span className={cls}>{formatCurrency(amt)}</span>
-                </li>
+                  <span className="debt-person-name">{p.name}</span>
+                  <span className={`debt-amount font-medium ${cls}`}>{formatCurrency(amt)}</span>
+                </div>
               );
             })}
-          </ul>
+          </div>
 
-          <h4 className="text-md font-semibold mt-4 mb-2">Ausgleichszahlungen</h4>
+          <h4 className="text-md font-semibold mt-4 mb-4">Ausgleichszahlungen</h4>
           {(!settlements || settlements.length === 0) ? (
-            <div className="text-gray-600">Keine offenen Schulden — alle sind ausgeglichen.</div>
+            <div className="text-gray-600 text-center py-8 bg-green-50 rounded-xl">
+              <div className="text-2xl mb-2">🎉</div>
+              <div className="font-medium">Keine offenen Schulden</div>
+              <div className="text-sm">Alle sind ausgeglichen!</div>
+            </div>
           ) : (
-            <ul className="space-y-2">
+            <div className="space-y-3">
               {settlements.map((s, idx) => (
-                <li
+                <div
                   key={idx}
-                  className="p-3 border rounded-md flex justify-between items-center"
+                  className="settlement-item p-3 bg-gray-50 rounded-lg"
                 >
-                  <div>
-                    <div className="text-sm text-gray-600 flex items-center gap-3">
-                      <span className="text-sm text-red-600">{getName(s.from)}</span>
-                      <span aria-hidden>→</span>
-                      <span className="text-sm text-green-600">{getName(s.to)}</span>
+                  <div className="flex items-center justify-between">
+                    <div className="settlement-info">
+                      <span className="settlement-name font-medium text-red-600">{getName(s.from)}</span>
+                      <span className="mx-2">→</span>
+                      <span className="settlement-name font-medium text-green-600">{getName(s.to)}</span>
                     </div>
-                    <div className="text-lg font-medium">{formatCurrency(s.amount)}</div>
+                    <div className="settlement-amount font-semibold text-blue-600">{formatCurrency(s.amount)}</div>
                   </div>
-                </li>
+                </div>
               ))}
-            </ul>
+            </div>
           )}
         </>
       )}

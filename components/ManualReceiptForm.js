@@ -7,6 +7,7 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId,
   const [selectedPeople, setSelectedPeople] = useState(initialData?.participants || []);
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(initialData?.imageUrl || null);
+  const [paidBy, setPaidBy] = useState(initialData?.uploadedBy || currentUserId || (typeof window !== 'undefined' ? localStorage.getItem('currentUserId') || 'user1' : 'user1'));
   // date is no longer collected from the user; use current date automatically
   const [loading, setLoading] = useState(false);
 
@@ -76,7 +77,7 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId,
         imageUrl: imageUrl,
         items,
         totalAmount: totalValue, // Include the total amount for manual receipts
-        uploadedBy: runtimeCurrentUserId,
+        uploadedBy: paidBy,
         participants,
         text: ''
       };
@@ -158,6 +159,21 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId,
         <span className="px-3 flex items-center bg-gray-100 border border-l-0 border-gray-300 rounded-r-lg text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300">€</span>
       </div>
 
+      {/* Paid by dropdown */}
+      <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Bezahlt von</label>
+      <select
+        value={paidBy}
+        onChange={(e) => setPaidBy(e.target.value)}
+        className="paid-by-dropdown mb-4"
+        required
+      >
+        {people.map(person => (
+          <option key={person.id} value={person.id}>
+            {person.name} {person.id === runtimeCurrentUserId ? '(ich)' : ''}
+          </option>
+        ))}
+      </select>
+
       {/* Image Upload Section */}
       <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Bild hinzufügen (optional)</label>
       <div className="mb-4">
@@ -202,27 +218,45 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId,
 
   {/* date is set automatically; no input shown */}
 
-      <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Personen auswählen</label>
+      <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-3">Personen auswählen</label>
       <div className="grid grid-cols-2 gap-2 mb-6">
         {people.map((p) => (
-          <label key={p.id} className="flex items-center space-x-2 p-2 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-800">
+          <div 
+            key={p.id}
+            className={`participant-card ${selectedPeople.includes(p.id) ? 'participant-card-selected' : ''}`}
+            onClick={() => {
+              if (selectedPeople.includes(p.id)) {
+                setSelectedPeople(selectedPeople.filter(id => id !== p.id));
+              } else {
+                setSelectedPeople([...selectedPeople, p.id]);
+              }
+            }}
+          >
             <input
               type="checkbox"
               value={p.id}
               checked={selectedPeople.includes(p.id)}
               onChange={(e) => {
-                if (e.target.checked) setSelectedPeople([...selectedPeople, p.id]);
-                else setSelectedPeople(selectedPeople.filter((id) => id !== p.id));
+                e.stopPropagation();
+                // Handle checkbox change - same logic as parent div click
+                if (selectedPeople.includes(p.id)) {
+                  setSelectedPeople(selectedPeople.filter(id => id !== p.id));
+                } else {
+                  setSelectedPeople([...selectedPeople, p.id]);
+                }
               }}
-              className="w-4 h-4 text-indigo-600 border-gray-300 dark:border-gray-600 rounded focus:ring-indigo-500 dark:bg-gray-700"
+              className="participant-checkbox"
             />
-            <span className="text-sm text-gray-700 dark:text-gray-300">
-              {p.name}
+            <div className="participant-avatar" style={{ backgroundColor: p.color }}>
+              {p.name.charAt(0).toUpperCase()}
+            </div>
+            <div className="participant-info">
+              <span className="participant-name">{p.name}</span>
               {p.id === runtimeCurrentUserId && (
-                <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">(Sie bezahlen)</span>
+                <span className="participant-badge">(Sie bezahlen)</span>
               )}
-            </span>
-          </label>
+            </div>
+          </div>
         ))}
       </div>
 

@@ -97,6 +97,14 @@ export default function HomePage() {
   const [claimsVersion, setClaimsVersion] = useState(0);
   const [showManualForm, setShowManualForm] = useState(false);
   const [selectedParticipants, setSelectedParticipants] = useState([]);
+  const [paidBy, setPaidBy] = useState(currentUserId || '');
+
+  // Update paidBy when currentUserId changes
+  useEffect(() => {
+    if (currentUserId && !paidBy) {
+      setPaidBy(currentUserId);
+    }
+  }, [currentUserId, paidBy]);
 
   // Drag & drop
   const handleDragOver = (e) => { e.preventDefault(); setIsDragging(true); };
@@ -139,7 +147,7 @@ export default function HomePage() {
 
       const receipt = {
         name: `Receipt ${new Date().toLocaleDateString('de-DE')}`,
-        uploadedBy: currentUserId,
+        uploadedBy: paidBy,
         imageUrl: imagePreview,
         items: (data.items || []).map((item, idx) => ({
           id: `item_${Date.now()}_${idx}`,
@@ -264,6 +272,7 @@ export default function HomePage() {
         <ReceiptList
           receipts={receipts}
           loading={receiptsLoading}
+          currentUserId={currentUserId}
           onReceiptSelect={(id) => {
             const r = receipts.find(r => r.id===id);
             if(r) { setSavedReceipt(r); setCurrentView('receipt'); }
@@ -288,23 +297,49 @@ export default function HomePage() {
             <p className="text-sm text-gray-400">Supports JPG, PNG • Max 20MB</p>
           </div>
 
+          {/* Paid by dropdown */}
+          <div className="mt-4 mb-4">
+            <label className="block mb-2 font-semibold text-gray-700">Bezahlt von</label>
+            <select
+              value={paidBy}
+              onChange={(e) => setPaidBy(e.target.value)}
+              className="paid-by-dropdown"
+            >
+              {people.map(person => (
+                <option key={person.id} value={person.id}>
+                  {person.name} {person.id === currentUserId ? '(ich)' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Participant selection */}
           <div className="mt-4 mb-6">
-            <label className="block mb-2 font-semibold text-gray-700">Teilnehmer auswählen</label>
+            <label className="block mb-3 font-semibold text-gray-700">Teilnehmer auswählen</label>
             <div className="grid grid-cols-2 gap-2">
               {people.map(p => (
-                <label key={p.id} className="flex items-center space-x-2">
-                  <input type="checkbox" value={p.id} checked={selectedParticipants.includes(p.id)}
-                    onChange={e => setSelectedParticipants(e.target.checked ? [...selectedParticipants,p.id] : selectedParticipants.filter(id => id!==p.id))}
-                    className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                <div 
+                  key={p.id} 
+                  className={`participant-card ${selectedParticipants.includes(p.id) ? 'participant-card-selected' : ''}`}
+                  onClick={() => setSelectedParticipants(selectedParticipants.includes(p.id) ? selectedParticipants.filter(id => id!==p.id) : [...selectedParticipants, p.id])}
+                >
+                  <input 
+                    type="checkbox" 
+                    value={p.id} 
+                    checked={selectedParticipants.includes(p.id)}
+                    onChange={() => {}} // Handled by parent div onClick
+                    className="participant-checkbox"
                   />
-                  <span className="text-gray-700">
-                    {p.name}
+                  <div className="participant-avatar" style={{ backgroundColor: p.color }}>
+                    {p.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="participant-info">
+                    <span className="participant-name">{p.name}</span>
                     {p.id === currentUserId && (
-                      <span className="ml-1 text-xs text-gray-500">(Sie bezahlen)</span>
+                      <span className="participant-badge">(Sie bezahlen)</span>
                     )}
-                  </span>
-                </label>
+                  </div>
+                </div>
               ))}
             </div>
           </div>

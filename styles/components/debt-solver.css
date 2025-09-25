@@ -1,0 +1,410 @@
+/* Debt Solver Components */
+/* Styles for debt calculation, settlement display, and debt solver UI */
+
+/* Debt solver container */
+.debt-solver {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  background: var(--card-bg);
+  border-radius: 1rem;
+  border: 1px solid rgba(229, 231, 235, 1);
+}
+
+/* Debt solver header */
+.debt-solver-header {
+  display: flex;
+  align-items: center;
+  justify-content: between;
+  gap: 1rem;
+}
+
+.debt-solver-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+
+.debt-solver-summary {
+  font-size: 0.875rem;
+  color: var(--muted);
+  margin-top: 0.25rem;
+}
+
+/* Debt list */
+.debt-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.debt-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 0.75rem;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.debt-item:hover {
+  background: rgba(0, 0, 0, 0.03);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* Debt item content */
+.debt-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.debt-people {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.debt-person {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.debt-person-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+
+.debt-person-name {
+  font-weight: 500;
+  color: var(--text);
+  font-size: 0.875rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100px;
+}
+
+.debt-arrow {
+  color: var(--muted);
+  font-size: 1rem;
+  margin: 0 0.25rem;
+}
+
+/* Debt amount */
+.debt-amount {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--primary);
+  text-align: right;
+  min-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Debt description */
+.debt-description {
+  flex: 1;
+  font-size: 0.875rem;
+  color: var(--text);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 0.5rem;
+}
+
+/* Settlement summary */
+.settlement-summary {
+  background: rgba(59, 130, 246, 0.05);
+  border: 1px solid rgba(59, 130, 246, 0.1);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  text-align: center;
+}
+
+.settlement-summary h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 0.5rem 0;
+}
+
+.settlement-count {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin: 0;
+}
+
+.settlement-label {
+  font-size: 0.875rem;
+  color: var(--muted);
+  margin-top: 0.25rem;
+}
+
+/* Empty state */
+.debt-empty {
+  text-align: center;
+  padding: 2rem;
+  color: var(--muted);
+}
+
+.debt-empty-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.debt-empty-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--text);
+}
+
+.debt-empty-description {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+/* Loading state */
+.debt-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: var(--muted);
+  gap: 0.75rem;
+}
+
+.debt-loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Error state */
+.debt-error {
+  background: rgba(239, 68, 68, 0.05);
+  border: 1px solid rgba(239, 68, 68, 0.1);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  text-align: center;
+  color: #ef4444;
+}
+
+.debt-error-title {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.debt-error-description {
+  font-size: 0.875rem;
+  opacity: 0.8;
+}
+
+/* Debt solver actions */
+.debt-solver-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.debt-solver-actions button {
+  flex: 1;
+  min-width: 120px;
+}
+
+/* Dark theme adjustments */
+.dark .debt-solver {
+  background: var(--card-bg);
+  border-color: rgba(255,255,255,0.08);
+}
+
+.dark .debt-solver-title {
+  color: var(--text);
+}
+
+.dark .debt-solver-summary {
+  color: var(--muted);
+}
+
+.dark .debt-item {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.dark .debt-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.dark .debt-person-name {
+  color: var(--text);
+}
+
+.dark .debt-arrow {
+  color: var(--muted);
+}
+
+.dark .debt-amount {
+  color: #60a5fa;
+}
+
+.dark .debt-description {
+  color: var(--text);
+}
+
+.dark .settlement-summary {
+  background: rgba(96, 165, 250, 0.08);
+  border-color: rgba(96, 165, 250, 0.2);
+}
+
+.dark .settlement-summary h3 {
+  color: var(--text);
+}
+
+.dark .settlement-count {
+  color: #60a5fa;
+}
+
+.dark .settlement-label {
+  color: var(--muted);
+}
+
+.dark .debt-empty-title {
+  color: var(--text);
+}
+
+.dark .debt-empty-description {
+  color: var(--muted);
+}
+
+.dark .debt-loading {
+  color: var(--muted);
+}
+
+.dark .debt-loading-spinner {
+  border-color: rgba(255, 255, 255, 0.1);
+  border-top-color: #60a5fa;
+}
+
+.dark .debt-error {
+  background: rgba(248, 113, 113, 0.08);
+  border-color: rgba(248, 113, 113, 0.2);
+  color: #f87171;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .debt-solver {
+    padding: 1rem;
+    gap: 1rem;
+  }
+  
+  .debt-solver-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .debt-solver-title {
+    font-size: 1.25rem;
+  }
+  
+  .debt-item {
+    padding: 0.75rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .debt-content {
+    width: 100%;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .debt-people {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .debt-person-name {
+    max-width: 80px;
+  }
+  
+  .debt-description {
+    text-align: left;
+    padding: 0;
+  }
+  
+  .debt-amount {
+    align-self: flex-end;
+    font-size: 1.125rem;
+  }
+  
+  .settlement-summary {
+    padding: 1rem;
+  }
+  
+  .settlement-count {
+    font-size: 1.75rem;
+  }
+  
+  .debt-solver-actions {
+    flex-direction: column;
+  }
+  
+  .debt-solver-actions button {
+    min-width: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .debt-person-avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 0.75rem;
+  }
+  
+  .debt-person-name {
+    max-width: 60px;
+    font-size: 0.8125rem;
+  }
+  
+  .debt-amount {
+    font-size: 1rem;
+    min-width: 70px;
+  }
+  
+  .debt-arrow {
+    font-size: 0.875rem;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
