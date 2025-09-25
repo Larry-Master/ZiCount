@@ -1,18 +1,22 @@
 [build]
-  command = "npm run build"
+  command = "npm run build && echo 'Build completed successfully'"
   publish = ".next"
 
 [build.environment]
   NODE_VERSION = "18"
+  NEXT_TELEMETRY_DISABLED = "1"
 
+# Redirect API routes to Netlify functions
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
 
 [functions]
-  # Directory for Netlify functions
   directory = "netlify/functions"
+
+[functions."*"]
+  timeout = "30s"
 
 [functions."*"]
   # Increase function timeout for Document AI processing (max 30s for free tier)
