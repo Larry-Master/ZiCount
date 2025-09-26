@@ -39,8 +39,15 @@ export default async function handler(req, res) {
       expires: Date.now() + 15 * 60 * 1000, // 15 minutes
       // contentType: 'image/jpeg',  // Allow any content type
     });
+  // Also create a signed read URL so the client can fetch the uploaded image for preview
+  // Note: the read URL will return 404 until the object exists; that's expected.
+  const [readUrl] = await file.getSignedUrl({
+      version: 'v4',
+      action: 'read',
+      expires: Date.now() + 15 * 60 * 1000, // 15 minutes
+    });
 
-    res.status(200).json({ uploadUrl: url, gcsUrl: `gs://${process.env.GCS_BUCKET_NAME}/${filename}` });
+    res.status(200).json({ uploadUrl: url, gcsUrl: `gs://${process.env.GCS_BUCKET_NAME}/${filename}`, readUrl });
   } catch (error) {
     console.error('Error generating upload URL:', error);
     res.status(500).json({ error: 'Failed to generate upload URL', details: error.message });

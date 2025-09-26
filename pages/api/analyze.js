@@ -277,15 +277,9 @@ export default async function handler(req, res) {
         if (storage) {
           const bucket = storage.bucket(bucketName);
           const file = bucket.file(filename);
-          try {
-            const [buffer] = await file.download();
-            const mimeType = gcsUrl.includes('.png') ? 'image/png' : 'image/jpeg';
-            imageBase64 = `data:${mimeType};base64,${buffer.toString('base64')}`;
-          } catch (downloadErr) {
-            console.warn('Failed to download GCS file for embedding:', downloadErr.message || downloadErr);
-            imageBase64 = null;
-          }
-
+          // Avoid downloading the full image into memory and embedding it in the response.
+          // Large base64 payloads can exceed serverless response limits and slow the client.
+          // Only attempt to delete the temporary GCS object and report the deletion result.
           try {
             await file.delete();
             deletedFromGCS = true;
@@ -293,6 +287,7 @@ export default async function handler(req, res) {
             console.warn('Failed to delete GCS file:', delErr.message || delErr);
             deletedFromGCS = false;
           }
+          imageBase64 = null;
         }
       }
     } catch (err) {
