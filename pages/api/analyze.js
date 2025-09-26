@@ -14,6 +14,7 @@
  */
 
 import { DocumentProcessorServiceClient } from '@google-cloud/documentai';
+import { Storage } from '@google-cloud/storage';
 import { checkMethod, errorResponse } from '@/lib/utils/apiHelpers';
 
 // Disable Next.js default body parser to handle JSON
@@ -257,11 +258,62 @@ export default async function handler(req, res) {
         }
       }
     }
+    // Try to fetch the image bytes from GCS and delete the object to avoid
+    // leaving large files in the bucket. This helps keep GCS as a temporary
+    // staging location for Document AI processing only.
+    let imageBase64 = null;
+    let deletedFromGCS = false;
+    try {
+      // Parse gs://bucket/filename
+      const match = (gcsUrl || '').match(/^gs:\/\/([^/]+)\/(.+)$/);
+      if (match) {
+        const bucketName = match[1];
+        const filename = match[2];
+
+        // Initialize Storage client with the same credential strategy as other endpoints
+        let storage;
+        if (process.env.NODE_ENV === 'development' && process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+          storage = new Storage();
+        } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+          const serviceAccountKey = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+          storage = new Storage({ credentials: serviceAccountKey, projectId: serviceAccountKey.project_id });
+        } else {
+          // If no credentials available, skip fetching/deleting but continue returning the analysis
+          storage = null;
+        }
+
+        if (storage) {
+          const bucket = storage.bucket(bucketName);
+          const file = bucket.file(filename);
+          try {
+            const [buffer] = await file.download();
+            const mimeType = gcsUrl.includes('.png') ? 'image/png' : 'image/jpeg';
+            imageBase64 = `data:${mimeType};base64,${buffer.toString('base64')}`;
+          } catch (downloadErr) {
+            console.warn('Failed to download GCS file for embedding:', downloadErr.message || downloadErr);
+            imageBase64 = null;
+          }
+
+          try {
+            await file.delete();
+            deletedFromGCS = true;
+          } catch (delErr) {
+            console.warn('Failed to delete GCS file:', delErr.message || delErr);
+            deletedFromGCS = false;
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('GCS post-processing failed:', err.message || err);
+    }
+
     return res.status(200).json({
       items: items,
       discounts: discounts,
       totalAmount: totalAmount,
-      currency: 'EUR'
+      currency: 'EUR',
+      imageBase64,
+      deletedFromGCS
     });
 
   } catch (error) {

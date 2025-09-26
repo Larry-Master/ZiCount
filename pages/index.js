@@ -217,10 +217,16 @@ export default function HomePage() {
         throw new Error(data.error || data.raw || `Request failed: ${response.status}`);
       }
 
+      // Prefer an embedded base64 image returned by the analyze API. The
+      // analyze endpoint will attempt to download the GCS object and delete
+      // it; if it returned imageBase64 we use that for storing/previewing so
+      // we don't rely on the temporary public GCS URL.
+      const imageUrlToStore = data.imageBase64 || publicUrl;
+
       const receipt = {
         name: receiptTitle,
         uploadedBy: paidBy,
-        imageUrl: publicUrl,
+        imageUrl: imageUrlToStore,
         items: (data.items || []).map((item, idx) => ({
           id: `item_${Date.now()}_${idx}`,
           name: item.name,
@@ -236,6 +242,12 @@ export default function HomePage() {
         participants: selectedParticipants,
         text: data.text
       };
+
+      if (data.deletedFromGCS === false) {
+        // Inform the user that the temporary file could not be deleted from GCS
+        // (non-blocking): leave a non-fatal warning in the UI.
+        setError('Hinweis: Temporäre Datei konnte in Google Cloud nicht gelöscht werden. Bitte prüfen Sie die Bucket-Aufbewahrungsrichtlinien.');
+      }
 
       const saveResponse = await fetch('/api/receipts', {
         method: 'POST',
