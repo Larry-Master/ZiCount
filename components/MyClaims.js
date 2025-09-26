@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { formatCurrency, calculateTotal } from '@/lib/utils/currency';
 import { apiClient } from '@/lib/api/client';
 import { useClaims, useUserClaims } from '@/lib/hooks/useReceipts';
@@ -20,6 +20,11 @@ export default function MyClaims({ userId, onClaimsUpdated, refreshKey }) {
       return;
     }
 
+    // Use a ref to track in-flight unclaim requests and prevent duplicates
+    if (!handleUnclaim.inFlight) handleUnclaim.inFlight = new Set();
+    if (handleUnclaim.inFlight.has(item.id)) return;
+    handleUnclaim.inFlight.add(item.id);
+
     try {
       // Use the hook's unclaim which performs optimistic cache updates for receipts
       await unclaimItem(item.receiptId, item.id, userId);
@@ -31,6 +36,8 @@ export default function MyClaims({ userId, onClaimsUpdated, refreshKey }) {
       }
     } catch (err) {
       console.error('Unclaim failed:', err);
+    } finally {
+      handleUnclaim.inFlight.delete(item.id);
     }
   };
 

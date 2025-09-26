@@ -95,6 +95,16 @@ export default function ReceiptList({ receipts, onReceiptSelect, loading, curren
     return sum + personalClaimedCosts + personalParticipantCosts;
   }, 0) : 0;
 
+  // Ensure newest receipts appear first. Create a sorted copy so we don't mutate props.
+  const sortedReceipts = [...receipts].sort((a, b) => {
+    const key = (r) => {
+      if (r && r.createdAt) return new Date(r.createdAt).getTime();
+      // fallback to numeric id if createdAt is missing
+      return Number(r && r.id) || 0;
+    };
+    return key(b) - key(a);
+  });
+
   return (
     <div className="p-4 sm:p-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
@@ -124,7 +134,7 @@ export default function ReceiptList({ receipts, onReceiptSelect, loading, curren
       </div>
 
       <div className="grid gap-3">
-        {receipts.map(receipt => {
+        {sortedReceipts.map(receipt => {
           // Use API totalAmount
           const totalAmount = receipt.totalAmount || 0;
           const claimedAmount = (receipt.items || [])

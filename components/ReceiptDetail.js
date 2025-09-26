@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import ItemCard from '@/components/ItemCard';
 import ClaimModal from '@/components/ClaimModal';
 import ManualReceiptForm from '@/components/ManualReceiptForm';
@@ -46,11 +46,18 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
   };
 
   const handleUnclaim = async (item) => {
+    // Guard against duplicate unclaim requests for the same item
+    if (!handleUnclaim.inFlight) handleUnclaim.inFlight = new Set();
+    if (handleUnclaim.inFlight.has(item.id)) return;
+    handleUnclaim.inFlight.add(item.id);
+
     try {
       const result = await unclaimItem(currentReceipt.id, item.id);
       if (result && onItemUnclaimed) onItemUnclaimed(item.id);
     } catch (err) {
       console.error('Unclaim failed:', err);
+    } finally {
+      handleUnclaim.inFlight.delete(item.id);
     }
   };
 
