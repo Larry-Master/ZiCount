@@ -252,7 +252,7 @@ export default function HomePage() {
         try {
           // Rough estimate of decoded bytes from base64 length: 3/4 * length
           const estimatedBytes = Math.floor((data.imageBase64.length * 3) / 4);
-          const MAX_BYTES = 2 * 1024 * 1024; // 2MB
+          const MAX_BYTES = 4 * 1024 * 1024; // 4MB - allow larger embedded images (user wants ~2-5MB)
           if (estimatedBytes > MAX_BYTES) {
             // create a thumbnail (smaller) for storing
             try {
@@ -302,7 +302,7 @@ export default function HomePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(receipt),
       });
-      if (!saveResponse.ok) throw new Error('Failed to save receipt');
+      if (!saveResponse.ok) throw new Error('Failed to save receipt response');
       const saved = await saveResponse.json();
       saved.items = saved.items.map(item => ({ ...item, receiptId: saved.id }));
       setSavedReceipt(saved);

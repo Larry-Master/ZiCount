@@ -150,47 +150,78 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId,
   };
 
   // Helper function to compress images for database storage
-  const compressImageForStorage = (file) => {
-    return new Promise((resolve) => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
+  const compressImageForStorage = (file, options = {}) => {
+    // Aim for ~3MB by default (user is OK with 2-5MB images)
+    const targetBytes = options.targetBytes || 3 * 1024 * 1024; // ~3MB
+    const maxDimension = options.maxDimension || 2048; // max width/height
+    const minQuality = options.minQuality || 0.6;
+
+    return new Promise((resolve, reject) => {
       const img = new Image();
-      
-      img.onload = () => {
-        // Calculate new dimensions (max width/height of 1920px for storage)
-        let { width, height } = img;
-        const maxSize = 1920;
-        
-        if (width > height) {
-          if (width > maxSize) {
-            height = (height * maxSize) / width;
-            width = maxSize;
+      const objectUrl = URL.createObjectURL(file);
+      img.onload = async () => {
+        try {
+          let { width, height } = img;
+
+          // Resize to maxDimension maintaining aspect ratio
+          if (width > height) {
+            if (width > maxDimension) {
+              height = Math.round((height * maxDimension) / width);
+              width = maxDimension;
+            }
+          } else {
+            if (height > maxDimension) {
+              width = Math.round((width * maxDimension) / height);
+              height = maxDimension;
+            }
           }
-        } else {
-          if (height > maxSize) {
-            width = (width * maxSize) / height;
-            height = maxSize;
+
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.max(1, width);
+          canvas.height = Math.max(1, height);
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+          // Iteratively try qualities until under targetBytes or minQuality reached
+          let quality = 0.8;
+          let blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', quality));
+
+          while (blob && blob.size > targetBytes && quality > minQuality) {
+            quality = Math.max(minQuality, quality - 0.1);
+            // create a fresh blob at lower quality
+            // eslint-disable-next-line no-await-in-loop
+            blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', quality));
           }
-        }
-        
-        canvas.width = width;
-        canvas.height = height;
-        
-        // Draw and compress for storage
-        ctx.drawImage(img, 0, 0, width, height);
-        
-        // Convert to blob with compression
-        canvas.toBlob((blob) => {
-          const compressedFile = new File([blob], file.name, {
-            type: 'image/jpeg',
-            lastModified: Date.now()
-          });
-          console.log(`Compressed for storage: ${Math.round(file.size / 1024)}KB → ${Math.round(compressedFile.size / 1024)}KB`);
+
+          // If still too large and image is still big, attempt to scale down further
+          if (blob && blob.size > targetBytes && Math.max(canvas.width, canvas.height) > 640) {
+            const scaleFactor = Math.sqrt(targetBytes / blob.size) * 0.9; // conservative
+            const newW = Math.max(1, Math.floor(canvas.width * scaleFactor));
+            const newH = Math.max(1, Math.floor(canvas.height * scaleFactor));
+            const canvas2 = document.createElement('canvas');
+            canvas2.width = newW;
+            canvas2.height = newH;
+            const ctx2 = canvas2.getContext('2d');
+            ctx2.drawImage(img, 0, 0, newW, newH);
+            quality = Math.max(minQuality, quality - 0.05);
+            blob = await new Promise(res => canvas2.toBlob(res, 'image/jpeg', quality));
+          }
+
+          const outName = (file.name || 'upload').replace(/\.[^/.]+$/, '') + '.jpg';
+          const compressedFile = new File([blob], outName, { type: 'image/jpeg', lastModified: Date.now() });
+          console.log(`Compressed for storage: ${Math.round(file.size / 1024)}KB → ${Math.round(compressedFile.size / 1024)}KB (quality=${quality})`);
+          URL.revokeObjectURL(objectUrl);
           resolve(compressedFile);
-        }, 'image/jpeg', 0.8); // 80% quality for storage
+        } catch (err) {
+          URL.revokeObjectURL(objectUrl);
+          reject(err);
+        }
       };
-      
-      img.src = URL.createObjectURL(file);
+      img.onerror = (e) => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error('Failed to load image for compression'));
+      };
+      img.src = objectUrl;
     });
   };
 
