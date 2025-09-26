@@ -131,7 +131,28 @@ export default function HomePage() {
     setImagePreview(null);
     setError(null);
     const reader = new FileReader();
-    reader.onload = (e) => setImagePreview(e.target.result);
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        // Resize to max 1024px width to reduce size and ensure compatibility
+        const maxWidth = 1024;
+        const scale = Math.min(1, maxWidth / img.width);
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((blob) => {
+          // Use resized image for upload
+          const resizedFile = new File([blob], file.name.replace(/\.[^/.]+$/, '.jpg'), { type: 'image/jpeg' });
+          setSelectedImage(resizedFile);
+        }, 'image/jpeg', 0.8);
+        // Use resized data URL for preview
+        const resizedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        setImagePreview(resizedDataUrl);
+      };
+      img.src = e.target.result;
+    };
     reader.readAsDataURL(file);
   };
 
