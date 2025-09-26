@@ -78,29 +78,7 @@ export default async function handler(req, res) {
     };
 
     // Send document to Google Cloud Document AI for processing
-    // Wrap the call in a timeout so we can return a helpful 504 when the
-    // external processing takes longer than our serverless function allows.
-    const processPromise = client.processDocument(request);
-    const TIMEOUT_MS = process.env.ANALYZE_TIMEOUT_MS ? parseInt(process.env.ANALYZE_TIMEOUT_MS, 10) : 50000; // 50s default
-
-    const start = Date.now();
-    let processResult;
-    try {
-      processResult = await Promise.race([
-        processPromise,
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Document AI processing timed out')), TIMEOUT_MS))
-      ]);
-    } catch (err) {
-      const duration = Date.now() - start;
-      console.error(`Document AI call failed after ${duration}ms:`, err && err.message ? err.message : err);
-      if (err && err.message && err.message.includes('timed out')) {
-        // Likely a serverless function timeout / slow external processing
-        return res.status(504).json({ error: 'Document AI processing timed out. This can happen with large or complex images on serverless platforms. Try reducing the image size (under ~4MB) or move processing to a service with a longer timeout.' });
-      }
-      throw err;
-    }
-
-    const [result] = processResult;
+    const [result] = await client.processDocument(request);
     
     // Handle case where no document was processed
     if (!result?.document) {
