@@ -11,8 +11,23 @@ export default function MyClaims({ userId, onClaimsUpdated, refreshKey }) {
 
   // Keep local copy for immediate UI updates
   useEffect(() => {
-    setClaimsLocal(claims || []);
-  }, [claims, refreshKey]);
+    // Avoid updating local state if the claims array hasn't meaningfully changed.
+    // React Query may return a new array reference even when contents are identical,
+    // which can cause a setState in useEffect to trigger a render loop.
+    const incoming = claims || [];
+    const local = claimsLocal || [];
+
+    const same = incoming.length === local.length && incoming.every((c, i) => {
+      const l = local[i];
+      if (!l) return false;
+      // compare identity and key properties that affect the UI
+      return l.id === c.id && (l.claimedBy || null) === (c.claimedBy || null) && (l.price || '') === (c.price || '');
+    });
+
+    if (!same || refreshKey) {
+      setClaimsLocal(incoming);
+    }
+  }, [claims, refreshKey, claimsLocal]);
 
   const handleUnclaim = async (item) => {
     if (!item.claimedBy || item.claimedBy !== userId) {
