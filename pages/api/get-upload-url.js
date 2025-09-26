@@ -9,20 +9,24 @@ export default async function handler(req, res) {
     if (!process.env.GCS_BUCKET_NAME) {
       return res.status(500).json({ error: 'Missing GCS_BUCKET_NAME' });
     }
-    if (!process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
-      return res.status(500).json({ error: 'Missing GOOGLE_APPLICATION_CREDENTIALS_JSON' });
+    if (!process.env.GOOGLE_APPLICATION_CREDENTIALS && !process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+      return res.status(500).json({ error: 'Missing Google Cloud credentials' });
     }
 
     // Initialize Storage client with credentials
     let storage;
-    if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+    if (process.env.NODE_ENV === 'development' && process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+      // For local development - use GOOGLE_APPLICATION_CREDENTIALS file path
+      storage = new Storage();
+    } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+      // For Vercel deployment - use service account key from environment variable
       const serviceAccountKey = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
       storage = new Storage({
         credentials: serviceAccountKey,
         projectId: serviceAccountKey.project_id
       });
     } else {
-      storage = new Storage();  // Fallback for local dev
+      return res.status(500).json({ error: 'Missing Google Cloud credentials. Set GOOGLE_APPLICATION_CREDENTIALS (dev) or GOOGLE_APPLICATION_CREDENTIALS_JSON (prod)' });
     }
 
     const bucket = storage.bucket(process.env.GCS_BUCKET_NAME);
@@ -33,7 +37,7 @@ export default async function handler(req, res) {
       version: 'v4',
       action: 'write',
       expires: Date.now() + 15 * 60 * 1000, // 15 minutes
-      contentType: 'image/jpeg',
+      // contentType: 'image/jpeg',  // Allow any content type
     });
 
     res.status(200).json({ uploadUrl: url, gcsUrl: `gs://${process.env.GCS_BUCKET_NAME}/${filename}` });
