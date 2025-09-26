@@ -38,8 +38,6 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
     try {
       const result = await claimItem(currentReceipt.id, item.id, userId);
       if (result && onItemClaimed) onItemClaimed(result.id || item.id, result.claimedBy || userId, result.claimedAt || new Date().toISOString());
-      if (refetchReceipt) refetchReceipt();
-      if (onClaimsUpdated) onClaimsUpdated();
       setShowClaimModal(false);
       setSelectedItem(null);
     } catch (err) {
@@ -49,10 +47,8 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
 
   const handleUnclaim = async (item) => {
     try {
-      const result = await unclaimItem(item.id);
+      const result = await unclaimItem(currentReceipt.id, item.id);
       if (result && onItemUnclaimed) onItemUnclaimed(item.id);
-      if (refetchReceipt) refetchReceipt();
-      if (onClaimsUpdated) onClaimsUpdated();
     } catch (err) {
       console.error('Unclaim failed:', err);
     }

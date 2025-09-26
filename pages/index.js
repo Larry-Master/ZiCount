@@ -370,7 +370,23 @@ export default function HomePage() {
         />
       )}
 
-      {currentView === 'claims' && <MyClaims userId={currentUserId} onClaimsUpdated={refetchReceipts} refreshKey={claimsVersion} />}
+      {currentView === 'claims' && (
+        <MyClaims
+          userId={currentUserId}
+          refreshKey={claimsVersion}
+          onClaimsUpdated={async () => {
+            try {
+              // Refetch receipts list cache
+              await refetchReceipts();
+              // If a receipt is currently opened in detail, refresh it too
+              await refreshReceiptData();
+              setClaimsVersion(v => v + 1);
+            } catch (e) {
+              console.error('Failed to refresh after claims update', e);
+            }
+          }}
+        />
+      )}
   {currentView === 'people' && (
     <PeopleManager 
       currentUserId={currentUserId} 

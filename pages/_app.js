@@ -9,6 +9,8 @@ import Head from 'next/head'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import DarkModeToggle from '@/components/DarkModeToggle'
 import { useEffect } from 'react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 
 export default function App({ Component, pageProps }) {
   useEffect(() => {
@@ -35,19 +37,34 @@ export default function App({ Component, pageProps }) {
       console.error = origConsoleError
     }
   }, [])
+  // Create a single QueryClient per app instance
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        // Avoid refetching on window focus by default; tweak as needed
+        refetchOnWindowFocus: false,
+        staleTime: 1000 * 60 * 5, // 5 minutes
+        cacheTime: 1000 * 60 * 30, // 30 minutes
+      }
+    }
+  })
+
   return (
-    <>
-      <Head>
-        <title>ZiCount - Receipt Analyzer</title>
-        <meta name="description" content="Analyze receipt images to extract items and prices using OCR" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-        <meta name="theme-color" content="#3B82F6" />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
-      <DarkModeToggle />
-      <ErrorBoundary>
-        <Component {...pageProps} />
-      </ErrorBoundary>
-    </>
+    <QueryClientProvider client={queryClient}>
+      <>
+        <Head>
+          <title>ZiCount - Receipt Analyzer</title>
+          <meta name="description" content="Analyze receipt images to extract items and prices using OCR" />
+          <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+          <meta name="theme-color" content="#3B82F6" />
+          <link rel="icon" href="/favicon.ico" />
+        </Head>
+        <DarkModeToggle />
+        <ErrorBoundary>
+          <Component {...pageProps} />
+        </ErrorBoundary>
+        <ReactQueryDevtools initialIsOpen={false} />
+      </>
+    </QueryClientProvider>
   )
 }
