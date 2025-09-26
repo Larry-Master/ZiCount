@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { usePeople } from '@/lib/hooks/usePeople';
-import { getAvatarDisplay } from '@/lib/utils/avatar';
+import { compressImageForStorage } from '@/lib/utils/imageCompression';
+import { validateFile } from '@/lib/utils/fileValidation';
+import ParticipantSelector from '@/components/ui/ParticipantSelector';
 
 export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId, isEditing = false, initialData = null }) {
   const [name, setName] = useState(initialData?.name || '');
@@ -8,7 +10,8 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId,
   const [selectedPeople, setSelectedPeople] = useState(initialData?.participants || []);
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(initialData?.imageUrl || null);
-  const [paidBy, setPaidBy] = useState(initialData?.uploadedBy || currentUserId || (typeof window !== 'undefined' ? localStorage.getItem('currentUserId') || null : null));
+  // Initialize to empty string (not null) to avoid React warning about select value
+  const [paidBy, setPaidBy] = useState(initialData?.uploadedBy || currentUserId || (typeof window !== 'undefined' ? localStorage.getItem('currentUserId') || '' : ''));
   // date is no longer collected from the user; use current date automatically
   const [loading, setLoading] = useState(false);
 
@@ -138,8 +141,6 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId,
     if (!file) return;
     
     try {
-      console.log(`Original file size: ${Math.round(file.size / 1024)}KB`);
-      
       // Compress image for database storage (manual receipts only)
       const compressedFile = await compressImageForStorage(file);
       
@@ -156,82 +157,6 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId,
       reader.onload = (e) => setImagePreview(e.target.result);
       reader.readAsDataURL(file);
     }
-  };
-
-  // Helper function to compress images for database storage
-  const compressImageForStorage = (file, options = {}) => {
-    // Aim for ~3MB by default (user is OK with 2-5MB images)
-    const targetBytes = options.targetBytes || 3 * 1024 * 1024; // ~3MB
-    const maxDimension = options.maxDimension || 2048; // max width/height
-    const minQuality = options.minQuality || 0.6;
-
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      const objectUrl = URL.createObjectURL(file);
-      img.onload = async () => {
-        try {
-          let { width, height } = img;
-
-          // Resize to maxDimension maintaining aspect ratio
-          if (width > height) {
-            if (width > maxDimension) {
-              height = Math.round((height * maxDimension) / width);
-              width = maxDimension;
-            }
-          } else {
-            if (height > maxDimension) {
-              width = Math.round((width * maxDimension) / height);
-              height = maxDimension;
-            }
-          }
-
-          const canvas = document.createElement('canvas');
-          canvas.width = Math.max(1, width);
-          canvas.height = Math.max(1, height);
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-          // Iteratively try qualities until under targetBytes or minQuality reached
-          let quality = 0.8;
-          let blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', quality));
-
-          while (blob && blob.size > targetBytes && quality > minQuality) {
-            quality = Math.max(minQuality, quality - 0.1);
-            // create a fresh blob at lower quality
-            // eslint-disable-next-line no-await-in-loop
-            blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', quality));
-          }
-
-          // If still too large and image is still big, attempt to scale down further
-          if (blob && blob.size > targetBytes && Math.max(canvas.width, canvas.height) > 640) {
-            const scaleFactor = Math.sqrt(targetBytes / blob.size) * 0.9; // conservative
-            const newW = Math.max(1, Math.floor(canvas.width * scaleFactor));
-            const newH = Math.max(1, Math.floor(canvas.height * scaleFactor));
-            const canvas2 = document.createElement('canvas');
-            canvas2.width = newW;
-            canvas2.height = newH;
-            const ctx2 = canvas2.getContext('2d');
-            ctx2.drawImage(img, 0, 0, newW, newH);
-            quality = Math.max(minQuality, quality - 0.05);
-            blob = await new Promise(res => canvas2.toBlob(res, 'image/jpeg', quality));
-          }
-
-          const outName = (file.name || 'upload').replace(/\.[^/.]+$/, '') + '.jpg';
-          const compressedFile = new File([blob], outName, { type: 'image/jpeg', lastModified: Date.now() });
-          console.log(`Compressed for storage: ${Math.round(file.size / 1024)}KB → ${Math.round(compressedFile.size / 1024)}KB (quality=${quality})`);
-          URL.revokeObjectURL(objectUrl);
-          resolve(compressedFile);
-        } catch (err) {
-          URL.revokeObjectURL(objectUrl);
-          reject(err);
-        }
-      };
-      img.onerror = (e) => {
-        URL.revokeObjectURL(objectUrl);
-        reject(new Error('Failed to load image for compression'));
-      };
-      img.src = objectUrl;
-    });
   };
 
   const handleImageRemove = () => {
@@ -324,55 +249,17 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId,
         )}
       </div>
 
-  {/* date is set automatically; no input shown */}
+      {/* date is set automatically; no input shown */}
 
-      <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-3">Personen auswählen</label>
-      <div className="grid grid-cols-2 gap-2 mb-6">
-        {people.map((p) => (
-          <div 
-            key={`${p.id}-${paidBy}`}
-            className={`participant-card ${selectedPeople.includes(p.id) ? 'participant-card-selected' : ''}`}
-            onClick={() => {
-              if (selectedPeople.includes(p.id)) {
-                setSelectedPeople(selectedPeople.filter(id => id !== p.id));
-              } else {
-                setSelectedPeople([...selectedPeople, p.id]);
-              }
-            }}
-          >
-            <input
-              type="checkbox"
-              value={p.id}
-              checked={selectedPeople.includes(p.id)}
-              onChange={(e) => {
-                e.stopPropagation();
-                // Handle checkbox change - same logic as parent div click
-                if (selectedPeople.includes(p.id)) {
-                  setSelectedPeople(selectedPeople.filter(id => id !== p.id));
-                } else {
-                  setSelectedPeople([...selectedPeople, p.id]);
-                }
-              }}
-              className="participant-checkbox"
-            />
-            <div className="participant-avatar" style={{ backgroundColor: p.color }}>
-              {getAvatarDisplay(p)}
-            </div>
-            <div className="participant-info">
-              <span className="participant-name">{p.name}</span>
-              {p.id === paidBy && (
-                <span className="participant-badge">(bezahlt)</span>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {selectedPeople.length === 0 && (
-        <div className="mb-4 text-sm text-red-500 bg-red-50 dark:bg-red-900/20 p-2 rounded border border-red-200 dark:border-red-800">
-          ⚠️ Keine Personen ausgewählt. Wähle mindestens eine Person für die Aufteilung aus.
-        </div>
-      )}
+      <ParticipantSelector
+        selectedParticipants={selectedPeople}
+        onSelectionChange={setSelectedPeople}
+        paidBy={paidBy}
+        currentUserId={runtimeCurrentUserId}
+        label="Personen auswählen"
+        className="mb-6"
+        required
+      />
 
       <button
         type="submit"

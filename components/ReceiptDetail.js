@@ -296,7 +296,7 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
               <div className="text-lg font-semibold text-indigo-600">{formatCurrency(claimedAmount)}</div>
               <div className="text-sm text-gray-500 mt-2">Remaining</div>
               <div className="text-lg font-semibold">{formatCurrency(totalAmount - claimedAmount)}</div>
-              {totalPersonalCosts > 0 && (
+              {currentUserId && totalPersonalCosts > 0 && (
                 <>
                   <div className="text-sm text-gray-500 mt-2">Personal Costs</div>
                   <div className="text-lg font-semibold text-purple-600">{formatCurrency(totalPersonalCosts)}</div>

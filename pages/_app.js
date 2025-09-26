@@ -1,4 +1,5 @@
 import '@/styles/globals.css'
+import '@/styles/variables.css'
 import '@/styles/components/participant-selection.css'
 import '@/styles/components/people-manager.css'
 import '@/styles/components/buttons.css'

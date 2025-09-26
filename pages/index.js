@@ -17,42 +17,50 @@
 import { useRef, useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useReceipts } from '@/lib/hooks/useReceipts';
+import { useReceiptUpload } from '@/lib/hooks/useReceiptUpload';
 import { apiClient } from '@/lib/api/client';
-import { getAvatarDisplay } from '@/lib/utils/avatar';
 import ManualReceiptForm from '@/components/ManualReceiptForm';
+import ParticipantSelector from '@/components/ui/ParticipantSelector';
 import { usePeople } from '@/lib/hooks/usePeople';
 
 // Dynamic component imports with loading states for better UX
+import { ComponentLoader } from '@/components/ui/Loading';
+
 const ReceiptDetail = dynamic(() => import('@/components/ReceiptDetail'), {
-  loading: () => <div className="flex justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>
+  loading: () => <ComponentLoader />
 });
 const ReceiptList = dynamic(() => import('@/components/ReceiptList'), {
-  loading: () => <div className="flex justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>
+  loading: () => <ComponentLoader />
 });
 const MyClaims = dynamic(() => import('@/components/MyClaims'), {
-  loading: () => <div className="flex justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>
+  loading: () => <ComponentLoader />
 });
 const PeopleManager = dynamic(() => import('@/components/PeopleManager'), {
-  loading: () => <div className="flex justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>
+  loading: () => <ComponentLoader />
 });
 const DebtSolver = dynamic(() => import('@/components/DebtSolver'), {
-  loading: () => <div className="flex justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>
+  loading: () => <ComponentLoader />
 });
 
 export default function HomePage() {
   // Custom hooks for data management
   const { people } = usePeople();
   const { receipts, loading: receiptsLoading, refetch: refetchReceipts } = useReceipts();
+  const { selectedImage, imagePreview, analyzing, error: uploadError, handleFile, analyzeReceipt, clearSelection } = useReceiptUpload();
+
+  // Page-level error state (some handlers in this page call setError)
+  const [error, setError] = useState(null);
+
+  // Sync upload hook errors into the page-level error so UI shows them
+  useEffect(() => {
+    if (uploadError) setError(uploadError);
+  }, [uploadError]);
 
   // File input reference for programmatic access
   const inputRef = useRef(null);
 
   // Component state management
-  const [selectedImage, setSelectedImage] = useState(null);     // Currently selected image file
-  const [imagePreview, setImagePreview] = useState(null);       // Base64 preview of selected image
-  const [analyzing, setAnalyzing] = useState(false);            // Loading state for receipt analysis
   const [savedReceipt, setSavedReceipt] = useState(null);       // Processed and saved receipt data
-  const [error, setError] = useState(null);                     // Error state for user feedback
   const [isDragging, setIsDragging] = useState(false);          // Drag & drop visual feedback
   const [currentView, setCurrentView] = useState('receipts');   // Current active view/tab
   
@@ -89,10 +97,9 @@ export default function HomePage() {
     if (typeof window === 'undefined') return;
     try {
       const stored = localStorage.getItem('currentUserId');
-      console.debug('localStorage.currentUserId=', stored);
       if (stored) setCurrentUserId(stored);
     } catch (e) {
-      console.debug('reading localStorage failed', e);
+      // Ignore localStorage errors
     }
   }, []);
   const [claimsVersion, setClaimsVersion] = useState(0);
@@ -117,210 +124,57 @@ export default function HomePage() {
     }
   }, [people, currentUserId, paidBy]);
 
+  // Reusable function to refresh receipt data after item changes
+  const refreshReceiptData = async () => {
+    if (!savedReceipt?.id) return;
+    try {
+      const fresh = await apiClient.getReceipt(savedReceipt.id);
+      setSavedReceipt(fresh);
+      refetchReceipts();
+    } catch (e) {
+      console.error('Failed to refresh receipt data:', e);
+    }
+  };
+
   // Drag & drop
   const handleDragOver = (e) => { e.preventDefault(); setIsDragging(true); };
   const handleDragLeave = () => setIsDragging(false);
   const handleDrop = (e) => {
-    e.preventDefault(); setIsDragging(false);
+    e.preventDefault(); 
+    setIsDragging(false);
     const file = e.dataTransfer?.files?.[0];
-    if (file) onFile(file);
+    if (file) handleFile(file);
   };
 
-  const onFile = (file) => {
-    if (!file) return;
-    
-    // Check file size before processing
-    const maxSize = 20 * 1024 * 1024; // 20MB limit
-    if (file.size > maxSize) {
-      setError(`Image too large (${Math.round(file.size / 1024 / 1024)}MB). Please use an image smaller than 20MB. Try taking a new photo with lower resolution or use image editing software to reduce the file size.`);
+  const handleAnalyzeReceipt = async () => {
+    if (!selectedParticipants.length) {
+      // Use the error state from the upload hook
       return;
     }
-    
-    // Keep the original file for upload (no compression/conversion)
-    setSelectedImage(file);
-    setImagePreview(null);
-    setError(null);
 
-    // Still create a browser-friendly preview (convert to JPEG/dataURL) for
-    // devices/browsers that don't display source formats like HEIC. This does
-    // not replace the file used for upload.
-    try {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          const maxWidth = 1024;
-          const scale = Math.min(1, maxWidth / img.width);
-          canvas.width = img.width * scale;
-          canvas.height = img.height * scale;
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          // Use resized data URL for preview only (no effect on upload file)
-          const resizedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-          setImagePreview(resizedDataUrl);
-        };
-        img.src = e.target.result;
-      };
-      reader.readAsDataURL(file);
-    } catch (previewErr) {
-      // If preview generation fails, fall back to a direct data URL (may still fail for some formats)
-      const fallbackReader = new FileReader();
-      fallbackReader.onload = (e) => setImagePreview(e.target.result);
-      fallbackReader.readAsDataURL(file);
-    }
-  };
+    const receiptData = {
+      title: receiptTitle,
+      paidBy: paidBy,
+      participants: selectedParticipants
+    };
 
-  // Helper: create a smaller JPEG dataURL from an existing dataURL (used to
-  // avoid storing huge base64 images in MongoDB which would exceed BSON size)
-  const createThumbnailFromDataUrl = (dataUrl, maxWidth = 1024, quality = 0.75) => {
-    return new Promise((resolve, reject) => {
-      try {
-        const img = new Image();
-        img.onload = () => {
-          const scale = Math.min(1, maxWidth / img.width);
-          const canvas = document.createElement('canvas');
-          canvas.width = Math.max(1, Math.floor(img.width * scale));
-          canvas.height = Math.max(1, Math.floor(img.height * scale));
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          const thumb = canvas.toDataURL('image/jpeg', quality);
-          resolve(thumb);
-        };
-        img.onerror = (e) => reject(new Error('Image load failed for thumbnail'));
-        img.src = dataUrl;
-      } catch (err) {
-        reject(err);
-      }
-    });
-  };
-
-  const uploadToGCS = async (file) => {
-    // Get signed upload URL from API
-    const response = await fetch('/api/get-upload-url', {
-      method: 'POST',
-    });
-    if (!response.ok) throw new Error('Failed to get upload URL');
-    const { uploadUrl, gcsUrl } = await response.json();
-
-    // Upload file to signed URL
-    const uploadResponse = await fetch(uploadUrl, {
-      method: 'PUT',
-      body: file,
-      headers: {
-        'Content-Type': file.type,
-      },
-    });
-    if (!uploadResponse.ok) throw new Error('Failed to upload file');
-
-    return gcsUrl;
-  };
-
-  const analyzeReceipt = async () => {
-    if (!selectedImage) return setError('Please select an image first');
-    if (!selectedParticipants.length) return setError('Bitte Teilnehmer auswählen');
-
-    // Additional client-side size check before upload
-    if (selectedImage.size > 20 * 1024 * 1024) {
-      return setError(`Image too large (${Math.round(selectedImage.size / 1024 / 1024)}MB). Please use an image smaller than 20MB.`);
-    }
-
-    setAnalyzing(true); setError(null);
-    try {
-      // Upload to GCS first
-      const gcsUrl = await uploadToGCS(selectedImage);
-      const publicUrl = gcsUrl.replace('gs://', 'https://storage.googleapis.com/');
-
-      // Send GCS URL to API instead of file
-      const response = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gcsUrl }),
-      });
-
-      const text = await response.text();
-      let data;
-      try { data = JSON.parse(text); } catch { data = { raw: text }; }
-
-      if (!response.ok) {
-        // Handle specific error cases
-        if (response.status === 413 || text.includes('FUNCTION_PAYLOAD_TOO_LARGE')) {
-          throw new Error('Image file is too large for processing. Please try taking a new photo with lower resolution or use image editing software to reduce the file size to under 4MB.');
-        }
-        throw new Error(data.error || data.raw || `Request failed: ${response.status}`);
-      }
-
-      // Prefer an embedded base64 image returned by the analyze API. The
-      // analyze endpoint will attempt to download the GCS object and delete
-      // it; if it returned imageBase64 we use that for storing/previewing.
-      // However, the embedded base64 can be very large — if it's bigger than
-      // 2MB we create a smaller thumbnail to avoid MongoDB document size /
-      // payload issues when saving.
-      let imageUrlToStore = publicUrl;
-      if (data.imageBase64) {
-        try {
-          // Rough estimate of decoded bytes from base64 length: 3/4 * length
-          const estimatedBytes = Math.floor((data.imageBase64.length * 3) / 4);
-          const MAX_BYTES = 4 * 1024 * 1024; // 4MB - allow larger embedded images (user wants ~2-5MB)
-          if (estimatedBytes > MAX_BYTES) {
-            // create a thumbnail (smaller) for storing
-            try {
-              const thumb = await createThumbnailFromDataUrl(data.imageBase64, 1024, 0.75);
-              imageUrlToStore = thumb;
-            } catch (thumbErr) {
-              console.warn('Thumbnail creation failed, falling back to original base64:', thumbErr);
-              imageUrlToStore = data.imageBase64; // fallback
-            }
-          } else {
-            imageUrlToStore = data.imageBase64;
-          }
-        } catch (errEstimate) {
-          console.warn('Failed to evaluate imageBase64 size:', errEstimate);
-          imageUrlToStore = data.imageBase64;
-        }
-      }
-
-      const receipt = {
-        name: receiptTitle,
-        uploadedBy: paidBy,
-        imageUrl: imageUrlToStore,
-        items: (data.items || []).map((item, idx) => ({
-          id: `item_${Date.now()}_${idx}`,
-          name: item.name,
-          price: typeof item.price === 'object' ? item.price.value : item.price,
-          priceEUR: typeof item.price === 'object' ? item.price.value : item.price,
-          confidence: item.confidence,
-          tags: ['detected'],
-          claimedBy: null,
-          claimedAt: null
-        })),
-        discounts: data.discounts || [],
-        totalAmount: data.totalAmount,
-        participants: selectedParticipants,
-        text: data.text
-      };
-
-      if (data.deletedFromGCS === false) {
-        // Inform the user that the temporary file could not be deleted from GCS
-        // (non-blocking): leave a non-fatal warning in the UI.
-        setError('Hinweis: Temporäre Datei konnte in Google Cloud nicht gelöscht werden. Bitte prüfen Sie die Bucket-Aufbewahrungsrichtlinien.');
-      }
-
+    const receipt = await analyzeReceipt(receiptData);
+    if (receipt) {
       const saveResponse = await fetch('/api/receipts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(receipt),
       });
-      if (!saveResponse.ok) throw new Error('Failed to save receipt response');
-      const saved = await saveResponse.json();
-      saved.items = saved.items.map(item => ({ ...item, receiptId: saved.id }));
-      setSavedReceipt(saved);
-      setCurrentView('receipt');
-      refetchReceipts();
-      setClaimsVersion(v => v + 1);
-    } catch (err) {
-      setError(err.message || 'Unknown error');
-    } finally { setAnalyzing(false); }
+      
+      if (saveResponse.ok) {
+        const saved = await saveResponse.json();
+        saved.items = saved.items.map(item => ({ ...item, receiptId: saved.id }));
+        setSavedReceipt(saved);
+        setCurrentView('receipt');
+        refetchReceipts();
+        setClaimsVersion(v => v + 1);
+      }
+    }
   };
 
   const handleDeleteReceipt = async (receiptId) => {
@@ -355,8 +209,8 @@ export default function HomePage() {
 
       {/* Manual Receipt Modal */}
       {showManualForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-lg w-full max-w-md p-6 relative">
+      <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl shadow-lg w-full max-w-md sm:max-w-lg p-6 relative max-h-[85vh] overflow-auto">
             <button
               className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-2xl"
               onClick={() => setShowManualForm(false)}
@@ -432,7 +286,7 @@ export default function HomePage() {
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
           >
-            <input ref={inputRef} type="file" accept="image/*" capture="environment" onChange={e => onFile(e.target.files?.[0])} className="hidden" />
+            <input ref={inputRef} type="file" accept="image/*" capture="environment" onChange={e => handleFile(e.target.files?.[0])} className="hidden" />
             <div className="text-4xl mb-2">📱</div>
             <p className="text-gray-700 mb-1">{selectedImage ? selectedImage.name : isDragging ? 'Drop image here' : 'Tap to take photo or select image'}</p>
             <p className="text-sm text-gray-400">Supports JPG, PNG • Max 20MB</p>
@@ -475,44 +329,23 @@ export default function HomePage() {
           </div>
 
           {/* Participant selection */}
-          <div className="mt-4 mb-6">
-            <label className="block mb-3 font-semibold text-gray-700">Teilnehmer auswählen</label>
-            <div className="grid grid-cols-2 gap-2">
-              {people.map(p => (
-                <div 
-                  key={`${p.id}-${paidBy}`}
-                  className={`participant-card ${selectedParticipants.includes(p.id) ? 'participant-card-selected' : ''}`}
-                  onClick={() => setSelectedParticipants(selectedParticipants.includes(p.id) ? selectedParticipants.filter(id => id!==p.id) : [...selectedParticipants, p.id])}
-                >
-                  <input 
-                    type="checkbox" 
-                    value={p.id} 
-                    checked={selectedParticipants.includes(p.id)}
-                    onChange={() => {}} // Handled by parent div onClick
-                    className="participant-checkbox"
-                  />
-                  <div className="participant-avatar" style={{ backgroundColor: p.color }}>
-                    {getAvatarDisplay(p)}
-                  </div>
-                  <div className="participant-info">
-                    <span className="participant-name">{p.name}</span>
-                    {p.id === paidBy && (
-                      <span className="participant-badge">(bezahlt)</span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <ParticipantSelector
+            selectedParticipants={selectedParticipants}
+            onSelectionChange={setSelectedParticipants}
+            paidBy={paidBy}
+            currentUserId={currentUserId}
+            className="mt-4 mb-6"
+            required
+          />
 
           {imagePreview && (
             <div className="relative mb-4">
               <img src={imagePreview} className="rounded-lg w-full object-cover" alt="Preview" />
-              <button className="absolute top-2 right-2 text-white bg-black bg-opacity-50 rounded-full px-2 hover:bg-opacity-75" onClick={()=>{setSelectedImage(null); setImagePreview(null); setError(null);}}>✕</button>
+              <button className="absolute top-2 right-2 text-white bg-black bg-opacity-50 rounded-full px-2 hover:bg-opacity-75" onClick={() => clearSelection()}>✕</button>
             </div>
           )}
 
-          <button onClick={analyzeReceipt} disabled={!selectedImage || analyzing} className="btn-primary w-full">
+          <button onClick={handleAnalyzeReceipt} disabled={!selectedImage || analyzing} className="btn-primary w-full">
             {analyzing ? '🔄 Analyzing...' : '🔍 Analyze Receipt'}
           </button>
         </div>
@@ -525,9 +358,12 @@ export default function HomePage() {
           currentUserId={currentUserId}
           onItemClaimed={(itemId, claimedBy, claimedAt) => {
             setSavedReceipt(prev => ({ ...prev, items: prev.items.map(it => it.id===itemId ? {...it, claimedBy, claimedAt} : it) }));
-            (async()=>{try{const fresh=await apiClient.getReceipt(savedReceipt.id); setSavedReceipt(fresh); refetchReceipts();}catch(e){console.error(e)}})();
+            refreshReceiptData();
           }}
-          onItemUnclaimed={(itemId)=>{ setSavedReceipt(prev => ({ ...prev, items: prev.items.map(it => it.id===itemId ? {...it, claimedBy:null, claimedAt:null}:it) })); (async()=>{try{const fresh=await apiClient.getReceipt(savedReceipt.id); setSavedReceipt(fresh); refetchReceipts();}catch(e){console.error(e)}})();}}
+          onItemUnclaimed={(itemId) => { 
+            setSavedReceipt(prev => ({ ...prev, items: prev.items.map(it => it.id===itemId ? {...it, claimedBy:null, claimedAt:null}:it) })); 
+            refreshReceiptData();
+          }}
           onDelete={()=>handleDeleteReceipt(savedReceipt.id)}
           onClaimsUpdated={()=>{ refetchReceipts(); setClaimsVersion(v=>v+1); }}
           onBack={()=>{ setCurrentView('receipts'); setSavedReceipt(null); }}

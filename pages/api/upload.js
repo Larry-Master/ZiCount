@@ -3,6 +3,7 @@ import path from 'path';
 import { connectToDatabase } from '@/lib/db/mongodb';
 import { parseFormData } from '@/lib/utils/formData';
 import { checkMethod, errorResponse } from '@/lib/utils/apiHelpers';
+import { FILE_SIZE_LIMITS, getContextualErrorMessage } from '@/lib/utils/fileValidation';
 
 export const config = {
   api: {
@@ -31,10 +32,10 @@ export default async function handler(req, res) {
     const buffer = await fs.readFile(filePath);
     
     // Additional size check after reading file
-    const maxSize = 10 * 1024 * 1024; // 10MB
+    const maxSize = FILE_SIZE_LIMITS.API_MAX;
     if (buffer.length > maxSize) {
       return res.status(400).json({ 
-        error: `Image too large (${Math.round(buffer.length / 1024 / 1024)}MB). Maximum size is 10MB. Please use image compression before uploading.` 
+        error: getContextualErrorMessage('api', buffer.length)
       });
     }
     
