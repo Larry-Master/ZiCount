@@ -78,7 +78,37 @@ export default async function handler(req, res) {
     };
 
     // Send document to Google Cloud Document AI for processing
-    const [result] = await client.processDocument(request);
+    // Wrap the call in a timeout so we can return a helpful 504 when the
+    // external processing takes longer than our serverless function allows.
+    const processPromise = client.processDocument(request);
+    const TIMEOUT_MS = process.env.ANALYZE_TIMEOUT_MS ? parseInt(process.env.ANALYZE_TIMEOUT_MS, 10) : 45000; // 45s default
+
+    const start = Date.now();
+    let processResult;
+    try {
+      processResult = await Promise.race([
+        processPromise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Document AI processing timed out')), TIMEOUT_MS))
+      ]);
+    } catch (err) {
+      const duration = Date.now() - start;
+      console.error(`Document AI call failed after ${duration}ms:`, err && err.message ? err.message : err);
+      if (err && err.message && err.message.includes('timed out')) {
+        // Likely a serverless function timeout / slow external processing
+        return res.status(504).json({ error: 'Document AI processing timed out. This can happen with large or complex images on serverless platforms. Try reducing the image size (under ~4MB) or move processing to a service with a longer timeout.' });
+      }
+      throw err;
+    }
+
+    const [result] = processResult;
+
+    // Log approximate size of the Document AI response for diagnostics
+    try {
+      const approxSize = JSON.stringify(result).length;
+      console.info(`Document AI response size: ~${Math.round(approxSize / 1024)}KB`);
+    } catch (sizeErr) {
+      console.warn('Failed to measure Document AI response size:', sizeErr && sizeErr.message ? sizeErr.message : sizeErr);
+    }
     
     // Handle case where no document was processed
     if (!result?.document) {
@@ -277,13 +307,35 @@ export default async function handler(req, res) {
         if (storage) {
           const bucket = storage.bucket(bucketName);
           const file = bucket.file(filename);
+          // For performance and to avoid exceeding serverless response size
+          // limits, do not download and embed the full image by default.
+          // Optionally embed only small images when explicitly enabled.
+          const EMBED_ENABLED = process.env.EMBED_IMAGE === 'true';
+          const EMBED_MAX_BYTES = process.env.EMBED_IMAGE_MAX_BYTES ? parseInt(process.env.EMBED_IMAGE_MAX_BYTES, 10) : 2 * 1024 * 1024; // 2MB default
+
           try {
-            const [buffer] = await file.download();
-            const mimeType = gcsUrl.includes('.png') ? 'image/png' : 'image/jpeg';
-            imageBase64 = `data:${mimeType};base64,${buffer.toString('base64')}`;
-          } catch (downloadErr) {
-            console.warn('Failed to download GCS file for embedding:', downloadErr.message || downloadErr);
-            imageBase64 = null;
+            // Fetch metadata first to decide whether to download for embedding
+            const [meta] = await file.getMetadata();
+            const size = parseInt(meta.size || '0', 10);
+
+            if (EMBED_ENABLED && size > 0 && size <= EMBED_MAX_BYTES) {
+              try {
+                const [buffer] = await file.download();
+                const mimeType = gcsUrl.includes('.png') ? 'image/png' : 'image/jpeg';
+                imageBase64 = `data:${mimeType};base64,${buffer.toString('base64')}`;
+              } catch (downloadErr) {
+                console.warn('Failed to download GCS file for embedding:', downloadErr.message || downloadErr);
+                imageBase64 = null;
+              }
+            } else {
+              // Skip embedding large images to keep responses small
+              imageBase64 = null;
+              if (!EMBED_ENABLED && size > EMBED_MAX_BYTES) {
+                console.info(`Skipping embedding large image (${Math.round(size / 1024)}KB). Set EMBED_IMAGE=true and EMBED_IMAGE_MAX_BYTES to override.`);
+              }
+            }
+          } catch (metaErr) {
+            console.warn('Failed to get metadata for GCS file:', metaErr && metaErr.message ? metaErr.message : metaErr);
           }
 
           try {
