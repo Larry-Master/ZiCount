@@ -241,50 +241,7 @@ export default function HomePage() {
 
     setAnalyzing(true); setError(null);
     try {
-      // Smart image optimization for OCR while maintaining quality
-      const optimizeImageForOCR = (file) => {
-        return new Promise((resolve, reject) => {
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          const img = new Image();
-          
-          img.onload = () => {
-            // Calculate optimal dimensions for OCR (max 2048px on longest side)
-            const maxDimension = 2048;
-            let { width, height } = img;
-            
-            if (Math.max(width, height) > maxDimension) {
-              const ratio = maxDimension / Math.max(width, height);
-              width = Math.floor(width * ratio);
-              height = Math.floor(height * ratio);
-            }
-            
-            canvas.width = width;
-            canvas.height = height;
-            
-            // Draw with high quality settings for text clarity
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
-            ctx.drawImage(img, 0, 0, width, height);
-            
-            // Convert to JPEG with quality optimized for OCR (0.85 maintains text sharpness)
-            canvas.toBlob(resolve, 'image/jpeg', 0.85);
-          };
-          
-          img.onerror = reject;
-          img.src = URL.createObjectURL(file);
-        });
-      };
-
-      // Optimize image if it's larger than 3MB (accounting for base64 expansion)
-      let processedImage = selectedImage;
-      if (selectedImage.size > 3 * 1024 * 1024) {
-        console.log(`Optimizing large image: ${Math.round(selectedImage.size / 1024)}KB`);
-        processedImage = await optimizeImageForOCR(selectedImage);
-        console.log(`Optimized to: ${Math.round(processedImage.size / 1024)}KB`);
-      }
-
-      // Convert optimized image to base64
+      // Convert image to base64 client-side to bypass FormData size limits
       const base64Promise = new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => {
@@ -292,14 +249,10 @@ export default function HomePage() {
           resolve(base64Data);
         };
         reader.onerror = reject;
-        reader.readAsDataURL(processedImage);
+        reader.readAsDataURL(selectedImage);
       });
 
       const imageData = await base64Promise;
-      
-      // Calculate base64 size (33% larger than binary)
-      const base64SizeMB = (imageData.length * 0.75) / (1024 * 1024);
-      console.log(`Base64 payload size: ${base64SizeMB.toFixed(2)}MB`);
       
       // Use new base64 API endpoint instead of FormData
       const response = await fetch('/api/analyze-base64', {
@@ -310,7 +263,7 @@ export default function HomePage() {
         },
         body: JSON.stringify({
           imageData: imageData,
-          mimeType: processedImage.type || 'image/jpeg',
+          mimeType: selectedImage.type || 'image/jpeg',
           filename: selectedImage.name || `upload_${Date.now()}.jpg`
         }),
       });
@@ -322,7 +275,7 @@ export default function HomePage() {
       if (!response.ok) {
         // Handle specific error cases
         if (response.status === 413 || text.includes('FUNCTION_PAYLOAD_TOO_LARGE') || text.includes('Request Entity Too Large')) {
-          throw new Error(`Upload failed due to file size. Processed size: ${base64SizeMB.toFixed(2)}MB (original: ${Math.round(selectedImage.size / 1024)}KB). The image was optimized but is still too large. Please try taking a photo with lower resolution or use a different image.`);
+          throw new Error(`Upload failed due to file size. Current size: ${Math.round(selectedImage.size / 1024)}KB. Please try taking a new photo with lower resolution settings on your camera, or use image editing software to reduce the file size.`);
         }
         if (response.status === 504 || text.includes('timeout')) {
           throw new Error('Processing timeout. The image might be too complex or large. Please try a simpler image or reduce the file size.');
