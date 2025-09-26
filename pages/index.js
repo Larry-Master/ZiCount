@@ -162,6 +162,30 @@ export default function HomePage() {
     }
   };
 
+  // Helper: create a smaller JPEG dataURL from an existing dataURL (used to
+  // avoid storing huge base64 images in MongoDB which would exceed BSON size)
+  const createThumbnailFromDataUrl = (dataUrl, maxWidth = 1024, quality = 0.75) => {
+    return new Promise((resolve, reject) => {
+      try {
+        const img = new Image();
+        img.onload = () => {
+          const scale = Math.min(1, maxWidth / img.width);
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.max(1, Math.floor(img.width * scale));
+          canvas.height = Math.max(1, Math.floor(img.height * scale));
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const thumb = canvas.toDataURL('image/jpeg', quality);
+          resolve(thumb);
+        };
+        img.onerror = (e) => reject(new Error('Image load failed for thumbnail'));
+        img.src = dataUrl;
+      } catch (err) {
+        reject(err);
+      }
+    });
+  };
+
   const uploadToGCS = async (file) => {
     // Get signed upload URL from API
     const response = await fetch('/api/get-upload-url', {
@@ -219,9 +243,33 @@ export default function HomePage() {
 
       // Prefer an embedded base64 image returned by the analyze API. The
       // analyze endpoint will attempt to download the GCS object and delete
-      // it; if it returned imageBase64 we use that for storing/previewing so
-      // we don't rely on the temporary public GCS URL.
-      const imageUrlToStore = data.imageBase64 || publicUrl;
+      // it; if it returned imageBase64 we use that for storing/previewing.
+      // However, the embedded base64 can be very large — if it's bigger than
+      // 2MB we create a smaller thumbnail to avoid MongoDB document size /
+      // payload issues when saving.
+      let imageUrlToStore = publicUrl;
+      if (data.imageBase64) {
+        try {
+          // Rough estimate of decoded bytes from base64 length: 3/4 * length
+          const estimatedBytes = Math.floor((data.imageBase64.length * 3) / 4);
+          const MAX_BYTES = 2 * 1024 * 1024; // 2MB
+          if (estimatedBytes > MAX_BYTES) {
+            // create a thumbnail (smaller) for storing
+            try {
+              const thumb = await createThumbnailFromDataUrl(data.imageBase64, 1024, 0.75);
+              imageUrlToStore = thumb;
+            } catch (thumbErr) {
+              console.warn('Thumbnail creation failed, falling back to original base64:', thumbErr);
+              imageUrlToStore = data.imageBase64; // fallback
+            }
+          } else {
+            imageUrlToStore = data.imageBase64;
+          }
+        } catch (errEstimate) {
+          console.warn('Failed to evaluate imageBase64 size:', errEstimate);
+          imageUrlToStore = data.imageBase64;
+        }
+      }
 
       const receipt = {
         name: receiptTitle,
