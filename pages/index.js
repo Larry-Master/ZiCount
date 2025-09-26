@@ -127,33 +127,39 @@ export default function HomePage() {
       return;
     }
     
+    // Keep the original file for upload (no compression/conversion)
     setSelectedImage(file);
     setImagePreview(null);
     setError(null);
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        // Resize to max 1024px width to reduce size and ensure compatibility
-        const maxWidth = 1024;
-        const scale = Math.min(1, maxWidth / img.width);
-        canvas.width = img.width * scale;
-        canvas.height = img.height * scale;
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        canvas.toBlob((blob) => {
-          // Use resized image for upload
-          const resizedFile = new File([blob], file.name.replace(/\.[^/.]+$/, '.jpg'), { type: 'image/jpeg' });
-          setSelectedImage(resizedFile);
-        }, 'image/jpeg', 0.8);
-        // Use resized data URL for preview
-        const resizedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-        setImagePreview(resizedDataUrl);
+
+    // Still create a browser-friendly preview (convert to JPEG/dataURL) for
+    // devices/browsers that don't display source formats like HEIC. This does
+    // not replace the file used for upload.
+    try {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          const maxWidth = 1024;
+          const scale = Math.min(1, maxWidth / img.width);
+          canvas.width = img.width * scale;
+          canvas.height = img.height * scale;
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          // Use resized data URL for preview only (no effect on upload file)
+          const resizedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          setImagePreview(resizedDataUrl);
+        };
+        img.src = e.target.result;
       };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
+      reader.readAsDataURL(file);
+    } catch (previewErr) {
+      // If preview generation fails, fall back to a direct data URL (may still fail for some formats)
+      const fallbackReader = new FileReader();
+      fallbackReader.onload = (e) => setImagePreview(e.target.result);
+      fallbackReader.readAsDataURL(file);
+    }
   };
 
   const uploadToGCS = async (file) => {
