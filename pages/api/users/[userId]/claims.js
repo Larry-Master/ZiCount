@@ -10,6 +10,35 @@ export default async function handler(req, res) {
       // Get all claims for this user
       const claims = await db.collection('claims').find({ userId }).toArray();
       
+      // Determine latest timestamp among claims and receipts referenced
+      let latest = null;
+      for (const c of claims) {
+        if (c.claimedAt) {
+          const t = new Date(c.claimedAt);
+          if (!latest || t > latest) latest = t;
+        }
+        // try to quickly get the receipt's updatedAt (cheap by _id lookup)
+        try {
+          const r = await db.collection('receipts').findOne({ _id: new ObjectId(c.receiptId) }, { projection: { updatedAt: 1, createdAt: 1 } });
+          if (r) {
+            const t = r.updatedAt ? new Date(r.updatedAt) : (r.createdAt ? new Date(r.createdAt) : null);
+            if (t && (!latest || t > latest)) latest = t;
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+
+      if (latest) {
+        const lm = latest.toUTCString();
+        res.setHeader('Last-Modified', lm);
+        const ifModifiedSince = req.headers['if-modified-since'];
+        if (ifModifiedSince) {
+          const since = new Date(ifModifiedSince);
+          if (!isNaN(since) && since >= latest) return res.status(304).end();
+        }
+      }
+      
       // Get receipt details for each claim
       const claimsWithDetails = await Promise.all(
         claims.map(async (claim) => {

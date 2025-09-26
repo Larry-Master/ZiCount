@@ -16,6 +16,25 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     try {
       const receipts = await db.collection('receipts').find({}).toArray();
+
+      // Determine latest updatedAt across receipts for Last-Modified
+      const latest = receipts.reduce((acc, r) => {
+        const t = r.updatedAt ? new Date(r.updatedAt) : (r.createdAt ? new Date(r.createdAt) : null);
+        if (!t) return acc;
+        return acc && acc > t ? acc : t;
+      }, null);
+
+      if (latest) {
+        const lastModified = latest.toUTCString();
+        res.setHeader('Last-Modified', lastModified);
+        const ifModifiedSince = req.headers['if-modified-since'];
+        if (ifModifiedSince) {
+          const since = new Date(ifModifiedSince);
+          if (!isNaN(since) && since >= latest) {
+            return res.status(304).end();
+          }
+        }
+      }
       
       // Add claim information to each receipt
       const receiptsWithClaims = await Promise.all(
@@ -69,7 +88,9 @@ export default async function handler(req, res) {
         text: body.text || ''
       };
 
-      const result = await db.collection('receipts').insertOne(receipt);
+  // set updatedAt for change tracking
+  receipt.updatedAt = new Date().toISOString();
+  const result = await db.collection('receipts').insertOne(receipt);
       
       const savedReceipt = {
         ...receipt,
@@ -78,7 +99,9 @@ export default async function handler(req, res) {
         claimedItems: 0
       };
 
-      res.status(200).json(savedReceipt);
+  // bump receipts meta
+  try { await db.collection('meta').updateOne({ _id: 'receipts' }, { $set: { updatedAt: new Date().toISOString() } }, { upsert: true }); } catch (e) {}
+  res.status(200).json(savedReceipt);
     } catch (error) {
       console.error('Create receipt error:', error);
       res.status(500).json({ error: 'Internal server error' });

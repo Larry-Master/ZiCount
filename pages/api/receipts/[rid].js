@@ -40,6 +40,18 @@ export default async function handler(req, res) {
         claimedItems: claims.length
       };
 
+      // Last-Modified header based on receipt.updatedAt or createdAt
+      const last = receipt.updatedAt ? new Date(receipt.updatedAt) : (receipt.createdAt ? new Date(receipt.createdAt) : receipt._id.getTimestamp());
+      const lastModified = last.toUTCString();
+      res.setHeader('Last-Modified', lastModified);
+      const ifModifiedSince = req.headers['if-modified-since'];
+      if (ifModifiedSince) {
+        const since = new Date(ifModifiedSince);
+        if (!isNaN(since) && since >= last) {
+          return res.status(304).end();
+        }
+      }
+
       res.status(200).json(receiptWithClaims);
     } catch (error) {
       console.error('Get receipt error:', error);
@@ -61,6 +73,8 @@ export default async function handler(req, res) {
       if (result.deletedCount === 0) {
         return res.status(404).json({ error: 'Receipt not found' });
       }
+
+      try { await db.collection('meta').updateOne({ _id: 'receipts' }, { $set: { updatedAt: new Date().toISOString() } }, { upsert: true }); } catch (e) {}
 
       res.status(200).json({ success: true, message: 'Receipt deleted successfully' });
     } catch (error) {
@@ -108,14 +122,14 @@ export default async function handler(req, res) {
 
       const result = await db.collection('receipts').updateOne(
         { _id: new ObjectId(rid) },
-        { $set: updateData }
+        { $set: { ...updateData, updatedAt: new Date().toISOString() } }
       );
       
       if (result.matchedCount === 0) {
         return res.status(404).json({ error: 'Receipt not found' });
       }
 
-      res.status(200).json({ success: true, message: 'Receipt updated successfully' });
+  res.status(200).json({ success: true, message: 'Receipt updated successfully' });
     } catch (error) {
       console.error('Update receipt error:', error);
       res.status(500).json({ error: 'Internal server error' });
@@ -132,7 +146,7 @@ export default async function handler(req, res) {
 
       const result = await db.collection('receipts').updateOne(
         { _id: new ObjectId(rid) },
-        { $set: updateData }
+        { $set: { ...updateData, updatedAt: new Date().toISOString() } }
       );
       
       if (result.matchedCount === 0) {
