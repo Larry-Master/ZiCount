@@ -169,7 +169,8 @@ export default function HomePage() {
     try {
       // Upload to GCS first
       const gcsUrl = await uploadToGCS(selectedImage);
-      
+      const publicUrl = gcsUrl.replace('gs://', 'https://storage.googleapis.com/');
+
       // Send GCS URL to API instead of file
       const response = await fetch('/api/analyze', {
         method: 'POST',
@@ -192,7 +193,7 @@ export default function HomePage() {
       const receipt = {
         name: receiptTitle,
         uploadedBy: paidBy,
-        imageUrl: imagePreview,
+        imageUrl: publicUrl,
         items: (data.items || []).map((item, idx) => ({
           id: `item_${Date.now()}_${idx}`,
           name: item.name,
