@@ -289,7 +289,7 @@ export default function HomePage() {
             <input ref={inputRef} type="file" accept="image/*" capture="environment" onChange={e => handleFile(e.target.files?.[0])} className="hidden" />
             <div className="text-4xl mb-2">📱</div>
             <p className="text-gray-700 mb-1">{selectedImage ? selectedImage.name : isDragging ? 'Drop image here' : 'Tap to take photo or select image'}</p>
-            <p className="text-sm text-gray-400">Supports JPG, PNG • Max 20MB</p>
+            <p className="text-sm text-gray-400">Supports various Image types • Max 20MB</p>
             {selectedImage && selectedImage.size > 0 && (
               <p className="text-xs text-gray-500 mt-1">
                 File size: {Math.round(selectedImage.size / 1024)}KB
