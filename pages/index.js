@@ -21,6 +21,7 @@ import { apiClient } from '@/lib/api/client';
 import { getAvatarDisplay } from '@/lib/utils/avatar';
 import ManualReceiptForm from '@/components/ManualReceiptForm';
 import { usePeople } from '@/lib/hooks/usePeople';
+import { optimizeImageForOCR, needsOptimization } from '@/lib/utils/imageOptimization';
 
 // Dynamic component imports with loading states for better UX
 const ReceiptDetail = dynamic(() => import('@/components/ReceiptDetail'), {
@@ -56,73 +57,6 @@ export default function HomePage() {
   const [error, setError] = useState(null);                     // Error state for user feedback
   const [isDragging, setIsDragging] = useState(false);          // Drag & drop visual feedback
   const [currentView, setCurrentView] = useState('receipts');   // Current active view/tab
-
-  // Simple image optimization for Vercel compatibility
-  const optimizeImageForVercel = (file, maxSizeMB = 2) => {
-    return new Promise((resolve, reject) => {
-      if (file.size <= maxSizeMB * 1024 * 1024) {
-        resolve(file);
-        return;
-      }
-
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      const img = new Image();
-      
-      img.onload = () => {
-        try {
-          let { width, height } = img;
-          
-          // Reduce dimensions to fit size limit
-          const maxDimension = 1600;
-          if (width > height) {
-            if (width > maxDimension) {
-              height = (height * maxDimension) / width;
-              width = maxDimension;
-            }
-          } else {
-            if (height > maxDimension) {
-              width = (width * maxDimension) / height;
-              height = maxDimension;
-            }
-          }
-          
-          canvas.width = width;
-          canvas.height = height;
-          ctx.drawImage(img, 0, 0, width, height);
-          
-          // Try different quality levels
-          const tryCompress = (quality) => {
-            canvas.toBlob((blob) => {
-              if (!blob) {
-                reject(new Error('Failed to optimize image'));
-                return;
-              }
-
-              if (blob.size > maxSizeMB * 1024 * 1024 && quality > 0.3) {
-                tryCompress(quality - 0.1);
-                return;
-              }
-
-              const optimizedFile = new File([blob], file.name, {
-                type: 'image/jpeg',
-                lastModified: Date.now()
-              });
-              
-              resolve(optimizedFile);
-            }, 'image/jpeg', quality);
-          };
-          
-          tryCompress(0.8);
-        } catch (error) {
-          reject(error);
-        }
-      };
-      
-      img.onerror = () => reject(new Error('Failed to load image'));
-      img.src = URL.createObjectURL(file);
-    });
-  };
   
   // SSR-safe user selection with localStorage persistence
   const [currentUserId, setCurrentUserId] = useState(() => {
@@ -201,11 +135,14 @@ export default function HomePage() {
       
       let processedFile = file;
       
-      // For Vercel deployment: Be more aggressive with optimization
-      // Optimize if larger than 2MB to ensure it works with Vercel's 4.5MB limit
-      if (file.size > 2 * 1024 * 1024) {
-        console.log(`Large image detected (${Math.round(file.size / 1024)}KB), optimizing for Vercel deployment...`);
-        processedFile = await optimizeImageForVercel(file, 2); // 2MB limit
+      // Optimize for Vercel's 4.5MB limit while maintaining OCR quality
+      if (needsOptimization(file, 4)) {
+        console.log(`Large image detected (${Math.round(file.size / 1024)}KB), optimizing for OCR...`);
+        processedFile = await optimizeImageForOCR(file, {
+          maxDimension: 2048,  // Keep high resolution for OCR
+          quality: 0.9,        // High quality for text recognition
+          maxFileSize: 4       // Vercel's practical limit
+        });
       }
       
       setSelectedImage(processedFile);
@@ -276,36 +213,28 @@ export default function HomePage() {
       if (selectedImage) {
         try {
           console.log(`Uploading image separately: ${Math.round(selectedImage.size / 1024)}KB`);
+          const uploadFormData = new FormData();
+          uploadFormData.append('file', selectedImage);
           
-          // For Vercel: If image is too large, skip upload to prevent failures
-          if (selectedImage.size > 3 * 1024 * 1024) { // 3MB limit for Vercel
-            console.warn('Image too large for Vercel upload, skipping image storage');
-            alert('Image too large for upload to Vercel (>3MB). Receipt will be saved without image. Consider using smaller images.');
+          const uploadResponse = await fetch('/api/upload', {
+            method: 'POST',
+            body: uploadFormData,
+          });
+          
+          if (uploadResponse.ok) {
+            const uploadData = await uploadResponse.json();
+            imageUrl = uploadData.url;
+            console.log('Image upload successful, URL length:', imageUrl?.length || 0);
           } else {
-            const uploadFormData = new FormData();
-            uploadFormData.append('file', selectedImage);
-            
-            const uploadResponse = await fetch('/api/upload', {
-              method: 'POST',
-              body: uploadFormData,
-            });
-            
-            if (uploadResponse.ok) {
-              const uploadData = await uploadResponse.json();
-              imageUrl = uploadData.url;
-              console.log('Image upload successful, URL length:', imageUrl?.length || 0);
-            } else {
-              const errorText = await uploadResponse.text();
-              console.error('Image upload failed:', errorText);
-              console.warn('Image upload failed, storing without image');
-              // Show upload failure in UI for mobile debugging
-              alert(`Image upload failed: ${uploadResponse.status} - Will save receipt without image`);
-            }
+            const errorText = await uploadResponse.text();
+            console.error('Image upload failed:', errorText);
+            console.warn('Image upload failed, storing without image');
+            // Show upload failure in UI for mobile debugging
+            alert(`Image upload failed: ${uploadResponse.status} - ${errorText.substring(0, 100)}`);
           }
         } catch (uploadError) {
           console.error('Image upload error:', uploadError);
           console.warn('Image upload failed:', uploadError);
-          alert('Image upload failed due to connection issue - Will save receipt without image');
           // Continue without image rather than failing completely
         }
       }
@@ -313,8 +242,7 @@ export default function HomePage() {
       const receipt = {
         name: receiptTitle,
         uploadedBy: paidBy,
-        // CRITICAL: Ensure no base64 data is ever stored in receipt
-        imageUrl: (imageUrl && !imageUrl.startsWith('data:')) ? imageUrl : null,
+        imageUrl: imageUrl,
         items: (data.items || []).map((item, idx) => ({
           id: `item_${Date.now()}_${idx}`,
           name: (item.name || 'Unknown item').substring(0, 200), // Limit item names
