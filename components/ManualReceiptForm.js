@@ -10,6 +10,7 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId,
   const [selectedPeople, setSelectedPeople] = useState(initialData?.participants || []);
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(initialData?.imageUrl || null);
+  const [imageRemoved, setImageRemoved] = useState(false);
   // Initialize to empty string (not null) to avoid React warning about select value
   const [paidBy, setPaidBy] = useState(initialData?.uploadedBy || currentUserId || (typeof window !== 'undefined' ? localStorage.getItem('currentUserId') || '' : ''));
   // date is no longer collected from the user; use current date automatically
@@ -47,6 +48,13 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId,
 
       // Handle image upload if selected
       let imageUrl = imagePreview;
+      let imageId = initialData?.imageId || null;
+      if (imageRemoved) {
+        // user requested removal of existing image
+        imageUrl = null;
+        imageId = null;
+      }
+
       if (selectedImage) {
         // Use FormData like the analyze endpoint
         const formData = new FormData();
@@ -63,6 +71,7 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId,
         
         const uploadData = await uploadRes.json();
         imageUrl = uploadData.url;
+        imageId = uploadData.id || imageId;
       }
 
       const items = selectedPeople.length > 0
@@ -95,6 +104,7 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId,
         name: name || `Manual ${new Date().toLocaleDateString('de-DE')}`,
         createdAt: isEditing ? initialData.createdAt : new Date().toISOString(),
         imageUrl: imageUrl,
+        imageId: imageId || null,
         items,
         totalAmount: totalValue, // Include the total amount for manual receipts
         uploadedBy: paidBy,
@@ -124,6 +134,7 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId,
         setSelectedPeople([]);
         setSelectedImage(null);
         setImagePreview(null);
+        setImageRemoved(false);
       }
       
       onRefresh?.();
@@ -161,7 +172,9 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId,
 
   const handleImageRemove = () => {
     setSelectedImage(null);
-    setImagePreview(initialData?.imageUrl || null);
+    setImagePreview(null);
+    // Mark existing image as removed so server can delete it on update
+    if (initialData?.imageId) setImageRemoved(true);
   };
 
   return (

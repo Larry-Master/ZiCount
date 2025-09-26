@@ -66,12 +66,26 @@ export default async function handler(req, res) {
 
       // Delete all claims for this receipt first
       await db.collection('claims').deleteMany({ receiptId: rid });
-      
+
+      // Find the receipt to get imageId (if any)
+      const receipt = await db.collection('receipts').findOne({ _id: new ObjectId(rid) });
+      if (!receipt) return res.status(404).json({ error: 'Receipt not found' });
+
       // Delete the receipt
       const result = await db.collection('receipts').deleteOne({ _id: new ObjectId(rid) });
-      
+
       if (result.deletedCount === 0) {
         return res.status(404).json({ error: 'Receipt not found' });
+      }
+
+      // If receipt had an associated imageId, delete the image document
+      try {
+        if (receipt.imageId) {
+          await db.collection('images').deleteOne({ _id: new ObjectId(receipt.imageId) });
+        }
+      } catch (e) {
+        // If deleting image fails, log but don't fail the whole request
+        console.warn('Failed to delete associated image for receipt', rid, e);
       }
 
       try { await db.collection('meta').updateOne({ _id: 'receipts' }, { $set: { updatedAt: new Date().toISOString() } }, { upsert: true }); } catch (e) {}
@@ -144,10 +158,29 @@ export default async function handler(req, res) {
       const updateData = { ...req.body };
       delete updateData.id; // Remove the id field from the update data
 
+      // If imageId or imageUrl are being changed, handle removal of old image
+      const existing = await db.collection('receipts').findOne({ _id: new ObjectId(rid) });
+      if (!existing) return res.status(404).json({ error: 'Receipt not found' });
+
+      const newImageId = updateData.imageId ?? existing.imageId ?? null;
+      const newImageUrl = updateData.imageUrl ?? existing.imageUrl ?? null;
+
+      // If the update explicitly removes the image (imageId set to null or imageUrl removed)
+      const imageWasRemoved = (existing.imageId && (updateData.imageId === null || (updateData.imageUrl === null)));
+
       const result = await db.collection('receipts').updateOne(
         { _id: new ObjectId(rid) },
         { $set: { ...updateData, updatedAt: new Date().toISOString() } }
       );
+
+      // If image was removed or replaced, delete the old image doc
+      try {
+        if (existing.imageId && (imageWasRemoved || (newImageId && existing.imageId !== newImageId))) {
+          await db.collection('images').deleteOne({ _id: new ObjectId(existing.imageId) });
+        }
+      } catch (e) {
+        console.warn('Failed to delete old image after receipt update', rid, e);
+      }
       
       if (result.matchedCount === 0) {
         return res.status(404).json({ error: 'Receipt not found' });
