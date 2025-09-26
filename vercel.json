@@ -2,12 +2,10 @@
   "version": 2,
   "functions": {
     "pages/api/analyze.js": {
-      "maxDuration": 60,
-      "memory": 1024
+      "maxDuration": 30
     },
     "pages/api/upload.js": {
-      "maxDuration": 30,
-      "memory": 512
+      "maxDuration": 15
     }
   },
   "routes": [
