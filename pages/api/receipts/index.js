@@ -58,7 +58,8 @@ export default async function handler(req, res) {
         name: body.name || `Receipt ${new Date().toLocaleDateString('de-DE')}`,
         // allow client to pass createdAt (e.g., manual form), fallback to now
         createdAt: body.createdAt ? new Date(body.createdAt) : new Date(),
-        imageUrl: body.imageUrl,
+  imageUrl: body.imageUrl,
+  imageId: body.imageId || null,
         items: body.items || [],
         discounts: body.discounts || [],
         // Only use totalAmount from request, never calculate fallback
