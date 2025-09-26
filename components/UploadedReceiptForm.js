@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePeople } from '@/lib/hooks/usePeople';
 import { getAvatarDisplay } from '@/lib/utils/avatar';
 
@@ -16,6 +16,13 @@ export default function UploadedReceiptForm({ receipt, currentUserId, onSave, on
         : [...prev, personId]
     );
   };
+
+  // Ensure editingPayer has a sensible default when people load
+  useEffect(() => {
+    if ((!editingPayer || editingPayer === null) && people && people.length > 0) {
+      setEditingPayer(people[0].id);
+    }
+  }, [people, editingPayer]);
 
   const handleSave = async () => {
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePeople } from '@/lib/hooks/usePeople';
 import { getAvatarDisplay } from '@/lib/utils/avatar';
 
@@ -15,6 +15,15 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId,
   const { people } = usePeople();
   // prefer prop currentUserId, fallback to localStorage
   const runtimeCurrentUserId = currentUserId || (typeof window !== 'undefined' ? localStorage.getItem('currentUserId') || null : null);
+
+  // If no paidBy was set (e.g., creator not selected), default to current user
+  // or the first person when the people list becomes available. This ensures
+  // the select is controlled and the chosen payer is actually saved.
+  useEffect(() => {
+    if (!paidBy && people && people.length > 0) {
+      setPaidBy(runtimeCurrentUserId || people[0].id);
+    }
+  }, [people, runtimeCurrentUserId, paidBy]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

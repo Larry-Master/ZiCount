@@ -108,6 +108,15 @@ export default function HomePage() {
     }
   }, [currentUserId, paidBy]);
 
+  // Ensure paidBy defaults to a valid person when the people list becomes
+  // available (covers the case where the creator isn't selected but they
+  // chose a payer from the dropdown — we want a controlled value).
+  useEffect(() => {
+    if ((!paidBy || paidBy === '') && people && people.length > 0) {
+      setPaidBy(currentUserId || people[0].id);
+    }
+  }, [people, currentUserId, paidBy]);
+
   // Drag & drop
   const handleDragOver = (e) => { e.preventDefault(); setIsDragging(true); };
   const handleDragLeave = () => setIsDragging(false);
