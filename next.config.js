@@ -22,15 +22,6 @@ const nextConfig = {
   // Netlify deployment configuration
   trailingSlash: true,
   
-  // Exclude Netlify functions from Next.js processing
-  webpack: (config, { isServer }) => {
-    config.resolve.fallback = {
-      ...config.resolve.fallback,
-      fs: false,
-    };
-    return config;
-  },
-  
   // Environment variables accessible on client-side
   env: {
     OCR_REMOTE_URL: process.env.OCR_REMOTE_URL,
