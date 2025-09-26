@@ -43,6 +43,8 @@ export default async function handler(req, res) {
       // Last-Modified header based on receipt.updatedAt or createdAt
       const last = receipt.updatedAt ? new Date(receipt.updatedAt) : (receipt.createdAt ? new Date(receipt.createdAt) : receipt._id.getTimestamp());
       const lastModified = last.toUTCString();
+      // Cache individual receipt pages on Vercel CDN for a short period. Browser cache is small.
+      res.setHeader('Cache-Control', 'public, max-age=20, s-maxage=120, stale-while-revalidate=60');
       res.setHeader('Last-Modified', lastModified);
       const ifModifiedSince = req.headers['if-modified-since'];
       if (ifModifiedSince) {

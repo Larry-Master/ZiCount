@@ -26,6 +26,9 @@ export default async function handler(req, res) {
 
       if (latest) {
         const lastModified = latest.toUTCString();
+        // Allow CDN to cache responses for 60 seconds and serve stale while revalidating for 30s
+        // s-maxage controls CDN (Vercel) caching, max-age controls browser caching
+        res.setHeader('Cache-Control', 'public, max-age=10, s-maxage=60, stale-while-revalidate=30');
         res.setHeader('Last-Modified', lastModified);
         const ifModifiedSince = req.headers['if-modified-since'];
         if (ifModifiedSince) {
@@ -34,6 +37,9 @@ export default async function handler(req, res) {
             return res.status(304).end();
           }
         }
+      } else {
+        // Default caching for list responses when we can't determine Last-Modified
+        res.setHeader('Cache-Control', 'public, max-age=10, s-maxage=30, stale-while-revalidate=15');
       }
       
       // Add claim information to each receipt
