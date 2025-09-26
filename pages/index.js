@@ -236,23 +236,8 @@ export default function HomePage() {
         discounts: data.discounts || [],
         totalAmount: data.totalAmount,
         participants: selectedParticipants,
-        // Limit text size to prevent document size issues (first 1000 chars only)
-        text: (data.text || '').substring(0, 1000)
+        text: data.text
       };
-
-      // Debug: Check the size of the receipt data being sent
-      const receiptJson = JSON.stringify(receipt);
-      const receiptSizeMB = receiptJson.length / (1024 * 1024);
-      console.log(`Receipt data size: ${receiptSizeMB.toFixed(2)}MB`);
-      
-      if (receiptSizeMB > 15) {
-        console.error('Receipt data too large:', {
-          imageUrlLength: receipt.imageUrl?.length || 0,
-          itemsCount: receipt.items?.length || 0,
-          textLength: receipt.text?.length || 0,
-          totalSize: receiptJson.length
-        });
-      }
 
       const saveResponse = await fetch('/api/receipts', {
         method: 'POST',

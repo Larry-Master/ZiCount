@@ -54,18 +54,11 @@ export default async function handler(req, res) {
     try {
       const body = req.body;
       
-      // Validate that imageUrl is not a base64 data URL to prevent document size issues
-      let imageUrl = body.imageUrl;
-      if (imageUrl && imageUrl.startsWith('data:')) {
-        console.warn('Attempted to save base64 image data directly to receipt document - removing to prevent size issues');
-        imageUrl = null; // Remove base64 data to prevent document size issues
-      }
-      
       const receipt = {
         name: body.name || `Receipt ${new Date().toLocaleDateString('de-DE')}`,
         // allow client to pass createdAt (e.g., manual form), fallback to now
         createdAt: body.createdAt ? new Date(body.createdAt) : new Date(),
-        imageUrl: imageUrl,
+        imageUrl: body.imageUrl,
         items: body.items || [],
         discounts: body.discounts || [],
         // Only use totalAmount from request, never calculate fallback
@@ -75,17 +68,6 @@ export default async function handler(req, res) {
         participants: body.participants || [],
         text: body.text || ''
       };
-
-      // Check document size before insertion to prevent MongoDB errors
-      const documentSize = JSON.stringify(receipt).length;
-      const maxDocumentSize = 15 * 1024 * 1024; // 15MB to leave some buffer
-      
-      if (documentSize > maxDocumentSize) {
-        console.error(`Receipt document too large: ${Math.round(documentSize / 1024 / 1024)}MB`);
-        return res.status(413).json({ 
-          error: `Receipt data too large (${Math.round(documentSize / 1024 / 1024)}MB). This is likely due to high-resolution image data being included. Please ensure images are uploaded separately.` 
-        });
-      }
 
       const result = await db.collection('receipts').insertOne(receipt);
       

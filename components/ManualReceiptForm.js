@@ -33,8 +33,8 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId,
       // Use only the selected people for cost calculation
       const perPerson = selectedPeople.length > 0 ? parseFloat((totalValue / selectedPeople.length).toFixed(2)) : totalValue;
 
-      // Handle image upload if selected - store separately to avoid document size limits
-      let imageUrl = null;
+      // Handle image upload if selected
+      let imageUrl = imagePreview;
       if (selectedImage) {
         // Use FormData like the analyze endpoint
         const formData = new FormData();
@@ -46,15 +46,11 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId,
         });
         
         if (!uploadRes.ok) {
-          console.warn('Image upload failed for manual receipt');
-          // Continue without image rather than failing completely
-        } else {
-          const uploadData = await uploadRes.json();
-          imageUrl = uploadData.url;
+          throw new Error('Failed to upload image');
         }
-      } else if (imagePreview && !imagePreview.startsWith('data:')) {
-        // Keep existing imageUrl if it's not a base64 data URL
-        imageUrl = imagePreview;
+        
+        const uploadData = await uploadRes.json();
+        imageUrl = uploadData.url;
       }
 
       const items = selectedPeople.length > 0
