@@ -286,7 +286,7 @@ export default function HomePage() {
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
           >
-            <input ref={inputRef} type="file" accept="image/*" capture="environment" onChange={e => handleFile(e.target.files?.[0])} className="hidden" />
+            <input ref={inputRef} type="file" accept="image/*" capture="environment" onChange={e => handleFile(e.target.files?.[0])} className="sr-only" />
             <div className="text-4xl mb-2">📱</div>
             <p className="text-gray-700 mb-1">{selectedImage ? selectedImage.name : isDragging ? 'Drop image here' : 'Tap to take photo or select image'}</p>
             <p className="text-sm text-gray-400">Supports various Image types • Max 20MB</p>
