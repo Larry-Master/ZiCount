@@ -7,9 +7,9 @@ import { checkMethod, errorResponse } from '@/lib/utils/apiHelpers';
 export const config = {
   api: {
     bodyParser: false,
-    // Allow reasonable sizes for image storage
-    responseLimit: '20mb',
-    sizeLimit: '20mb',
+    // Consistent limits with analyze endpoint
+    responseLimit: '10mb',
+    sizeLimit: '10mb',
   },
 };
 
@@ -19,8 +19,8 @@ export default async function handler(req, res) {
   if (!checkMethod(req, res, 'POST')) return;
 
   try {
-    // Parse uploaded file
-    const { files } = await parseFormData(req, { maxFileSize: 20 * 1024 * 1024 });
+    // Parse uploaded file with consistent size limit
+    const { files } = await parseFormData(req, { maxFileSize: 10 * 1024 * 1024 });
     const uploadedFile = Array.isArray(files.file) ? files.file[0] : files.file;
     
     if (!uploadedFile) {
@@ -30,14 +30,11 @@ export default async function handler(req, res) {
     const filePath = uploadedFile.filepath || uploadedFile.path;
     const buffer = await fs.readFile(filePath);
     
-    // Check if the image will exceed MongoDB's 16MB document limit when base64 encoded
-    // Base64 encoding increases size by ~33%, so we need to be conservative
-    const base64Size = Math.ceil(buffer.length * 1.33);
-    const maxMongoSize = 12 * 1024 * 1024; // 12MB to leave room for other document data
-    
-    if (base64Size > maxMongoSize) {
+    // Additional size check after reading file
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (buffer.length > maxSize) {
       return res.status(400).json({ 
-        error: `Image too large for database storage (${Math.round(base64Size / 1024 / 1024)}MB when encoded). Maximum size is ~12MB. Please compress the image before uploading.` 
+        error: `Image too large (${Math.round(buffer.length / 1024 / 1024)}MB). Maximum size is 10MB. Please use image compression before uploading.` 
       });
     }
     
