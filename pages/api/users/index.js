@@ -26,16 +26,12 @@ export default async function handler(req, res) {
       } catch (e) {}
       if (latest) {
         const lastModified = latest.toUTCString();
-        // Cache users list on CDN for 60s and allow short browser caching
-        res.setHeader('Cache-Control', 'public, max-age=20, s-maxage=60, stale-while-revalidate=30');
         res.setHeader('Last-Modified', lastModified);
         const ifModifiedSince = req.headers['if-modified-since'];
         if (ifModifiedSince) {
           const since = new Date(ifModifiedSince);
           if (!isNaN(since) && since >= latest) return res.status(304).end();
         }
-      } else {
-        res.setHeader('Cache-Control', 'public, max-age=10, s-maxage=30, stale-while-revalidate=15');
       }
 
       const mapped = users.map(u => ({ id: u._id.toString(), name: u.name, color: u.color, createdAt: u.createdAt, updatedAt: u.updatedAt }));
