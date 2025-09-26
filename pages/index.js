@@ -135,6 +135,27 @@ export default function HomePage() {
     reader.readAsDataURL(file);
   };
 
+  const uploadToGCS = async (file) => {
+    // Get signed upload URL from API
+    const response = await fetch('/api/get-upload-url', {
+      method: 'POST',
+    });
+    if (!response.ok) throw new Error('Failed to get upload URL');
+    const { uploadUrl, gcsUrl } = await response.json();
+
+    // Upload file to signed URL
+    const uploadResponse = await fetch(uploadUrl, {
+      method: 'PUT',
+      body: file,
+      headers: {
+        'Content-Type': file.type,
+      },
+    });
+    if (!uploadResponse.ok) throw new Error('Failed to upload file');
+
+    return gcsUrl;
+  };
+
   const analyzeReceipt = async () => {
     if (!selectedImage) return setError('Please select an image first');
     if (!selectedParticipants.length) return setError('Bitte Teilnehmer auswählen');
@@ -146,12 +167,14 @@ export default function HomePage() {
 
     setAnalyzing(true); setError(null);
     try {
-      const formData = new FormData();
-      formData.append('file', selectedImage);
+      // Upload to GCS first
+      const gcsUrl = await uploadToGCS(selectedImage);
+      
+      // Send GCS URL to API instead of file
       const response = await fetch('/api/analyze', {
         method: 'POST',
-        headers: { 'x-file-name': selectedImage.name || `upload_${Date.now()}.jpg` },
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gcsUrl }),
       });
 
       const text = await response.text();

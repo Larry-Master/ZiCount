@@ -13,18 +13,13 @@
  * - Handles common OCR errors (e.g., "11" -> "1l" for liter measurements)
  */
 
-import { promises as fs } from 'fs';
 import { DocumentProcessorServiceClient } from '@google-cloud/documentai';
-import { parseFormData } from '@/lib/utils/formData';
 import { checkMethod, errorResponse } from '@/lib/utils/apiHelpers';
 
-// Disable Next.js default body parser to handle file uploads
+// Disable Next.js default body parser to handle JSON
 export const config = {
   api: {
-    bodyParser: false,
-    // Set reasonable limits for phone images
-    responseLimit: '50mb',
-    sizeLimit: '50mb',
+    bodyParser: true,  // Enable for JSON
   },
 };
 
@@ -47,29 +42,10 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Missing DOC_AI_PROJECT_ID or DOC_AI_PROCESSOR_ID' });
     }
 
-    // Parse the uploaded file from multipart form data
-    const { files } = await parseFormData(req);
-    const uploadedFile = Array.isArray(files.file) ? files.file[0] : files.file;
-    
-    if (!uploadedFile) {
-      return res.status(400).json({ error: 'No file uploaded' });
-    }
-
-    // Read the uploaded file into memory
-    const filePath = uploadedFile.filepath || uploadedFile.path;
-    let buffer = await fs.readFile(filePath);
-    const originalName = uploadedFile.originalFilename || uploadedFile.name || 'upload.jpg';
-
-    // Determine MIME type based on file extension
-    const ext = originalName.split('.').pop().toLowerCase();
-    const mimeType = ext === 'png' ? 'image/png' : 'image/jpeg';
-
-    // Check if image exceeds 20MB limit
-    const maxSize = 20 * 1024 * 1024; // 20MB in bytes
-    if (buffer.length > maxSize) {
-      return res.status(400).json({ 
-        error: `Image too large (${Math.round(buffer.length / 1024 / 1024)}MB). Maximum size is 20MB. Please try taking a photo with lower resolution or use image editing software to reduce the file size without losing quality.` 
-      });
+    // Expect gcsUrl in request body instead of file
+    const { gcsUrl } = req.body;
+    if (!gcsUrl) {
+      return res.status(400).json({ error: 'No GCS URL provided' });
     }
 
     // Initialize Google Cloud Document AI client
@@ -94,9 +70,9 @@ export default async function handler(req, res) {
     // Prepare request for Document AI processing
     const request = {
       name: processorName,
-      rawDocument: {
-        content: buffer.toString('base64'), // Convert image to base64
-        mimeType: mimeType,
+      gcsDocument: {
+        gcsUri: gcsUrl,
+        mimeType: gcsUrl.includes('.png') ? 'image/png' : 'image/jpeg',
       },
     };
 
