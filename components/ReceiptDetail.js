@@ -36,12 +36,19 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
 
   const handleClaim = async (item, userId) => {
     try {
-      const result = await claimItem(currentReceipt.id, item.id, userId);
-      if (result && onItemClaimed) onItemClaimed(result.id || item.id, result.claimedBy || userId, result.claimedAt || new Date().toISOString());
+      // Optimistic local update so UI reflects the claim instantly
+      const claimedAt = new Date().toISOString();
+      if (onItemClaimed) onItemClaimed(item.id, userId, claimedAt);
       setShowClaimModal(false);
       setSelectedItem(null);
+
+      // Perform server mutation; if it fails we'll refetch to rollback
+      await claimItem(currentReceipt.id, item.id, userId);
     } catch (err) {
       console.error('Claim failed:', err);
+      // rollback: refresh the receipt from server to sync UI
+      if (refetchReceipt) refetchReceipt();
+      if (onClaimsUpdated) onClaimsUpdated();
     }
   };
 
@@ -52,10 +59,15 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
     handleUnclaim.inFlight.add(item.id);
 
     try {
-      const result = await unclaimItem(currentReceipt.id, item.id);
-      if (result && onItemUnclaimed) onItemUnclaimed(item.id);
+      // Optimistic local update
+      if (onItemUnclaimed) onItemUnclaimed(item.id);
+      // Perform server mutation
+      await unclaimItem(currentReceipt.id, item.id);
     } catch (err) {
       console.error('Unclaim failed:', err);
+      // rollback
+      if (refetchReceipt) refetchReceipt();
+      if (onClaimsUpdated) onClaimsUpdated();
     } finally {
       handleUnclaim.inFlight.delete(item.id);
     }

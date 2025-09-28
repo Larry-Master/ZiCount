@@ -387,12 +387,15 @@ export default function HomePage() {
           receiptId={savedReceipt.id}
           currentUserId={currentUserId}
           onItemClaimed={(itemId, claimedBy, claimedAt) => {
+            // Apply optimistic update locally. Do NOT trigger an immediate
+            // server refresh here — that causes the UI to wait on network
+            // roundtrips and leads to the visible 2s delay.
             setSavedReceipt(prev => ({ ...prev, items: prev.items.map(it => it.id===itemId ? {...it, claimedBy, claimedAt} : it) }));
-            refreshReceiptData();
           }}
           onItemUnclaimed={(itemId) => { 
+            // Optimistically update UI; background mutation/invalidation will
+            // reconcile with the server. Avoid immediate refresh to prevent UI lag.
             setSavedReceipt(prev => ({ ...prev, items: prev.items.map(it => it.id===itemId ? {...it, claimedBy:null, claimedAt:null}:it) })); 
-            refreshReceiptData();
           }}
           onDelete={()=>handleDeleteReceipt(savedReceipt.id)}
           onClaimsUpdated={()=>{ refetchReceipts(); setClaimsVersion(v=>v+1); }}
