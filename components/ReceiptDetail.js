@@ -75,7 +75,10 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
 
   const getItemStatus = (item) => {
     const optimistic = optimisticClaims?.get ? optimisticClaims.get(item.id) : undefined;
-    return optimistic || item;
+    // optimistic may only contain claim metadata; merge it onto the full item so components
+    // receive a complete object (name, price, etc.) while overriding claim fields.
+    if (optimistic) return { ...item, ...optimistic };
+    return item;
   };
 
   // If editing manual receipt, show the form
