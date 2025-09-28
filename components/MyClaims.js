@@ -1,31 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { formatCurrency, calculateTotal } from '@/lib/utils/currency';
 import { apiClient } from '@/lib/api/client';
+import { useClaims, useUserClaims } from '@/lib/hooks/useReceipts';
 import ItemCard from '@/components/ItemCard';
 
 export default function MyClaims({ userId, onClaimsUpdated, refreshKey }) {
-  const [claims, setClaims] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [claimsLocal, setClaimsLocal] = useState([]);
+  const { unclaimItem } = useClaims();
+  const { claims, loading, error, refetch } = useUserClaims(userId);
 
+  // Keep local copy for immediate UI updates
   useEffect(() => {
-    const fetchClaims = async () => {
-      if (!userId) return;
-
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await apiClient.getUserClaims(userId);
-        setClaims(data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchClaims();
-  }, [userId, refreshKey]);
+    setClaimsLocal(claims || []);
+  }, [claims, refreshKey]);
 
   const handleUnclaim = async (item) => {
     if (!item.claimedBy || item.claimedBy !== userId) {
@@ -33,24 +20,33 @@ export default function MyClaims({ userId, onClaimsUpdated, refreshKey }) {
       return;
     }
 
+    // Use a ref to track in-flight unclaim requests and prevent duplicates
+    if (!handleUnclaim.inFlight) handleUnclaim.inFlight = new Set();
+    if (handleUnclaim.inFlight.has(item.id)) return;
+    handleUnclaim.inFlight.add(item.id);
+
     try {
-      await apiClient.unclaimItem(item.id);
-      setClaims(prev => prev.filter(claim => claim.id !== item.id));
-      // Notify parent component to refresh data
+      // Use the hook's unclaim which performs optimistic cache updates for receipts
+      await unclaimItem(item.receiptId, item.id, userId);
+      // Remove locally from the MyClaims list
+      setClaimsLocal(prev => prev.filter(claim => claim.id !== item.id));
+      // Notify parent component to refresh data if they need to
       if (onClaimsUpdated) {
         onClaimsUpdated();
       }
     } catch (err) {
       console.error('Unclaim failed:', err);
+    } finally {
+      handleUnclaim.inFlight.delete(item.id);
     }
   };
 
   if (loading) return <div className="container">Loading your claims...</div>;
   if (error) return <div className="container">Error: {error}</div>;
-  if (!claims.length) return <div className="container">No claims yet</div>;
+  if (!claimsLocal.length) return <div className="container">No claims yet</div>;
 
-  const totalClaimed = calculateTotal(claims);
-  const claimsByReceipt = claims.reduce((acc, claim) => {
+  const totalClaimed = calculateTotal(claimsLocal);
+  const claimsByReceipt = claimsLocal.reduce((acc, claim) => {
     const receiptId = claim.receiptId;
     if (!acc[receiptId]) {
       acc[receiptId] = {

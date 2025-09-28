@@ -16,43 +16,53 @@
 
 import { useRef, useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { useReceipts } from '@/lib/hooks/useReceipts';
+import { useReceipts, useReceiptMutations } from '@/lib/hooks/useReceipts';
+import { useReceiptUpload } from '@/lib/hooks/useReceiptUpload';
 import { apiClient } from '@/lib/api/client';
-import { getAvatarDisplay } from '@/lib/utils/avatar';
 import ManualReceiptForm from '@/components/ManualReceiptForm';
+import ParticipantSelector from '@/components/ui/ParticipantSelector';
 import { usePeople } from '@/lib/hooks/usePeople';
 
 // Dynamic component imports with loading states for better UX
+import { ComponentLoader } from '@/components/ui/Loading';
+
 const ReceiptDetail = dynamic(() => import('@/components/ReceiptDetail'), {
-  loading: () => <div className="flex justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>
+  loading: () => <ComponentLoader />
 });
 const ReceiptList = dynamic(() => import('@/components/ReceiptList'), {
-  loading: () => <div className="flex justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>
+  loading: () => <ComponentLoader />
 });
 const MyClaims = dynamic(() => import('@/components/MyClaims'), {
-  loading: () => <div className="flex justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>
+  loading: () => <ComponentLoader />
 });
 const PeopleManager = dynamic(() => import('@/components/PeopleManager'), {
-  loading: () => <div className="flex justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>
+  loading: () => <ComponentLoader />
 });
 const DebtSolver = dynamic(() => import('@/components/DebtSolver'), {
-  loading: () => <div className="flex justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>
+  loading: () => <ComponentLoader />
 });
 
 export default function HomePage() {
   // Custom hooks for data management
   const { people } = usePeople();
   const { receipts, loading: receiptsLoading, refetch: refetchReceipts } = useReceipts();
+  const { deleteReceiptMutate, deleting } = useReceiptMutations();
+  const [removedReceipts, setRemovedReceipts] = useState(() => new Set());
+  const { selectedImage, imagePreview, analyzing, error: uploadError, handleFile, analyzeReceipt, clearSelection } = useReceiptUpload();
+
+  // Page-level error state (some handlers in this page call setError)
+  const [error, setError] = useState(null);
+
+  // Sync upload hook errors into the page-level error so UI shows them
+  useEffect(() => {
+    if (uploadError) setError(uploadError);
+  }, [uploadError]);
 
   // File input reference for programmatic access
   const inputRef = useRef(null);
 
   // Component state management
-  const [selectedImage, setSelectedImage] = useState(null);     // Currently selected image file
-  const [imagePreview, setImagePreview] = useState(null);       // Base64 preview of selected image
-  const [analyzing, setAnalyzing] = useState(false);            // Loading state for receipt analysis
   const [savedReceipt, setSavedReceipt] = useState(null);       // Processed and saved receipt data
-  const [error, setError] = useState(null);                     // Error state for user feedback
   const [isDragging, setIsDragging] = useState(false);          // Drag & drop visual feedback
   const [currentView, setCurrentView] = useState('receipts');   // Current active view/tab
   
@@ -89,10 +99,9 @@ export default function HomePage() {
     if (typeof window === 'undefined') return;
     try {
       const stored = localStorage.getItem('currentUserId');
-      console.debug('localStorage.currentUserId=', stored);
       if (stored) setCurrentUserId(stored);
     } catch (e) {
-      console.debug('reading localStorage failed', e);
+      // Ignore localStorage errors
     }
   }, []);
   const [claimsVersion, setClaimsVersion] = useState(0);
@@ -108,114 +117,104 @@ export default function HomePage() {
     }
   }, [currentUserId, paidBy]);
 
+  // Ensure paidBy defaults to a valid person when the people list becomes
+  // available (covers the case where the creator isn't selected but they
+  // chose a payer from the dropdown — we want a controlled value).
+  useEffect(() => {
+    if ((!paidBy || paidBy === '') && people && people.length > 0) {
+      setPaidBy(currentUserId || people[0].id);
+    }
+  }, [people, currentUserId, paidBy]);
+
+  // Reusable function to refresh receipt data after item changes
+  const refreshReceiptData = async () => {
+    if (!savedReceipt?.id) return;
+    try {
+      const fresh = await apiClient.getReceipt(savedReceipt.id);
+      setSavedReceipt(fresh);
+      refetchReceipts();
+    } catch (e) {
+      console.error('Failed to refresh receipt data:', e);
+    }
+  };
+
   // Drag & drop
   const handleDragOver = (e) => { e.preventDefault(); setIsDragging(true); };
   const handleDragLeave = () => setIsDragging(false);
   const handleDrop = (e) => {
-    e.preventDefault(); setIsDragging(false);
+    e.preventDefault(); 
+    setIsDragging(false);
     const file = e.dataTransfer?.files?.[0];
-    if (file) onFile(file);
+    if (file) handleFile(file);
   };
 
-  const onFile = (file) => {
-    if (!file) return;
-    
-    // Check file size before processing
-    const maxSize = 20 * 1024 * 1024; // 20MB limit
-    if (file.size > maxSize) {
-      setError(`Image too large (${Math.round(file.size / 1024 / 1024)}MB). Please use an image smaller than 20MB. Try taking a new photo with lower resolution or use image editing software to reduce the file size.`);
+  const handleAnalyzeReceipt = async () => {
+    if (!selectedParticipants.length) {
+      // Use the error state from the upload hook
       return;
     }
-    
-    setSelectedImage(file);
-    setImagePreview(null);
-    setError(null);
-    const reader = new FileReader();
-    reader.onload = (e) => setImagePreview(e.target.result);
-    reader.readAsDataURL(file);
-  };
 
-  const analyzeReceipt = async () => {
-    if (!selectedImage) return setError('Please select an image first');
-    if (!selectedParticipants.length) return setError('Bitte Teilnehmer auswählen');
+    const receiptData = {
+      title: receiptTitle,
+      paidBy: paidBy,
+      participants: selectedParticipants
+    };
 
-    // Additional client-side size check before upload
-    if (selectedImage.size > 20 * 1024 * 1024) {
-      return setError(`Image too large (${Math.round(selectedImage.size / 1024 / 1024)}MB). Please use an image smaller than 20MB.`);
-    }
-
-    setAnalyzing(true); setError(null);
-    try {
-      const formData = new FormData();
-      formData.append('file', selectedImage);
-      const response = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: { 'x-file-name': selectedImage.name || `upload_${Date.now()}.jpg` },
-        body: formData,
-      });
-
-      const text = await response.text();
-      let data;
-      try { data = JSON.parse(text); } catch { data = { raw: text }; }
-
-      if (!response.ok) {
-        // Handle specific error cases
-        if (response.status === 413 || text.includes('FUNCTION_PAYLOAD_TOO_LARGE')) {
-          throw new Error('Image file is too large for processing. Please try taking a new photo with lower resolution or use image editing software to reduce the file size to under 4MB.');
-        }
-        throw new Error(data.error || data.raw || `Request failed: ${response.status}`);
-      }
-
-      const receipt = {
-        name: receiptTitle,
-        uploadedBy: paidBy,
-        imageUrl: imagePreview,
-        items: (data.items || []).map((item, idx) => ({
-          id: `item_${Date.now()}_${idx}`,
-          name: item.name,
-          price: typeof item.price === 'object' ? item.price.value : item.price,
-          priceEUR: typeof item.price === 'object' ? item.price.value : item.price,
-          confidence: item.confidence,
-          tags: ['detected'],
-          claimedBy: null,
-          claimedAt: null
-        })),
-        discounts: data.discounts || [],
-        totalAmount: data.totalAmount,
-        participants: selectedParticipants,
-        text: data.text
-      };
-
+    const receipt = await analyzeReceipt(receiptData);
+    if (receipt) {
       const saveResponse = await fetch('/api/receipts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(receipt),
       });
-      if (!saveResponse.ok) throw new Error('Failed to save receipt');
-      const saved = await saveResponse.json();
-      saved.items = saved.items.map(item => ({ ...item, receiptId: saved.id }));
-      setSavedReceipt(saved);
-      setCurrentView('receipt');
-      refetchReceipts();
-      setClaimsVersion(v => v + 1);
-    } catch (err) {
-      setError(err.message || 'Unknown error');
-    } finally { setAnalyzing(false); }
+      
+      if (saveResponse.ok) {
+        const saved = await saveResponse.json();
+        saved.items = saved.items.map(item => ({ ...item, receiptId: saved.id }));
+        setSavedReceipt(saved);
+        setCurrentView('receipt');
+        refetchReceipts();
+        setClaimsVersion(v => v + 1);
+      }
+    }
   };
 
   const handleDeleteReceipt = async (receiptId) => {
     if (!receiptId) return;
     try {
       if (!confirm('Delete this receipt? This will remove the receipt and all associated claims.')) return;
-      await apiClient.deleteReceipt(receiptId);
-      refetchReceipts();
-      setClaimsVersion(v => v + 1);
-      setSavedReceipt(null);
-      setCurrentView('receipts');
+  // Optimistic delete: updates the receipts cache immediately and will
+  // rollback if the server call fails. Do not trigger an immediate
+  // refetch here (it can race with conditional GET headers and briefly
+  // repopulate a deleted receipt). Mutation's onSettled will invalidate
+  // the queries which triggers a controlled refetch.
+  // Fire optimistic mutate so onMutate runs immediately and UI updates
+  // without waiting for the server response.
+  // Mark as removed locally so the overview doesn't show it while
+  // the optimistic mutation and any background refetch run.
+  setRemovedReceipts(prev => new Set([...prev, receiptId]));
+  deleteReceiptMutate(receiptId);
+  // Update UI immediately
+  setSavedReceipt(null);
+  setCurrentView('receipts');
+  setClaimsVersion(v => v + 1);
     } catch (err) {
       setError(err.message || 'Delete failed');
     }
   };
+
+  // When the receipts list updates from the server, remove any ids
+  // from `removedReceipts` that no longer exist in the server result.
+  useEffect(() => {
+    if (!removedReceipts || removedReceipts.size === 0) return;
+    setRemovedReceipts(prev => {
+      const next = new Set(prev);
+      for (const id of prev) {
+        if (!receipts.find(r => r.id === id)) next.delete(id);
+      }
+      return next;
+    });
+  }, [receipts]);
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
@@ -235,8 +234,8 @@ export default function HomePage() {
 
       {/* Manual Receipt Modal */}
       {showManualForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-lg w-full max-w-md p-6 relative">
+      <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl shadow-lg w-full max-w-md sm:max-w-lg p-6 relative max-h-[85vh] overflow-auto">
             <button
               className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-2xl"
               onClick={() => setShowManualForm(false)}
@@ -290,15 +289,20 @@ export default function HomePage() {
 
       {/* Views */}
       {currentView === 'receipts' && (
-        <ReceiptList
-          receipts={receipts}
-          loading={receiptsLoading}
-          currentUserId={currentUserId}
-          onReceiptSelect={(id) => {
-            const r = receipts.find(r => r.id===id);
-            if(r) { setSavedReceipt(r); setCurrentView('receipt'); }
-          }}
-        />
+        (() => {
+          const visibleReceipts = receipts.filter(r => !removedReceipts.has(r.id));
+          return (
+            <ReceiptList
+              receipts={visibleReceipts}
+              loading={receiptsLoading}
+              currentUserId={currentUserId}
+              onReceiptSelect={(id) => {
+                const r = visibleReceipts.find(r => r.id===id);
+                if(r) { setSavedReceipt(r); setCurrentView('receipt'); }
+              }}
+            />
+          );
+        })()
       )}
 
       {currentView === 'upload' && (
@@ -312,10 +316,10 @@ export default function HomePage() {
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
           >
-            <input ref={inputRef} type="file" accept="image/*" capture="environment" onChange={e => onFile(e.target.files?.[0])} className="hidden" />
+            <input ref={inputRef} type="file" accept="image/*" onChange={e => handleFile(e.target.files?.[0])} className="sr-only" />
             <div className="text-4xl mb-2">📱</div>
             <p className="text-gray-700 mb-1">{selectedImage ? selectedImage.name : isDragging ? 'Drop image here' : 'Tap to take photo or select image'}</p>
-            <p className="text-sm text-gray-400">Supports JPG, PNG • Max 20MB</p>
+            <p className="text-sm text-gray-400">Supports various Image types • Max 20MB</p>
             {selectedImage && selectedImage.size > 0 && (
               <p className="text-xs text-gray-500 mt-1">
                 File size: {Math.round(selectedImage.size / 1024)}KB
@@ -355,44 +359,23 @@ export default function HomePage() {
           </div>
 
           {/* Participant selection */}
-          <div className="mt-4 mb-6">
-            <label className="block mb-3 font-semibold text-gray-700">Teilnehmer auswählen</label>
-            <div className="grid grid-cols-2 gap-2">
-              {people.map(p => (
-                <div 
-                  key={`${p.id}-${paidBy}`}
-                  className={`participant-card ${selectedParticipants.includes(p.id) ? 'participant-card-selected' : ''}`}
-                  onClick={() => setSelectedParticipants(selectedParticipants.includes(p.id) ? selectedParticipants.filter(id => id!==p.id) : [...selectedParticipants, p.id])}
-                >
-                  <input 
-                    type="checkbox" 
-                    value={p.id} 
-                    checked={selectedParticipants.includes(p.id)}
-                    onChange={() => {}} // Handled by parent div onClick
-                    className="participant-checkbox"
-                  />
-                  <div className="participant-avatar" style={{ backgroundColor: p.color }}>
-                    {getAvatarDisplay(p)}
-                  </div>
-                  <div className="participant-info">
-                    <span className="participant-name">{p.name}</span>
-                    {p.id === paidBy && (
-                      <span className="participant-badge">(bezahlt)</span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <ParticipantSelector
+            selectedParticipants={selectedParticipants}
+            onSelectionChange={setSelectedParticipants}
+            paidBy={paidBy}
+            currentUserId={currentUserId}
+            className="mt-4 mb-6"
+            required
+          />
 
           {imagePreview && (
             <div className="relative mb-4">
               <img src={imagePreview} className="rounded-lg w-full object-cover" alt="Preview" />
-              <button className="absolute top-2 right-2 text-white bg-black bg-opacity-50 rounded-full px-2 hover:bg-opacity-75" onClick={()=>{setSelectedImage(null); setImagePreview(null); setError(null);}}>✕</button>
+              <button className="absolute top-2 right-2 text-white bg-black bg-opacity-50 rounded-full px-2 hover:bg-opacity-75" onClick={() => clearSelection()}>✕</button>
             </div>
           )}
 
-          <button onClick={analyzeReceipt} disabled={!selectedImage || analyzing} className="btn-primary w-full">
+          <button onClick={handleAnalyzeReceipt} disabled={!selectedImage || analyzing} className="btn-primary w-full">
             {analyzing ? '🔄 Analyzing...' : '🔍 Analyze Receipt'}
           </button>
         </div>
@@ -405,16 +388,35 @@ export default function HomePage() {
           currentUserId={currentUserId}
           onItemClaimed={(itemId, claimedBy, claimedAt) => {
             setSavedReceipt(prev => ({ ...prev, items: prev.items.map(it => it.id===itemId ? {...it, claimedBy, claimedAt} : it) }));
-            (async()=>{try{const fresh=await apiClient.getReceipt(savedReceipt.id); setSavedReceipt(fresh); refetchReceipts();}catch(e){console.error(e)}})();
+            refreshReceiptData();
           }}
-          onItemUnclaimed={(itemId)=>{ setSavedReceipt(prev => ({ ...prev, items: prev.items.map(it => it.id===itemId ? {...it, claimedBy:null, claimedAt:null}:it) })); (async()=>{try{const fresh=await apiClient.getReceipt(savedReceipt.id); setSavedReceipt(fresh); refetchReceipts();}catch(e){console.error(e)}})();}}
+          onItemUnclaimed={(itemId) => { 
+            setSavedReceipt(prev => ({ ...prev, items: prev.items.map(it => it.id===itemId ? {...it, claimedBy:null, claimedAt:null}:it) })); 
+            refreshReceiptData();
+          }}
           onDelete={()=>handleDeleteReceipt(savedReceipt.id)}
           onClaimsUpdated={()=>{ refetchReceipts(); setClaimsVersion(v=>v+1); }}
           onBack={()=>{ setCurrentView('receipts'); setSavedReceipt(null); }}
         />
       )}
 
-      {currentView === 'claims' && <MyClaims userId={currentUserId} onClaimsUpdated={refetchReceipts} refreshKey={claimsVersion} />}
+      {currentView === 'claims' && (
+        <MyClaims
+          userId={currentUserId}
+          refreshKey={claimsVersion}
+          onClaimsUpdated={async () => {
+            try {
+              // Refetch receipts list cache
+              await refetchReceipts();
+              // If a receipt is currently opened in detail, refresh it too
+              await refreshReceiptData();
+              setClaimsVersion(v => v + 1);
+            } catch (e) {
+              console.error('Failed to refresh after claims update', e);
+            }
+          }}
+        />
+      )}
   {currentView === 'people' && (
     <PeopleManager 
       currentUserId={currentUserId} 

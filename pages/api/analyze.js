@@ -13,18 +13,14 @@
  * - Handles common OCR errors (e.g., "11" -> "1l" for liter measurements)
  */
 
-import { promises as fs } from 'fs';
 import { DocumentProcessorServiceClient } from '@google-cloud/documentai';
-import { parseFormData } from '@/lib/utils/formData';
+import { Storage } from '@google-cloud/storage';
 import { checkMethod, errorResponse } from '@/lib/utils/apiHelpers';
 
-// Disable Next.js default body parser to handle file uploads
+// Disable Next.js default body parser to handle JSON
 export const config = {
   api: {
-    bodyParser: false,
-    // Set reasonable limits for phone images
-    responseLimit: '50mb',
-    sizeLimit: '50mb',
+    bodyParser: true,  // Enable for JSON
   },
 };
 
@@ -47,29 +43,10 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Missing DOC_AI_PROJECT_ID or DOC_AI_PROCESSOR_ID' });
     }
 
-    // Parse the uploaded file from multipart form data
-    const { files } = await parseFormData(req);
-    const uploadedFile = Array.isArray(files.file) ? files.file[0] : files.file;
-    
-    if (!uploadedFile) {
-      return res.status(400).json({ error: 'No file uploaded' });
-    }
-
-    // Read the uploaded file into memory
-    const filePath = uploadedFile.filepath || uploadedFile.path;
-    let buffer = await fs.readFile(filePath);
-    const originalName = uploadedFile.originalFilename || uploadedFile.name || 'upload.jpg';
-
-    // Determine MIME type based on file extension
-    const ext = originalName.split('.').pop().toLowerCase();
-    const mimeType = ext === 'png' ? 'image/png' : 'image/jpeg';
-
-    // Check if image exceeds 20MB limit
-    const maxSize = 20 * 1024 * 1024; // 20MB in bytes
-    if (buffer.length > maxSize) {
-      return res.status(400).json({ 
-        error: `Image too large (${Math.round(buffer.length / 1024 / 1024)}MB). Maximum size is 20MB. Please try taking a photo with lower resolution or use image editing software to reduce the file size without losing quality.` 
-      });
+    // Expect gcsUrl in request body instead of file
+    const { gcsUrl } = req.body;
+    if (!gcsUrl) {
+      return res.status(400).json({ error: 'No GCS URL provided' });
     }
 
     // Initialize Google Cloud Document AI client
@@ -94,9 +71,9 @@ export default async function handler(req, res) {
     // Prepare request for Document AI processing
     const request = {
       name: processorName,
-      rawDocument: {
-        content: buffer.toString('base64'), // Convert image to base64
-        mimeType: mimeType,
+      gcsDocument: {
+        gcsUri: gcsUrl,
+        mimeType: gcsUrl.includes('.png') ? 'image/png' : 'image/jpeg',
       },
     };
 
@@ -160,16 +137,13 @@ export default async function handler(req, res) {
           discountAmounts.push(Math.abs(discountAmount));
         } else if (entity.type === 'sum') {
           // Only use sum from Document AI, never calculate fallback
-          console.log('Sum entity found:', entity.mentionText, entity.normalizedValue?.moneyValue);
           if (entity.normalizedValue?.moneyValue) {
             totalAmount = parseFloat(entity.normalizedValue.moneyValue.units || 0) + 
               parseFloat(entity.normalizedValue.moneyValue.nanos || 0) / 1000000000;
-            console.log('Sum from normalized value:', totalAmount);
           } else if (entity.mentionText) {
             // Clean the sum text by removing letters and keeping only numbers, commas, and dots
             const cleanedSumText = entity.mentionText.replace(/[^\d,.-]/g, '').replace(',', '.');
             totalAmount = parseFloat(cleanedSumText) || 0;
-            console.log('Sum from cleaned mention text:', cleanedSumText, '->', totalAmount);
           }
         }
       }
@@ -180,9 +154,6 @@ export default async function handler(req, res) {
       
       // Use all items as detected by Document AI - no merging needed
       const mergedItems = itemsWithPositions;
-      
-      console.log('Items after processing:', mergedItems.map(item => item.name));
-      console.log('Prices after processing:', pricesWithPositions.map(price => price.price));
       
       // Match items with prices using proximity-based matching
       const usedPrices = new Set();
@@ -213,8 +184,6 @@ export default async function handler(req, res) {
           
           const name = itemData.name;
           const price = closestPrice.price;
-          
-          console.log(`Matched item "${name}" with price ${price} (distance: ${closestDistance})`);
           
           if (name && price !== undefined) {
             // Edge case: if price is negative, it's a discount
@@ -281,11 +250,57 @@ export default async function handler(req, res) {
         }
       }
     }
+    // Try to fetch the image bytes from GCS and delete the object to avoid
+    // leaving large files in the bucket. This helps keep GCS as a temporary
+    // staging location for Document AI processing only.
+    let imageBase64 = null;
+    let deletedFromGCS = false;
+    try {
+      // Parse gs://bucket/filename
+      const match = (gcsUrl || '').match(/^gs:\/\/([^/]+)\/(.+)$/);
+      if (match) {
+        const bucketName = match[1];
+        const filename = match[2];
+
+        // Initialize Storage client with the same credential strategy as other endpoints
+        let storage;
+        if (process.env.NODE_ENV === 'development' && process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+          storage = new Storage();
+        } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+          const serviceAccountKey = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+          storage = new Storage({ credentials: serviceAccountKey, projectId: serviceAccountKey.project_id });
+        } else {
+          // If no credentials available, skip fetching/deleting but continue returning the analysis
+          storage = null;
+        }
+
+        if (storage) {
+          const bucket = storage.bucket(bucketName);
+          const file = bucket.file(filename);
+          // Avoid downloading the full image into memory and embedding it in the response.
+          // Large base64 payloads can exceed serverless response limits and slow the client.
+          // Only attempt to delete the temporary GCS object and report the deletion result.
+          try {
+            await file.delete();
+            deletedFromGCS = true;
+          } catch (delErr) {
+            console.warn('Failed to delete GCS file:', delErr.message || delErr);
+            deletedFromGCS = false;
+          }
+          imageBase64 = null;
+        }
+      }
+    } catch (err) {
+      console.warn('GCS post-processing failed:', err.message || err);
+    }
+
     return res.status(200).json({
       items: items,
       discounts: discounts,
       totalAmount: totalAmount,
-      currency: 'EUR'
+      currency: 'EUR',
+      imageBase64,
+      deletedFromGCS
     });
 
   } catch (error) {

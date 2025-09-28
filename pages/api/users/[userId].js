@@ -43,6 +43,11 @@ export default async function handler(req, res) {
         return res.status(404).json({ error: 'User not found' });
       }
 
+      // bump people meta updatedAt
+      try {
+        await db.collection('meta').updateOne({ _id: 'people' }, { $set: { updatedAt: new Date().toISOString() } }, { upsert: true });
+      } catch (e) {}
+
       res.status(200).json({ success: true, message: 'User and related data deleted successfully' });
     } catch (err) {
       console.error('DELETE /api/users/[id] error', err);

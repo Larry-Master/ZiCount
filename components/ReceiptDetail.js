@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import ItemCard from '@/components/ItemCard';
 import ClaimModal from '@/components/ClaimModal';
 import ManualReceiptForm from '@/components/ManualReceiptForm';
@@ -38,8 +38,6 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
     try {
       const result = await claimItem(currentReceipt.id, item.id, userId);
       if (result && onItemClaimed) onItemClaimed(result.id || item.id, result.claimedBy || userId, result.claimedAt || new Date().toISOString());
-      if (refetchReceipt) refetchReceipt();
-      if (onClaimsUpdated) onClaimsUpdated();
       setShowClaimModal(false);
       setSelectedItem(null);
     } catch (err) {
@@ -48,13 +46,18 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
   };
 
   const handleUnclaim = async (item) => {
+    // Guard against duplicate unclaim requests for the same item
+    if (!handleUnclaim.inFlight) handleUnclaim.inFlight = new Set();
+    if (handleUnclaim.inFlight.has(item.id)) return;
+    handleUnclaim.inFlight.add(item.id);
+
     try {
-      const result = await unclaimItem(item.id);
+      const result = await unclaimItem(currentReceipt.id, item.id);
       if (result && onItemUnclaimed) onItemUnclaimed(item.id);
-      if (refetchReceipt) refetchReceipt();
-      if (onClaimsUpdated) onClaimsUpdated();
     } catch (err) {
       console.error('Unclaim failed:', err);
+    } finally {
+      handleUnclaim.inFlight.delete(item.id);
     }
   };
 
@@ -296,7 +299,7 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
               <div className="text-lg font-semibold text-indigo-600">{formatCurrency(claimedAmount)}</div>
               <div className="text-sm text-gray-500 mt-2">Remaining</div>
               <div className="text-lg font-semibold">{formatCurrency(totalAmount - claimedAmount)}</div>
-              {totalPersonalCosts > 0 && (
+              {currentUserId && totalPersonalCosts > 0 && (
                 <>
                   <div className="text-sm text-gray-500 mt-2">Personal Costs</div>
                   <div className="text-lg font-semibold text-purple-600">{formatCurrency(totalPersonalCosts)}</div>

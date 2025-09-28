@@ -16,12 +16,13 @@
 
 import { formatCurrency } from '@/lib/utils/currency';
 import { usePeople } from '@/lib/hooks/usePeople';
+import { LoadingSection } from '@/components/ui/Loading';
 
 export default function ReceiptList({ receipts, onReceiptSelect, loading, currentUserId }) {
   const { getPerson } = usePeople();
   // Display loading spinner while fetching data
   if (loading) {
-    return <div className="p-6 text-center text-gray-500">Loading receipts...</div>;
+    return <LoadingSection message="Loading receipts..." />;
   }
 
   // Handle empty state with helpful message
@@ -55,7 +56,8 @@ export default function ReceiptList({ receipts, onReceiptSelect, loading, curren
   }, 0);
 
   // Calculate personal costs across all receipts for current user
-  const totalPersonalCosts = receipts.reduce((sum, receipt) => {
+  // If no currentUserId is selected, skip calculation and return 0 to avoid showing personal data
+  const totalPersonalCosts = currentUserId ? receipts.reduce((sum, receipt) => {
     // Calculate personal claimed costs
     const personalClaimedCosts = (receipt.items || [])
       .filter(item => item.claimedBy === currentUserId)
@@ -91,7 +93,17 @@ export default function ReceiptList({ receipts, onReceiptSelect, loading, curren
     }
 
     return sum + personalClaimedCosts + personalParticipantCosts;
-  }, 0);
+  }, 0) : 0;
+
+  // Ensure newest receipts appear first. Create a sorted copy so we don't mutate props.
+  const sortedReceipts = [...receipts].sort((a, b) => {
+    const key = (r) => {
+      if (r && r.createdAt) return new Date(r.createdAt).getTime();
+      // fallback to numeric id if createdAt is missing
+      return Number(r && r.id) || 0;
+    };
+    return key(b) - key(a);
+  });
 
   return (
     <div className="p-4 sm:p-6">
@@ -112,7 +124,7 @@ export default function ReceiptList({ receipts, onReceiptSelect, loading, curren
             <span className="text-gray-500 font-medium">Remaining:</span>
             <span className="font-semibold text-green-600">{formatCurrency(totalOverall - totalClaimedOverall)}</span>
           </div>
-          {totalPersonalCosts > 0 && (
+          {currentUserId && totalPersonalCosts > 0 && (
             <div className="flex items-center justify-between sm:justify-start gap-2 p-2 sm:p-0 bg-purple-50 sm:bg-transparent rounded-lg sm:rounded-none">
               <span className="text-gray-500 font-medium">Your Total:</span>
               <span className="font-semibold text-purple-600">{formatCurrency(totalPersonalCosts)}</span>
@@ -122,7 +134,7 @@ export default function ReceiptList({ receipts, onReceiptSelect, loading, curren
       </div>
 
       <div className="grid gap-3">
-        {receipts.map(receipt => {
+        {sortedReceipts.map(receipt => {
           // Use API totalAmount
           const totalAmount = receipt.totalAmount || 0;
           const claimedAmount = (receipt.items || [])

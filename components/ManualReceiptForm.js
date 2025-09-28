@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePeople } from '@/lib/hooks/usePeople';
-import { getAvatarDisplay } from '@/lib/utils/avatar';
+import { compressImageForStorage } from '@/lib/utils/imageCompression';
+import { validateFile } from '@/lib/utils/fileValidation';
+import ParticipantSelector from '@/components/ui/ParticipantSelector';
 
 export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId, isEditing = false, initialData = null }) {
   const [name, setName] = useState(initialData?.name || '');
@@ -8,13 +10,24 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId,
   const [selectedPeople, setSelectedPeople] = useState(initialData?.participants || []);
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(initialData?.imageUrl || null);
-  const [paidBy, setPaidBy] = useState(initialData?.uploadedBy || currentUserId || (typeof window !== 'undefined' ? localStorage.getItem('currentUserId') || null : null));
+  const [imageRemoved, setImageRemoved] = useState(false);
+  // Initialize to empty string (not null) to avoid React warning about select value
+  const [paidBy, setPaidBy] = useState(initialData?.uploadedBy || currentUserId || (typeof window !== 'undefined' ? localStorage.getItem('currentUserId') || '' : ''));
   // date is no longer collected from the user; use current date automatically
   const [loading, setLoading] = useState(false);
 
   const { people } = usePeople();
   // prefer prop currentUserId, fallback to localStorage
   const runtimeCurrentUserId = currentUserId || (typeof window !== 'undefined' ? localStorage.getItem('currentUserId') || null : null);
+
+  // If no paidBy was set (e.g., creator not selected), default to current user
+  // or the first person when the people list becomes available. This ensures
+  // the select is controlled and the chosen payer is actually saved.
+  useEffect(() => {
+    if (!paidBy && people && people.length > 0) {
+      setPaidBy(runtimeCurrentUserId || people[0].id);
+    }
+  }, [people, runtimeCurrentUserId, paidBy]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -35,6 +48,13 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId,
 
       // Handle image upload if selected
       let imageUrl = imagePreview;
+      let imageId = initialData?.imageId || null;
+      if (imageRemoved) {
+        // user requested removal of existing image
+        imageUrl = null;
+        imageId = null;
+      }
+
       if (selectedImage) {
         // Use FormData like the analyze endpoint
         const formData = new FormData();
@@ -51,6 +71,7 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId,
         
         const uploadData = await uploadRes.json();
         imageUrl = uploadData.url;
+        imageId = uploadData.id || imageId;
       }
 
       const items = selectedPeople.length > 0
@@ -83,6 +104,7 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId,
         name: name || `Manual ${new Date().toLocaleDateString('de-DE')}`,
         createdAt: isEditing ? initialData.createdAt : new Date().toISOString(),
         imageUrl: imageUrl,
+        imageId: imageId || null,
         items,
         totalAmount: totalValue, // Include the total amount for manual receipts
         uploadedBy: paidBy,
@@ -112,6 +134,7 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId,
         setSelectedPeople([]);
         setSelectedImage(null);
         setImagePreview(null);
+        setImageRemoved(false);
       }
       
       onRefresh?.();
@@ -129,8 +152,6 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId,
     if (!file) return;
     
     try {
-      console.log(`Original file size: ${Math.round(file.size / 1024)}KB`);
-      
       // Compress image for database storage (manual receipts only)
       const compressedFile = await compressImageForStorage(file);
       
@@ -149,54 +170,11 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId,
     }
   };
 
-  // Helper function to compress images for database storage
-  const compressImageForStorage = (file) => {
-    return new Promise((resolve) => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      const img = new Image();
-      
-      img.onload = () => {
-        // Calculate new dimensions (max width/height of 1920px for storage)
-        let { width, height } = img;
-        const maxSize = 1920;
-        
-        if (width > height) {
-          if (width > maxSize) {
-            height = (height * maxSize) / width;
-            width = maxSize;
-          }
-        } else {
-          if (height > maxSize) {
-            width = (width * maxSize) / height;
-            height = maxSize;
-          }
-        }
-        
-        canvas.width = width;
-        canvas.height = height;
-        
-        // Draw and compress for storage
-        ctx.drawImage(img, 0, 0, width, height);
-        
-        // Convert to blob with compression
-        canvas.toBlob((blob) => {
-          const compressedFile = new File([blob], file.name, {
-            type: 'image/jpeg',
-            lastModified: Date.now()
-          });
-          console.log(`Compressed for storage: ${Math.round(file.size / 1024)}KB → ${Math.round(compressedFile.size / 1024)}KB`);
-          resolve(compressedFile);
-        }, 'image/jpeg', 0.8); // 80% quality for storage
-      };
-      
-      img.src = URL.createObjectURL(file);
-    });
-  };
-
   const handleImageRemove = () => {
     setSelectedImage(null);
-    setImagePreview(initialData?.imageUrl || null);
+    setImagePreview(null);
+    // Mark existing image as removed so server can delete it on update
+    if (initialData?.imageId) setImageRemoved(true);
   };
 
   return (
@@ -284,55 +262,17 @@ export default function ManualReceiptForm({ onCreated, onRefresh, currentUserId,
         )}
       </div>
 
-  {/* date is set automatically; no input shown */}
+      {/* date is set automatically; no input shown */}
 
-      <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-3">Personen auswählen</label>
-      <div className="grid grid-cols-2 gap-2 mb-6">
-        {people.map((p) => (
-          <div 
-            key={`${p.id}-${paidBy}`}
-            className={`participant-card ${selectedPeople.includes(p.id) ? 'participant-card-selected' : ''}`}
-            onClick={() => {
-              if (selectedPeople.includes(p.id)) {
-                setSelectedPeople(selectedPeople.filter(id => id !== p.id));
-              } else {
-                setSelectedPeople([...selectedPeople, p.id]);
-              }
-            }}
-          >
-            <input
-              type="checkbox"
-              value={p.id}
-              checked={selectedPeople.includes(p.id)}
-              onChange={(e) => {
-                e.stopPropagation();
-                // Handle checkbox change - same logic as parent div click
-                if (selectedPeople.includes(p.id)) {
-                  setSelectedPeople(selectedPeople.filter(id => id !== p.id));
-                } else {
-                  setSelectedPeople([...selectedPeople, p.id]);
-                }
-              }}
-              className="participant-checkbox"
-            />
-            <div className="participant-avatar" style={{ backgroundColor: p.color }}>
-              {getAvatarDisplay(p)}
-            </div>
-            <div className="participant-info">
-              <span className="participant-name">{p.name}</span>
-              {p.id === paidBy && (
-                <span className="participant-badge">(bezahlt)</span>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {selectedPeople.length === 0 && (
-        <div className="mb-4 text-sm text-red-500 bg-red-50 dark:bg-red-900/20 p-2 rounded border border-red-200 dark:border-red-800">
-          ⚠️ Keine Personen ausgewählt. Wähle mindestens eine Person für die Aufteilung aus.
-        </div>
-      )}
+      <ParticipantSelector
+        selectedParticipants={selectedPeople}
+        onSelectionChange={setSelectedPeople}
+        paidBy={paidBy}
+        currentUserId={runtimeCurrentUserId}
+        label="Personen auswählen"
+        className="mb-6"
+        required
+      />
 
       <button
         type="submit"
