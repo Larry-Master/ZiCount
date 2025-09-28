@@ -18,10 +18,30 @@ export default async function handler(req, res) {
       const receipts = await db.collection('receipts').find({}).toArray();
 
       // Determine latest updatedAt across receipts for Last-Modified
-      const latest = receipts.reduce((acc, r) => {
+      // Also consider a meta document (meta._id === 'receipts') which is bumped
+      // on structural changes (create/delete). This ensures DELETE operations
+      // that may not change any remaining receipt's timestamps are still
+      // reflected for conditional GET clients.
+      const latestFromReceipts = receipts.reduce((acc, r) => {
         const t = r.updatedAt ? new Date(r.updatedAt) : (r.createdAt ? new Date(r.createdAt) : null);
         if (!t) return acc;
         return acc && acc > t ? acc : t;
+      }, null);
+
+      // Read meta.updatedAt if present (server updates this on create/delete)
+      let metaUpdated = null;
+      try {
+        const metaDoc = await db.collection('meta').findOne({ _id: 'receipts' });
+        if (metaDoc && metaDoc.updatedAt) metaUpdated = new Date(metaDoc.updatedAt);
+      } catch (e) {
+        // Non-fatal, we'll just ignore meta if it can't be read
+      }
+
+      // Choose the most recent timestamp between receipts and meta
+      const latest = [latestFromReceipts, metaUpdated].filter(Boolean).reduce((a, b) => {
+        if (!a) return b;
+        if (!b) return a;
+        return a > b ? a : b;
       }, null);
 
       if (latest) {
