@@ -10,7 +10,7 @@ export default function ItemCard({ item, currentUserId, onClaim, onUnclaim, isMy
   const isClaimed = !!item.claimedBy;
   const isMyItem = item.claimedBy === currentUserId;
   const canUnclaim = isMyItem; // Always allow unclaim if it's my item
-  const isPending = item.pending;
+  const isPending = !!item.pending;
 
   const claimedByPerson = isClaimed ? getPerson(item.claimedBy) : null;
 

@@ -26,15 +26,17 @@ export default function MyClaims({ userId, onClaimsUpdated, refreshKey }) {
     handleUnclaim.inFlight.add(item.id);
 
     try {
-      // Use the hook's unclaim which performs optimistic cache updates for receipts
-      await unclaimItem(item.receiptId, item.id, userId);
-      // Remove locally from the MyClaims list
-      setClaimsLocal(prev => prev.filter(claim => claim.id !== item.id));
+        // Optimistically remove locally from the MyClaims list so UI updates immediately
+        setClaimsLocal(prev => prev.filter(claim => claim.id !== item.id));
+        // Use the hook's unclaim which performs optimistic cache updates for receipts
+        await unclaimItem(item.receiptId, item.id, userId);
       // Notify parent component to refresh data if they need to
       if (onClaimsUpdated) {
         onClaimsUpdated();
       }
     } catch (err) {
+        // rollback local state on error
+        setClaimsLocal(prev => [...prev, item]);
       console.error('Unclaim failed:', err);
     } finally {
       handleUnclaim.inFlight.delete(item.id);

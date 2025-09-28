@@ -62,8 +62,10 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
   };
 
   const getItemStatus = (item) => {
-    const optimistic = optimisticClaims?.get ? optimisticClaims.get(item.id) : undefined;
-    return optimistic || item;
+    const optimistic = optimisticClaims && typeof optimisticClaims.get === 'function' ? optimisticClaims.get(item.id) : undefined;
+    // if optimistic snapshot exists and has pending flag, prefer it
+    if (optimistic) return { ...item, ...optimistic };
+    return item;
   };
 
   // If editing manual receipt, show the form
