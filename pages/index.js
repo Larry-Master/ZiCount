@@ -47,6 +47,7 @@ export default function HomePage() {
   const { people } = usePeople();
   const { receipts, loading: receiptsLoading, refetch: refetchReceipts } = useReceipts();
   const { deleteReceiptMutate, deleting } = useReceiptMutations();
+  const [removedReceipts, setRemovedReceipts] = useState(() => new Set());
   const { selectedImage, imagePreview, analyzing, error: uploadError, handleFile, analyzeReceipt, clearSelection } = useReceiptUpload();
 
   // Page-level error state (some handlers in this page call setError)
@@ -189,6 +190,9 @@ export default function HomePage() {
   // the queries which triggers a controlled refetch.
   // Fire optimistic mutate so onMutate runs immediately and UI updates
   // without waiting for the server response.
+  // Mark as removed locally so the overview doesn't show it while
+  // the optimistic mutation and any background refetch run.
+  setRemovedReceipts(prev => new Set([...prev, receiptId]));
   deleteReceiptMutate(receiptId);
   // Update UI immediately
   setSavedReceipt(null);
@@ -198,6 +202,19 @@ export default function HomePage() {
       setError(err.message || 'Delete failed');
     }
   };
+
+  // When the receipts list updates from the server, remove any ids
+  // from `removedReceipts` that no longer exist in the server result.
+  useEffect(() => {
+    if (!removedReceipts || removedReceipts.size === 0) return;
+    setRemovedReceipts(prev => {
+      const next = new Set(prev);
+      for (const id of prev) {
+        if (!receipts.find(r => r.id === id)) next.delete(id);
+      }
+      return next;
+    });
+  }, [receipts]);
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
@@ -272,15 +289,20 @@ export default function HomePage() {
 
       {/* Views */}
       {currentView === 'receipts' && (
-        <ReceiptList
-          receipts={receipts}
-          loading={receiptsLoading}
-          currentUserId={currentUserId}
-          onReceiptSelect={(id) => {
-            const r = receipts.find(r => r.id===id);
-            if(r) { setSavedReceipt(r); setCurrentView('receipt'); }
-          }}
-        />
+        (() => {
+          const visibleReceipts = receipts.filter(r => !removedReceipts.has(r.id));
+          return (
+            <ReceiptList
+              receipts={visibleReceipts}
+              loading={receiptsLoading}
+              currentUserId={currentUserId}
+              onReceiptSelect={(id) => {
+                const r = visibleReceipts.find(r => r.id===id);
+                if(r) { setSavedReceipt(r); setCurrentView('receipt'); }
+              }}
+            />
+          );
+        })()
       )}
 
       {currentView === 'upload' && (
