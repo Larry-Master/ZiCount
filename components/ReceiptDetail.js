@@ -35,14 +35,24 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
   };
 
   const handleClaim = async (item, userId) => {
-    try {
-      const result = await claimItem(currentReceipt.id, item.id, userId);
-      if (result && onItemClaimed) onItemClaimed(result.id || item.id, result.claimedBy || userId, result.claimedAt || new Date().toISOString());
-      setShowClaimModal(false);
-      setSelectedItem(null);
-    } catch (err) {
-      console.error('Claim failed:', err);
-    }
+    // Start mutation but don't wait for server response to update UI.
+    // We still return the mutation promise so callers can optionally await it.
+    const promise = claimItem(currentReceipt.id, item.id, userId)
+      .then(result => {
+        if (result && onItemClaimed) onItemClaimed(result.id || item.id, result.claimedBy || userId, result.claimedAt || new Date().toISOString());
+        return result;
+      })
+      .catch(err => {
+        console.error('Claim failed:', err);
+        throw err;
+      });
+
+    // Optimistically update parent/savedReceipt immediately so UI reflects claim
+    if (onItemClaimed) onItemClaimed(item.id, userId, new Date().toISOString());
+    setShowClaimModal(false);
+    setSelectedItem(null);
+
+    return promise;
   };
 
   const handleUnclaim = async (item) => {
