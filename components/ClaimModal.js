@@ -11,18 +11,14 @@ export default function ClaimModal({ item, onClaim, onCancel, currentUserId }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedUserId) return;
-    // Trigger claim but don't await it so UI can update optimistically.
+    setLoading(true);
     try {
-      const res = onClaim(selectedUserId);
-      // If the caller returned a promise, handle failure quietly (we don't await for UI)
-      if (res && typeof res.then === 'function') {
-        res.catch(err => console.error('Claim failed:', err));
-      }
+      await onClaim(selectedUserId);
     } catch (err) {
       console.error('Claim failed:', err);
+    } finally {
+      setLoading(false);
     }
-    // Close modal immediately
-    if (onCancel) onCancel();
   };
 
   const price = typeof item.price === 'object' ? item.price.value : item.price;
