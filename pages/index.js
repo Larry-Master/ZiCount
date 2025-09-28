@@ -46,7 +46,7 @@ export default function HomePage() {
   // Custom hooks for data management
   const { people } = usePeople();
   const { receipts, loading: receiptsLoading, refetch: refetchReceipts } = useReceipts();
-  const { deleteReceipt, deleting } = useReceiptMutations();
+  const { deleteReceiptMutate, deleting } = useReceiptMutations();
   const { selectedImage, imagePreview, analyzing, error: uploadError, handleFile, analyzeReceipt, clearSelection } = useReceiptUpload();
 
   // Page-level error state (some handlers in this page call setError)
@@ -182,15 +182,18 @@ export default function HomePage() {
     if (!receiptId) return;
     try {
       if (!confirm('Delete this receipt? This will remove the receipt and all associated claims.')) return;
-      // Optimistic delete: this updates the receipts cache immediately
-      // and will rollback if the server call fails
-      await deleteReceipt(receiptId);
-      // Update UI immediately
-      setSavedReceipt(null);
-      setCurrentView('receipts');
-      // trigger background refetch to ensure consistency
-      refetchReceipts();
-      setClaimsVersion(v => v + 1);
+  // Optimistic delete: updates the receipts cache immediately and will
+  // rollback if the server call fails. Do not trigger an immediate
+  // refetch here (it can race with conditional GET headers and briefly
+  // repopulate a deleted receipt). Mutation's onSettled will invalidate
+  // the queries which triggers a controlled refetch.
+  // Fire optimistic mutate so onMutate runs immediately and UI updates
+  // without waiting for the server response.
+  deleteReceiptMutate(receiptId);
+  // Update UI immediately
+  setSavedReceipt(null);
+  setCurrentView('receipts');
+  setClaimsVersion(v => v + 1);
     } catch (err) {
       setError(err.message || 'Delete failed');
     }
