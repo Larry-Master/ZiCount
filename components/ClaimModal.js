@@ -6,18 +6,24 @@ import { usePeople } from '@/lib/hooks/usePeople';
 export default function ClaimModal({ item, onClaim, onCancel, currentUserId }) {
   const { people, getPerson } = usePeople();
   const [selectedUserId, setSelectedUserId] = useState(currentUserId || '');
-  const [loading, setLoading] = useState(false);
+
+  const handleUserSelect = (userId) => {
+    setSelectedUserId(userId);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedUserId) return;
-    setLoading(true);
+    
+    // Close modal immediately for better UX
+    onCancel();
+    
+    // Call claim in background (no need to await or show loading here)
     try {
       await onClaim(selectedUserId);
     } catch (err) {
       console.error('Claim failed:', err);
-    } finally {
-      setLoading(false);
+      // Modal is already closed, error will show on the item
     }
   };
 
@@ -45,7 +51,7 @@ export default function ClaimModal({ item, onClaim, onCancel, currentUserId }) {
               <button
                 key={person.id}
                 type="button"
-                onClick={() => setSelectedUserId(person.id)}
+                onClick={() => handleUserSelect(person.id)}
                 className={`person-select-btn ${selectedUserId === person.id ? 'person-select-btn-active' : ''} flex flex-col items-center gap-2 p-3 rounded-lg border focus:outline-none transition-all`}
               >
                 <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white" style={{ backgroundColor: person.color }}>{person.name.charAt(0).toUpperCase()}</div>
@@ -56,11 +62,11 @@ export default function ClaimModal({ item, onClaim, onCancel, currentUserId }) {
           </div>
 
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <button type="button" onClick={onCancel} disabled={loading} className="btn-secondary w-full">
+            <button type="button" onClick={onCancel} className="btn-secondary w-full">
               Cancel
             </button>
-            <button type="submit" disabled={loading || !selectedUserId} className="btn-primary w-full">
-              {loading ? 'Claiming...' : `Claim for ${selectedPerson?.name || 'User'}`}
+            <button type="submit" disabled={!selectedUserId} className="btn-primary w-full">
+              {`Claim for ${selectedPerson?.name || 'User'}`}
             </button>
           </div>
         </form>
