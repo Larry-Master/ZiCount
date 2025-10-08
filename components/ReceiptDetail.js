@@ -37,6 +37,11 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
   };
 
   const handleClaim = async (item, userId) => {
+    // Guard against duplicate claim requests for the same item
+    if (!handleClaim.inFlight) handleClaim.inFlight = new Set();
+    if (handleClaim.inFlight.has(item.id)) return;
+    handleClaim.inFlight.add(item.id);
+
     try {
       const result = await claimItem(currentReceipt.id, item.id, userId);
       if (result && onItemClaimed) onItemClaimed(result.id || item.id, result.claimedBy || userId, result.claimedAt || new Date().toISOString());
@@ -44,6 +49,8 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
       setSelectedItem(null);
     } catch (err) {
       console.error('Claim failed:', err);
+    } finally {
+      handleClaim.inFlight.delete(item.id);
     }
   };
 

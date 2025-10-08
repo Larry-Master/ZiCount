@@ -9,7 +9,7 @@
   padding: 1.5rem;
   background: var(--card-bg);
   border-radius: 1rem;
-  border: 1px solid rgba(229, 231, 235, 1);
+  border: 1px solid rgba(255,255,255,0.08);
 }
 
 /* Debt solver header */
@@ -45,16 +45,16 @@
   align-items: center;
   justify-content: space-between;
   padding: 1rem;
-  background: rgba(0, 0, 0, 0.02);
+  background: rgba(255, 255, 255, 0.03);
   border-radius: 0.75rem;
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   transition: all 0.2s ease;
 }
 
 .debt-item:hover {
-  background: rgba(0, 0, 0, 0.03);
+  background: rgba(255, 255, 255, 0.05);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 /* Debt item content */
@@ -112,7 +112,7 @@
 .debt-amount {
   font-weight: 700;
   font-size: 1rem;
-  color: var(--primary);
+  color: #60a5fa;
   text-align: right;
   flex: 0 0 80px;
   overflow: hidden;
@@ -135,7 +135,7 @@
 .debt-bar-container {
   width: 100%;
   height: 8px;
-  background: rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.05);
   border-radius: 4px;
   margin-top: 8px;
   overflow: hidden;
@@ -148,13 +148,13 @@
 }
 
 .debt-bar-positive {
-  background: linear-gradient(90deg, #10b981, #059669);
-  box-shadow: 0 1px 3px rgba(16, 185, 129, 0.3);
+  background: linear-gradient(90deg, #10b981, #047857);
+  box-shadow: 0 1px 3px rgba(16, 185, 129, 0.4);
 }
 
 .debt-bar-negative {
-  background: linear-gradient(90deg, #ef4444, #dc2626);
-  box-shadow: 0 1px 3px rgba(239, 68, 68, 0.3);
+  background: linear-gradient(90deg, #ef4444, #b91c1c);
+  box-shadow: 0 1px 3px rgba(239, 68, 68, 0.4);
 }
 
 /* Debt description */
@@ -171,8 +171,8 @@
 
 /* Settlement summary */
 .settlement-summary {
-  background: rgba(59, 130, 246, 0.05);
-  border: 1px solid rgba(59, 130, 246, 0.1);
+  background: rgba(96, 165, 250, 0.08);
+  border: 1px solid rgba(96, 165, 250, 0.2);
   border-radius: 0.75rem;
   padding: 1.25rem;
   text-align: center;
@@ -188,7 +188,7 @@
 .settlement-count {
   font-size: 2rem;
   font-weight: 700;
-  color: var(--primary);
+  color: #60a5fa;
   margin: 0;
 }
 
@@ -236,20 +236,20 @@
 .debt-loading-spinner {
   width: 20px;
   height: 20px;
-  border: 2px solid rgba(0, 0, 0, 0.1);
-  border-top-color: var(--primary);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #60a5fa;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
 
 /* Error state */
 .debt-error {
-  background: rgba(239, 68, 68, 0.05);
-  border: 1px solid rgba(239, 68, 68, 0.1);
+  background: rgba(248, 113, 113, 0.08);
+  border: 1px solid rgba(248, 113, 113, 0.2);
   border-radius: 0.75rem;
   padding: 1.25rem;
   text-align: center;
-  color: #ef4444;
+  color: #f87171;
 }
 
 .debt-error-title {
@@ -272,101 +272,6 @@
 .debt-solver-actions button {
   flex: 1;
   min-width: 120px;
-}
-
-/* Dark theme adjustments */
-.dark .debt-solver {
-  background: var(--card-bg);
-  border-color: rgba(255,255,255,0.08);
-}
-
-.dark .debt-solver-title {
-  color: var(--text);
-}
-
-.dark .debt-solver-summary {
-  color: var(--muted);
-}
-
-.dark .debt-item {
-  background: rgba(255, 255, 255, 0.03);
-  border-color: rgba(255, 255, 255, 0.08);
-}
-
-.dark .debt-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-.dark .debt-person-name {
-  color: var(--text);
-}
-
-.dark .debt-arrow {
-  color: var(--muted);
-}
-
-.dark .debt-amount {
-  color: #60a5fa;
-}
-
-.dark .debt-description {
-  color: var(--text);
-}
-
-/* Dark mode bar graph styles */
-.dark .debt-bar-container {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.dark .debt-bar-positive {
-  background: linear-gradient(90deg, #10b981, #047857);
-  box-shadow: 0 1px 3px rgba(16, 185, 129, 0.4);
-}
-
-.dark .debt-bar-negative {
-  background: linear-gradient(90deg, #ef4444, #b91c1c);
-  box-shadow: 0 1px 3px rgba(239, 68, 68, 0.4);
-}
-
-.dark .settlement-summary {
-  background: rgba(96, 165, 250, 0.08);
-  border-color: rgba(96, 165, 250, 0.2);
-}
-
-.dark .settlement-summary h3 {
-  color: var(--text);
-}
-
-.dark .settlement-count {
-  color: #60a5fa;
-}
-
-.dark .settlement-label {
-  color: var(--muted);
-}
-
-.dark .debt-empty-title {
-  color: var(--text);
-}
-
-.dark .debt-empty-description {
-  color: var(--muted);
-}
-
-.dark .debt-loading {
-  color: var(--muted);
-}
-
-.dark .debt-loading-spinner {
-  border-color: rgba(255, 255, 255, 0.1);
-  border-top-color: #60a5fa;
-}
-
-.dark .debt-error {
-  background: rgba(248, 113, 113, 0.08);
-  border-color: rgba(248, 113, 113, 0.2);
-  color: #f87171;
 }
 
 /* Responsive adjustments */

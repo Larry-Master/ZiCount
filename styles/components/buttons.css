@@ -45,33 +45,19 @@ button:disabled {
 
 /* Secondary button */
 .btn-secondary {
-  background: rgba(107, 114, 128, 0.1);
-  color: #6b7280;
+  background: rgba(156, 163, 175, 0.1);
+  color: #d1d5db;
   padding: 0.75rem 1.5rem;
   border-radius: 0.5rem;
   font-size: 1rem;
   font-weight: 600;
-  border: 1px solid rgba(107, 114, 128, 0.2);
+  border: 1px solid rgba(156, 163, 175, 0.2);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: rgba(107, 114, 128, 0.15);
-  border-color: rgba(107, 114, 128, 0.3);
+  background: rgba(156, 163, 175, 0.15);
+  border-color: rgba(156, 163, 175, 0.3);
   transform: translateY(-1px);
-}
-
-/* Dark mode for secondary button */
-@media (prefers-color-scheme: dark) {
-  .btn-secondary {
-    background: rgba(156, 163, 175, 0.1);
-    color: #d1d5db;
-    border-color: rgba(156, 163, 175, 0.2);
-  }
-
-  .btn-secondary:hover:not(:disabled) {
-    background: rgba(156, 163, 175, 0.15);
-    border-color: rgba(156, 163, 175, 0.3);
-  }
 }
 
 /* Success button */
@@ -93,33 +79,19 @@ button:disabled {
 
 /* Danger button */
 .btn-danger {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
+  background: rgba(248, 113, 113, 0.1);
+  color: #f87171;
   padding: 0.75rem 1.5rem;
   border-radius: 0.5rem;
   font-size: 1rem;
   font-weight: 600;
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(248, 113, 113, 0.2);
 }
 
 .btn-danger:hover:not(:disabled) {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(248, 113, 113, 0.15);
+  border-color: rgba(248, 113, 113, 0.3);
   transform: translateY(-1px);
-}
-
-/* Dark mode for danger button */
-@media (prefers-color-scheme: dark) {
-  .btn-danger {
-    background: rgba(248, 113, 113, 0.1);
-    color: #f87171;
-    border-color: rgba(248, 113, 113, 0.2);
-  }
-
-  .btn-danger:hover:not(:disabled) {
-    background: rgba(248, 113, 113, 0.15);
-    border-color: rgba(248, 113, 113, 0.3);
-  }
 }
 
 /* Warning button */
@@ -352,111 +324,100 @@ button:disabled {
   }
 }
 
-/* Dark theme adjustments */
-.dark .btn-primary {
+/* Button styles - all unified for dark theme */
+.btn-primary {
   background: #60a5fa;
   color: #0f172a;
 }
 
-.dark .btn-primary:hover:not(:disabled) {
+.btn-primary:hover:not(:disabled) {
   background: #3b82f6;
   color: #0f172a;
 }
 
-.dark .btn-secondary {
+.btn-secondary {
   background: rgba(156, 163, 175, 0.1);
   color: #9ca3af;
   border-color: rgba(156, 163, 175, 0.2);
 }
 
-.dark .btn-secondary:hover:not(:disabled) {
+.btn-secondary:hover:not(:disabled) {
   background: rgba(156, 163, 175, 0.15);
   border-color: rgba(156, 163, 175, 0.3);
 }
 
-.dark .btn-success {
+.btn-success {
   background: rgba(52, 211, 153, 0.1);
   color: #34d399;
   border-color: rgba(52, 211, 153, 0.2);
 }
 
-.dark .btn-success:hover:not(:disabled) {
+.btn-success:hover:not(:disabled) {
   background: rgba(52, 211, 153, 0.15);
   border-color: rgba(52, 211, 153, 0.3);
 }
 
-.dark .btn-danger {
+.btn-danger {
   background: rgba(248, 113, 113, 0.1);
   color: #f87171;
   border-color: rgba(248, 113, 113, 0.2);
 }
 
-.dark .btn-danger:hover:not(:disabled) {
+.btn-danger:hover:not(:disabled) {
   background: rgba(248, 113, 113, 0.15);
   border-color: rgba(248, 113, 113, 0.3);
 }
 
-.dark .btn-warning {
+.btn-warning {
   background: rgba(251, 191, 36, 0.1);
   color: #fbbf24;
   border-color: rgba(251, 191, 36, 0.2);
 }
 
-.dark .btn-warning:hover:not(:disabled) {
+.btn-warning:hover:not(:disabled) {
   background: rgba(251, 191, 36, 0.15);
   border-color: rgba(251, 191, 36, 0.3);
 }
 
-.dark .btn-outline-primary {
+.btn-outline-primary {
   color: #60a5fa;
   border-color: #60a5fa;
 }
 
-.dark .btn-outline-primary:hover:not(:disabled) {
+.btn-outline-primary:hover:not(:disabled) {
   background: #60a5fa;
   color: #0f172a;
 }
 
-.dark .btn-ghost {
+.btn-ghost {
   color: var(--text);
 }
 
-.dark .btn-ghost:hover:not(:disabled) {
+.btn-ghost:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.05);
 }
 
-.dark .btn-link {
+.btn-link {
   color: #60a5fa;
 }
 
-.dark .btn-link:hover:not(:disabled) {
+.btn-link:hover:not(:disabled) {
   color: #3b82f6;
 }
 
-.dark .btn-outline {
+.btn-outline {
   background: transparent;
   color: #60a5fa;
   border-color: #60a5fa;
 }
 
-.dark .btn-outline:hover:not(:disabled) {
+.btn-outline:hover:not(:disabled) {
   background: #60a5fa;
   color: #0f172a;
 }
 
-.dark .btn-danger {
-  background: rgba(248, 113, 113, 0.15);
-  color: #f87171;
-  border-color: rgba(248, 113, 113, 0.3);
-}
-
-.dark .btn-danger:hover:not(:disabled) {
-  background: rgba(248, 113, 113, 0.2);
-  border-color: rgba(248, 113, 113, 0.4);
-}
-
-/* Dark mode nav-tabs styling */
-.dark .nav-tabs button:not(.active):not(.nav-btn-active):not([class*=bg-indigo-600]) {
+/* Nav-tabs buttons */
+.nav-tabs button:not(.active):not(.nav-btn-active):not([class*=bg-indigo-600]) {
   background: #071426 !important;
   color: #9ca3af !important;
 }
@@ -505,63 +466,34 @@ button:disabled {
 
 /* Claim button (positive action) */
 .item-btn-claim {
-  background: rgba(79, 70, 229, 0.06);
-  color: #4f46e5;
-  border: 1px solid rgba(79, 70, 229, 0.15);
+  background: rgba(129, 140, 248, 0.08);
+  color: #818cf8;
+  border: 1px solid rgba(129, 140, 248, 0.2);
 }
 
 .item-btn-claim:hover:not(:disabled) {
-  background: rgba(79, 70, 229, 0.1);
-  border-color: rgba(79, 70, 229, 0.25);
+  background: rgba(129, 140, 248, 0.12);
+  border-color: rgba(129, 140, 248, 0.3);
   transform: translateY(-1px);
 }
 
 /* Unclaim button (negative action) */
 .item-btn-unclaim {
-  background: rgba(239, 68, 68, 0.06);
-  color: #ef4444;
-  border: 1px solid rgba(239, 68, 68, 0.15);
+  background: rgba(248, 113, 113, 0.08);
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.2);
 }
 
 .item-btn-unclaim:hover:not(:disabled) {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.25);
+  background: rgba(248, 113, 113, 0.12);
+  border-color: rgba(248, 113, 113, 0.3);
   transform: translateY(-1px);
 }
 
 /* Disabled state */
 .item-btn-disabled {
-  background: rgba(156, 163, 175, 0.06);
-  color: #9ca3af;
-  border: 1px solid rgba(156, 163, 175, 0.15);
-  cursor: not-allowed;
-}
-
-/* Dark mode styles for item buttons */
-.dark .item-btn-claim {
-  background: rgba(129, 140, 248, 0.08);
-  color: #818cf8;
-  border-color: rgba(129, 140, 248, 0.2);
-}
-
-.dark .item-btn-claim:hover:not(:disabled) {
-  background: rgba(129, 140, 248, 0.12);
-  border-color: rgba(129, 140, 248, 0.3);
-}
-
-.dark .item-btn-unclaim {
-  background: rgba(248, 113, 113, 0.08);
-  color: #f87171;
-  border-color: rgba(248, 113, 113, 0.2);
-}
-
-.dark .item-btn-unclaim:hover:not(:disabled) {
-  background: rgba(248, 113, 113, 0.12);
-  border-color: rgba(248, 113, 113, 0.3);
-}
-
-.dark .item-btn-disabled {
   background: rgba(156, 163, 175, 0.08);
   color: #6b7280;
-  border-color: rgba(156, 163, 175, 0.15);
+  border: 1px solid rgba(156, 163, 175, 0.15);
+  cursor: not-allowed;
 }

@@ -58,21 +58,8 @@ body {
   }
 }
 
-/* CSS Variables - Light theme (default) */
+/* CSS Variables - Dark theme only */
 body {
-  /* Light theme colors */
-  --bg: #f5f5f5;
-  --text: #111827;
-  --muted: #6b7280;
-  --primary: #3b82f6;
-  --card-bg: #ffffff;
-  --muted-bg: #f3f4f6;
-  --input-bg: #ffffff;
-  --card-shadow: rgba(0,0,0,0.05);
-}
-
-/* Dark theme colors */
-.dark {
   --bg: #0f1720;
   --text: #e6eef8;
   --muted: #9ca3af;
@@ -81,20 +68,13 @@ body {
   --muted-bg: #071426;
   --input-bg: #0b1220;
   --card-shadow: rgba(2,6,23,0.6);
-}
-
-/* Body base */
-body {
-  --bg: #f5f5f5;
-  --muted: #6b7280;
-  --primary: #3b82f6;
-  --card-bg: #ffffff;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   line-height: 1.6;
-  color: #111827;
-  background-color: var(--bg);
+  color: #e6eef8;
+  background-color: #0f1720;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  color-scheme: dark;
 }
 
 /* Container */
@@ -172,19 +152,14 @@ body {
   position: relative;
   scroll-behavior: smooth;
   scroll-snap-type: x mandatory;
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(15, 23, 36, 0.8);
   backdrop-filter: blur(12px);
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
   /* Hide default scrollbar but keep functionality */
   scrollbar-width: none;
   -ms-overflow-style: none;
-}
-
-.dark .nav-tabs {
-  background: rgba(15, 23, 36, 0.8);
-  border-color: rgba(255, 255, 255, 0.1);
 }
 
 .nav-tabs::-webkit-scrollbar {
@@ -228,23 +203,14 @@ body {
 
   .nav-tabs::before {
     left: 0;
-    background: linear-gradient(to right, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 60%, transparent 100%);
+    background: linear-gradient(to right, rgba(15, 23, 36, 0.8) 0%, rgba(15, 23, 36, 0.4) 60%, transparent 100%);
     border-radius: 16px 0 0 16px;
   }
 
   .nav-tabs::after {
     right: 0;
-    background: linear-gradient(to left, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 60%, transparent 100%);
-    border-radius: 0 16px 16px 0;
-  }
-
-  /* Dark mode gradient adjustments */
-  .dark .nav-tabs::before {
-    background: linear-gradient(to right, rgba(15, 23, 36, 0.8) 0%, rgba(15, 23, 36, 0.4) 60%, transparent 100%);
-  }
-
-  .dark .nav-tabs::after {
     background: linear-gradient(to left, rgba(15, 23, 36, 0.8) 0%, rgba(15, 23, 36, 0.4) 60%, transparent 100%);
+    border-radius: 0 16px 16px 0;
   }
 }
 
@@ -314,37 +280,7 @@ body {
   box-shadow: 0 6px 18px var(--card-shadow);
 }
 
-/* Dark toggle (fixed, small) */
-.dark-toggle {
-  position: fixed;
-  right: 12px;
-  bottom: 12px;
-  z-index: 9999; /* ensure above sticky headers and overlays */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.dark-toggle .btn {
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  font-size: 1.05rem;
-  border-radius: 9999px;
-  box-shadow: 0 8px 24px rgba(2,6,23,0.12);
-  background: var(--card-bg);
-  color: var(--text);
-  border: 1px solid rgba(0,0,0,0.06);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.dark .dark-toggle .btn { 
-  border-color: rgba(255,255,255,0.06); 
-  box-shadow: 0 8px 24px rgba(0,0,0,0.3); 
-}
-
+/* Add receipt button specific styles */
 /* Add receipt button specific styles */
 .add-receipt-btn {
   display: inline-flex;
@@ -355,33 +291,23 @@ body {
   min-height: 44px;      /* touch target */
   border-radius: 0.5rem; /* rounded-lg */
   font-weight: 600;      /* font-semibold */
-  border: 2px solid #4f46e5; /* indigo-600 border */
-  color: #4f46e5;        /* indigo-600 text */
+  border: 2px solid #818cf8; /* indigo-400 border for dark mode */
+  color: #818cf8;
   background-color: transparent; /* outlined */
   cursor: pointer;
   transition: color 150ms cubic-bezier(0.4,0,0.2,1),
               background-color 150ms cubic-bezier(0.4,0,0.2,1);
+  box-shadow: 0 6px 18px rgba(59,130,246,0.12);
 }
 
 .add-receipt-btn:hover {
-  background-color: #4f46e5; /* hover fill indigo-600 */
-  color: #ffffff;            /* text becomes white */
-}
-
-.dark .add-receipt-btn {
-  border-color: #818cf8;     /* indigo-400 in dark mode */
-  color: #818cf8;
-  background-color: transparent;
-}
-
-.dark .add-receipt-btn:hover {
-  background-color: #818cf8; /* hover fill in dark mode */
+  background-color: #818cf8; /* hover fill */
   color: #000000;
 }
 
 .add-receipt-btn:focus {
   outline: none;
-  box-shadow: 0 0 0 2px rgba(79,70,229,0.5); /* focus ring */
+  box-shadow: 0 0 0 2px rgba(129,140,248,0.5); /* focus ring */
 }
 
 /* Modal helpers */
@@ -395,30 +321,21 @@ body {
 .receipt-card {
   background: var(--card-bg);
   border-radius: 12px;
-  border: 1px solid rgba(229, 231, 235, 1);
+  border: 1px solid rgba(255,255,255,0.08);
   transition: all 0.2s ease;
   overflow: hidden;
 }
 
 .receipt-card:hover {
-  border-color: rgba(59, 130, 246, 0.3);
-  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.08);
-  transform: translateY(-2px);
-}
-
-.dark .receipt-card {
-  border-color: rgba(255,255,255,0.08);
-}
-
-.dark .receipt-card:hover {
   border-color: rgba(96, 165, 250, 0.3);
   box-shadow: 0 8px 25px rgba(96, 165, 250, 0.12);
+  transform: translateY(-2px);
 }
 
 /* Item card styling */
 .item-card {
   background: var(--card-bg);
-  border: 1px solid rgba(229, 231, 235, 1);
+  border: 1px solid rgba(255,255,255,0.08);
   border-radius: 12px;
   padding: 1rem;
   transition: all 0.2s ease;
@@ -429,8 +346,8 @@ body {
 }
 
 .item-card:hover {
-  border-color: rgba(59, 130, 246, 0.3);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08);
+  border-color: rgba(96, 165, 250, 0.3);
+  box-shadow: 0 4px 12px rgba(96, 165, 250, 0.12);
 }
 
 /* Mobile-specific item card optimizations */
@@ -456,15 +373,6 @@ body {
     max-width: 100%;
     word-break: break-word;
   }
-}
-
-.dark .item-card {
-  border-color: rgba(255,255,255,0.08);
-}
-
-.dark .item-card:hover {
-  border-color: rgba(96, 165, 250, 0.3);
-  box-shadow: 0 4px 12px rgba(96, 165, 250, 0.12);
 }
 
 /* Text overflow prevention */
@@ -517,216 +425,163 @@ button:disabled, [role="button"]:disabled {
   }
 }
 
-/* Dark theme improvements */
-.dark {
-  color-scheme: dark;
-}
-
-.dark body {
-  background-color: var(--bg);
-  color: var(--text);
-}
-
-/* Dark theme for dark toggle button */
-.dark .dark-toggle .btn { 
-  border-color: rgba(255,255,255,0.06); 
-  box-shadow: 0 8px 24px rgba(0,0,0,0.3); 
-}
-
-/* Dark theme for add receipt button */
-.dark .add-receipt-btn {
-  border-color: #818cf8;     /* indigo-400 in dark mode */
-  color: #818cf8;
-  background-color: transparent;
-}
-
-.dark .add-receipt-btn:hover {
-  background-color: #818cf8; /* hover fill in dark mode */
-  color: #000000;
-}
-
-/* Dark theme for receipt cards */
-.dark .receipt-card {
-  border-color: rgba(255,255,255,0.08);
-}
-
-.dark .receipt-card:hover {
-  border-color: rgba(96, 165, 250, 0.3);
-  box-shadow: 0 8px 25px rgba(96, 165, 250, 0.12);
-}
-
-/* Dark theme for item cards */
-.dark .item-card {
-  border-color: rgba(255,255,255,0.08);
-}
-
-.dark .item-card:hover {
-  border-color: rgba(96, 165, 250, 0.3);
-  box-shadow: 0 4px 12px rgba(96, 165, 250, 0.12);
-}
-
-/* Dark theme for text colors */
-.dark .text-gray-900 {
+/* Text color utilities */
+.text-gray-900 {
   color: #e6eef8 !important;
 }
 
-.dark .text-gray-800 {
+.text-gray-800 {
   color: #d1dbe8 !important;
 }
 
-.dark .text-gray-700 {
+.text-gray-700 {
   color: #9ca3af !important;
 }
 
-.dark .text-gray-600 {
+.text-gray-600 {
   color: #9ca3af !important;
 }
 
-.dark .text-gray-500 {
+.text-gray-500 {
   color: #6b7280 !important;
 }
 
-.dark .text-gray-400 {
+.text-gray-400 {
   color: #6b7280 !important;
 }
 
-/* Dark theme for background colors */
-.dark .bg-gray-50 {
+/* Background color utilities */
+.bg-gray-50 {
   background-color: rgba(255, 255, 255, 0.05) !important;
 }
 
-.dark .bg-gray-100 {
+.bg-gray-100 {
   background-color: rgba(255, 255, 255, 0.08) !important;
 }
 
-.dark .bg-white {
+.bg-white {
   background-color: var(--card-bg) !important;
 }
 
-/* Dark theme for borders */
-.dark .border-gray-200 {
+/* Border utilities */
+.border-gray-200 {
   border-color: rgba(255,255,255,0.08) !important;
 }
 
-.dark .border-gray-300 {
+.border-gray-300 {
   border-color: rgba(255,255,255,0.12) !important;
 }
 
-/* Dark theme for form controls */
-.dark input,
-.dark textarea,
-.dark select {
+/* Form controls */
+input,
+textarea,
+select {
   background: var(--input-bg) !important;
   color: var(--text) !important;
   border-color: rgba(255,255,255,0.06) !important;
 }
 
-.dark input::placeholder,
-.dark textarea::placeholder {
+input::placeholder,
+textarea::placeholder {
   color: var(--muted) !important;
 }
 
-.dark input:focus,
-.dark textarea:focus,
-.dark select:focus {
+input:focus,
+textarea:focus,
+select:focus {
   border-color: var(--primary) !important;
   box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1) !important;
 }
 
-.dark select option {
+select option {
   background: var(--input-bg) !important;
   color: var(--text) !important;
 }
 
-/* Dark theme for participant selection dropdowns */
-.dark .user-select {
+/* Participant selection dropdowns */
+.user-select {
   background: var(--input-bg) !important;
   color: var(--text) !important;
   border-color: rgba(255,255,255,0.06) !important;
 }
 
-/* Dark theme for navigation buttons */
-.dark .nav-tabs button { 
+/* Navigation buttons */
+.nav-tabs button { 
   background: #071426 !important; 
   color: #9ca3af !important; 
 }
 
-.dark .nav-tabs button.active { 
+.nav-tabs button.active { 
   background: #60a5fa !important; 
   color: #031124 !important; 
 }
 
-/* Dark theme for modal buttons */
-.dark .fixed.inset-0 button[type="button"] {
+/* Modal buttons */
+.fixed.inset-0 button[type="button"] {
   background: rgba(75, 85, 99, 0.1) !important;
   color: #9ca3af !important;
   border-color: rgba(75, 85, 99, 0.2) !important;
 }
 
-.dark .fixed.inset-0 button[type="button"]:hover {
+.fixed.inset-0 button[type="button"]:hover {
   background: rgba(75, 85, 99, 0.15) !important;
   border-color: rgba(75, 85, 99, 0.3) !important;
 }
 
-.dark .fixed.inset-0 .grid button[type="button"][class*="border-indigo-500"] {
+.fixed.inset-0 .grid button[type="button"][class*="border-indigo-500"] {
   background: rgba(96, 165, 250, 0.1) !important;
   color: #60a5fa !important;
   border-color: rgba(96, 165, 250, 0.3) !important;
 }
 
-/* Dark theme for colored amounts */
-.dark .text-indigo-600 {
+/* Colored text utilities */
+.text-indigo-600 {
   color: #60a5fa !important;
 }
 
-.dark .text-purple-600 {
+.text-purple-600 {
   color: #c084fc !important;
 }
 
-.dark .text-green-600 {
+.text-green-600 {
   color: #34d399 !important;
 }
 
-.dark .text-red-600 {
+.text-red-600 {
   color: #f87171 !important;
 }
 
-/* Dark theme for colored backgrounds */
-.dark .bg-indigo-50 {
+/* Colored background utilities */
+.bg-indigo-50 {
   background-color: rgba(96, 165, 250, 0.08) !important;
 }
 
-.dark .bg-purple-50 {
+.bg-purple-50 {
   background-color: rgba(192, 132, 252, 0.08) !important;
 }
 
-.dark .bg-green-50 {
+.bg-green-50 {
   background-color: rgba(52, 211, 153, 0.08) !important;
 }
 
-.dark .bg-red-50 {
+.bg-red-50 {
   background-color: rgba(248, 113, 113, 0.08) !important;
 }
 
-/* Dark theme debt coloring classes */
-.dark .debt-highest {
+/* Debt coloring classes */
+.debt-highest {
   color: #f87171 !important; /* Red for highest debt */
 }
 
-.dark .debt-lowest {
+.debt-lowest {
   color: #34d399 !important; /* Green for lowest debt */
 }
 
-.dark .settlement-amount {
+.settlement-amount {
   color: #60a5fa !important; /* Blue for settlement amounts */
 }
 
-/* Ensure high-contrast for important UI elements in dark mode */
-.dark .add-receipt-btn { 
-  box-shadow: 0 6px 18px rgba(59,130,246,0.12); 
-}
-
-/* Make muted small text more legible in dark backgrounds */
-.dark small, .dark .text-sm { 
+/* Make muted small text more legible */
+small, .text-sm { 
   color: var(--muted) !important; 
 }

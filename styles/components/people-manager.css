@@ -22,15 +22,15 @@
   padding: 1rem; 
   border-radius: 12px; 
   background: var(--card-bg); 
-  border: 1px solid rgba(241,243,245,0.6); 
+  border: 1px solid rgba(255,255,255,0.08); 
   transition: all 0.2s ease;
   min-height: 60px;
 }
 
 .person-item.current { 
-  box-shadow: 0 8px 25px rgba(59,130,246,0.08); 
-  border-color: rgba(59,130,246,0.15); 
-  background: rgba(59,130,246,0.03);
+  box-shadow: 0 8px 25px rgba(96, 165, 250, 0.12); 
+  border-color: rgba(96, 165, 250, 0.25); 
+  background: rgba(96, 165, 250, 0.08);
 }
 
 /* Person avatar */
@@ -75,7 +75,7 @@
 
 .current-indicator {
   font-size: 0.75rem;
-  color: var(--primary);
+  color: #60a5fa;
   font-weight: 600;
   margin-top: 0.125rem;
 }
@@ -90,9 +90,9 @@
 
 /* Switch user button */
 .switch-user-btn {
-  background: rgba(59, 130, 246, 0.1);
-  color: #3b82f6;
-  border: 1px solid rgba(59, 130, 246, 0.2);
+  background: rgba(96, 165, 250, 0.1);
+  color: #60a5fa;
+  border: 1px solid rgba(96, 165, 250, 0.2);
   padding: 0.5rem 0.75rem;
   border-radius: 8px;
   font-size: 0.75rem;
@@ -107,15 +107,15 @@
 }
 
 .switch-user-btn:hover {
-  background: rgba(59, 130, 246, 0.15);
-  border-color: rgba(59, 130, 246, 0.3);
+  background: rgba(96, 165, 250, 0.15);
+  border-color: rgba(96, 165, 250, 0.3);
 }
 
 /* Remove person button */
 .remove-person-btn {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: rgba(248, 113, 113, 0.1);
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.2);
   padding: 0.5rem;
   border-radius: 8px;
   font-size: 1rem;
@@ -130,15 +130,15 @@
 }
 
 .remove-person-btn:hover {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(248, 113, 113, 0.15);
+  border-color: rgba(248, 113, 113, 0.3);
 }
 
 /* Add person button */
 .add-person-btn {
-  background: rgba(34, 197, 94, 0.1);
-  color: #22c55e;
-  border: 1px solid rgba(34, 197, 94, 0.2);
+  background: rgba(52, 211, 153, 0.1);
+  color: #34d399;
+  border: 1px solid rgba(52, 211, 153, 0.2);
   padding: 0.5rem 1rem;
   border-radius: 0.5rem;
   font-size: 0.875rem;
@@ -147,8 +147,8 @@
 }
 
 .add-person-btn:hover {
-  background: rgba(34, 197, 94, 0.15);
-  border-color: rgba(34, 197, 94, 0.3);
+  background: rgba(52, 211, 153, 0.15);
+  border-color: rgba(52, 211, 153, 0.3);
 }
 
 .add-person-btn.compact {
@@ -179,7 +179,7 @@
 .user-select {
   background: var(--card-bg);
   color: var(--text);
-  border: 1px solid rgba(229, 231, 235, 1);
+  border: 1px solid rgba(255,255,255,0.06);
   border-radius: 0.5rem;
   padding: 0.5rem;
   font-size: 0.875rem;
@@ -188,8 +188,8 @@
 
 .user-select:focus {
   outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
 }
 
 /* People manager compact mode */
@@ -202,7 +202,7 @@
 /* Add person form */
 .add-person-form {
   background: var(--card-bg);
-  border: 1px solid rgba(229, 231, 235, 1);
+  border: 1px solid rgba(255,255,255,0.06);
   border-radius: 0.75rem;
   padding: 1rem;
   margin-top: 0.75rem;
@@ -210,7 +210,7 @@
 
 .add-person-form.compact {
   background: var(--card-bg);
-  border: 1px solid rgba(229, 231, 235, 1);
+  border: 1px solid rgba(255,255,255,0.06);
   border-radius: 0.5rem;
   padding: 1rem;
   margin-top: 0.5rem;
@@ -232,7 +232,7 @@
 .person-name-input {
   background: var(--input-bg);
   color: var(--text);
-  border: 1px solid rgba(229, 231, 235, 1);
+  border: 1px solid rgba(255,255,255,0.06);
   border-radius: 0.5rem;
   padding: 0.5rem;
   font-size: 0.875rem;
@@ -241,8 +241,8 @@
 
 .person-name-input:focus {
   outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
 }
 
 .person-name-input::placeholder {
@@ -267,12 +267,13 @@
 }
 
 .form-actions button[type="submit"] {
-  background: var(--primary);
-  color: white;
+  background: #60a5fa;
+  color: #0f172a;
 }
 
 .form-actions button[type="submit"]:hover:not(:disabled) {
-  background: #2563eb;
+  background: #3b82f6;
+  color: #0f172a;
 }
 
 .form-actions button[type="submit"]:disabled {
@@ -281,128 +282,12 @@
 }
 
 .form-actions button[type="button"] {
-  background: rgba(107, 114, 128, 0.1);
-  color: #6b7280;
-  border-color: rgba(107, 114, 128, 0.2);
-}
-
-.form-actions button[type="button"]:hover {
-  background: rgba(107, 114, 128, 0.15);
-  border-color: rgba(107, 114, 128, 0.3);
-}
-
-/* Dark theme for people manager */
-.dark .person-item {
-  background: var(--card-bg);
-  border-color: rgba(255,255,255,0.08);
-}
-
-.dark .person-item.current {
-  background: rgba(96, 165, 250, 0.08);
-  border-color: rgba(96, 165, 250, 0.25);
-  box-shadow: 0 8px 25px rgba(96, 165, 250, 0.12);
-}
-
-.dark .person-name {
-  color: var(--text);
-}
-
-.dark .current-indicator {
-  color: #60a5fa;
-}
-
-.dark .switch-user-btn {
-  background: rgba(96, 165, 250, 0.1);
-  color: #60a5fa;
-  border-color: rgba(96, 165, 250, 0.2);
-}
-
-.dark .switch-user-btn:hover {
-  background: rgba(96, 165, 250, 0.15);
-}
-
-.dark .remove-person-btn {
-  background: rgba(248, 113, 113, 0.1);
-  color: #f87171;
-  border-color: rgba(248, 113, 113, 0.2);
-}
-
-.dark .remove-person-btn:hover {
-  background: rgba(248, 113, 113, 0.15);
-  border-color: rgba(248, 113, 113, 0.3);
-}
-
-.dark .add-person-btn {
-  background: rgba(52, 211, 153, 0.1);
-  color: #34d399;
-  border-color: rgba(52, 211, 153, 0.2);
-}
-
-.dark .add-person-btn:hover {
-  background: rgba(52, 211, 153, 0.15);
-  border-color: rgba(52, 211, 153, 0.3);
-}
-
-.dark .current-user-selector label {
-  color: var(--text);
-}
-
-.dark .user-select {
-  background: var(--card-bg);
-  color: var(--text);
-  border-color: rgba(255,255,255,0.06);
-}
-
-.dark .user-select:focus {
-  border-color: #60a5fa;
-  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
-}
-
-.dark .add-person-form {
-  background: var(--card-bg);
-  border-color: rgba(255,255,255,0.06);
-}
-
-.dark .add-person-form.compact {
-  background: var(--card-bg);
-  border-color: rgba(255,255,255,0.06);
-}
-
-.dark .add-person-form label {
-  color: var(--text);
-}
-
-.dark .person-name-input {
-  background: var(--input-bg);
-  color: var(--text);
-  border-color: rgba(255,255,255,0.06);
-}
-
-.dark .person-name-input:focus {
-  border-color: #60a5fa;
-  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
-}
-
-.dark .person-name-input::placeholder {
-  color: var(--muted);
-}
-
-.dark .form-actions button[type="submit"] {
-  background: #60a5fa;
-  color: #0f172a;
-}
-
-.dark .form-actions button[type="submit"]:hover:not(:disabled) {
-  background: #3b82f6;
-}
-
-.dark .form-actions button[type="button"] {
   background: rgba(156, 163, 175, 0.1);
   color: #9ca3af;
   border-color: rgba(156, 163, 175, 0.2);
 }
 
-.dark .form-actions button[type="button"]:hover {
+.form-actions button[type="button"]:hover {
   background: rgba(156, 163, 175, 0.15);
   border-color: rgba(156, 163, 175, 0.3);
 }

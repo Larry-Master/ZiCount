@@ -7,8 +7,8 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem;
-  background: white;
-  border: 2px solid rgba(229, 231, 235, 1);
+  background: #1f2937;
+  border: 2px solid rgba(255,255,255,0.08);
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -17,8 +17,8 @@
 }
 
 .participant-card-selected {
-  border-color: #3b82f6;
-  background: rgba(59, 130, 246, 0.1);
+  border-color: #60a5fa;
+  background: rgba(96, 165, 250, 0.15);
 }
 
 /* Custom checkbox styling */
@@ -32,8 +32,8 @@
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
-  background: white;
-  border: 2px solid rgba(156, 163, 175, 0.5);
+  background: #1f2937;
+  border: 2px solid rgba(156, 163, 175, 0.4);
   border-radius: 2px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -42,8 +42,8 @@
 }
 
 .participant-checkbox:checked {
-  background: #3b82f6 !important;
-  border-color: #3b82f6 !important;
+  background: #60a5fa !important;
+  border-color: #60a5fa !important;
   background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='m13.854 3.646-7.5 7.5a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6 10.293l7.146-7.147a.5.5 0 0 1 .708.708z'/%3e%3c/svg%3e") !important;
   background-size: 14px 14px !important;
   background-position: center !important;
@@ -74,7 +74,7 @@
 
 .participant-name {
   font-weight: 600;
-  color: #111827;
+  color: #e6eef8;
   font-size: 0.875rem;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -84,41 +84,12 @@
 
 .participant-badge {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: #9ca3af;
   margin-top: 0.125rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 100px;
-}
-
-/* Dark theme for participant cards */
-.dark .participant-card {
-  background: #1f2937;
-  border-color: rgba(255,255,255,0.08);
-}
-
-.dark .participant-card-selected {
-  border-color: #60a5fa;
-  background: rgba(96, 165, 250, 0.15);
-}
-
-.dark .participant-checkbox {
-  background: #1f2937;
-  border-color: rgba(156, 163, 175, 0.4);
-}
-
-.dark .participant-checkbox:checked {
-  background: #60a5fa !important;
-  border-color: #60a5fa !important;
-}
-
-.dark .participant-name {
-  color: #e6eef8;
-}
-
-.dark .participant-badge {
-  color: #9ca3af;
 }
 
 /* Mobile improvements for participant cards */
@@ -170,23 +141,13 @@
 .participant-checkbox-label {
   padding: 0.5rem;
   border-radius: 0.5rem;
-  border: 1px solid rgba(229, 231, 235, 1);
+  border: 1px solid rgba(255,255,255,0.06);
   background: var(--card-bg);
   transition: all 0.2s ease;
   cursor: pointer;
 }
 
 .participant-checkbox-label:has(input:checked) {
-  background: rgba(59, 130, 246, 0.1);
-  border-color: #3b82f6;
-}
-
-.dark .participant-checkbox-label {
-  background: var(--card-bg);
-  border-color: rgba(255,255,255,0.06);
-}
-
-.dark .participant-checkbox-label:has(input:checked) {
   background: rgba(96, 165, 250, 0.15);
   border-color: #60a5fa;
 }
