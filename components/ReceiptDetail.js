@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import ItemCard from '@/components/ItemCard';
 import ClaimModal from '@/components/ClaimModal';
+import SplitItemModal from '@/components/SplitItemModal';
 import ManualReceiptForm from '@/components/ManualReceiptForm';
 import UploadedReceiptForm from '@/components/UploadedReceiptForm';
 import { formatCurrency } from '@/lib/utils/currency';
@@ -12,6 +13,7 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
   const [showParticipants, setShowParticipants] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [showClaimModal, setShowClaimModal] = useState(false);
+  const [showSplitModal, setShowSplitModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
@@ -58,6 +60,69 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
       console.error('Unclaim failed:', err);
     } finally {
       handleUnclaim.inFlight.delete(item.id);
+    }
+  };
+
+  const handleSplitClick = (item) => {
+    setSelectedItem(item);
+    setShowSplitModal(true);
+  };
+
+  const handleSplit = async (splits) => {
+    try {
+      if (!selectedItem || !currentReceipt) return;
+
+      // Create new items from splits
+      const newItems = splits.map((split, index) => ({
+        id: `${selectedItem.id}_split_${index}_${Date.now()}`,
+        name: split.name,
+        price: split.amount,
+        priceEUR: split.amount,
+        claimedBy: null,
+        claimedAt: null,
+        tags: [...(selectedItem.tags || []), 'split'],
+        confidence: selectedItem.confidence || 1,
+        participant: selectedItem.participant || null
+      }));
+
+      // Remove original item and add split items
+      const updatedItems = currentReceipt.items
+        .filter(item => item.id !== selectedItem.id)
+        .concat(newItems);
+
+      // Update receipt with new items (excluding _id and id fields)
+      const updatePayload = {
+        name: currentReceipt.name,
+        totalAmount: currentReceipt.totalAmount,
+        uploadedBy: currentReceipt.uploadedBy,
+        participants: currentReceipt.participants,
+        imageUrl: currentReceipt.imageUrl,
+        imageId: currentReceipt.imageId,
+        createdAt: currentReceipt.createdAt,
+        items: updatedItems,
+        discounts: currentReceipt.discounts || []
+      };
+
+      const response = await fetch(`/api/receipts/${currentReceipt.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatePayload)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to split item');
+      }
+
+      // Refresh receipt data
+      if (refetchReceipt) await refetchReceipt();
+      if (onClaimsUpdated) onClaimsUpdated();
+
+      setShowSplitModal(false);
+      setSelectedItem(null);
+    } catch (err) {
+      console.error('Split failed:', err);
+      alert(`Failed to split item: ${err.message}`);
     }
   };
 
@@ -322,6 +387,7 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
                     currentUserId={currentUserId}
                     onClaim={() => handleClaimClick(item)}
                     onUnclaim={() => handleUnclaim(item)}
+                    onSplit={() => handleSplitClick(item)}
                   />
                 </div>
               ))}
@@ -360,6 +426,17 @@ export default function ReceiptDetail({ receipt, receiptId, currentUserId, onIte
             onClaim={(userId) => handleClaim(selectedItem, userId)}
             onCancel={() => {
               setShowClaimModal(false);
+              setSelectedItem(null);
+            }}
+          />
+        )}
+
+        {showSplitModal && selectedItem && (
+          <SplitItemModal
+            item={selectedItem}
+            onSplit={handleSplit}
+            onCancel={() => {
+              setShowSplitModal(false);
               setSelectedItem(null);
             }}
           />

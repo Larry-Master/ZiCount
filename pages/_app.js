@@ -12,42 +12,29 @@ import { useEffect } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 
+// Create QueryClient singleton outside component to avoid recreation on re-renders
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      cacheTime: 1000 * 60 * 30, // 30 minutes
+    }
+  }
+})
+
 export default function App({ Component, pageProps }) {
   useEffect(() => {
-    // Development-only: suppress noisy HMR hot-update.json 404 console errors
-    // This prevents the console from filling with harmless 404 messages
-    // when the dev client requests an outdated hot-update manifest.
     if (typeof window === 'undefined' || process.env.NODE_ENV !== 'development') return
 
     const origConsoleError = console.error
     console.error = (...args) => {
-      try {
-        const first = args[0]
-        if (typeof first === 'string' && first.includes('webpack.hot-update.json')) {
-          // swallow this specific noisy message
-          return
-        }
-      } catch (e) {
-        // ignore filter errors and fall through to original
-      }
+      const first = args[0]
+      if (typeof first === 'string' && first.includes('webpack.hot-update.json')) return
       origConsoleError(...args)
     }
-
-    return () => {
-      console.error = origConsoleError
-    }
+    return () => { console.error = origConsoleError }
   }, [])
-  // Create a single QueryClient per app instance
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        // Avoid refetching on window focus by default; tweak as needed
-        refetchOnWindowFocus: false,
-        staleTime: 1000 * 60 * 5, // 5 minutes
-        cacheTime: 1000 * 60 * 30, // 30 minutes
-      }
-    }
-  })
 
   return (
     <QueryClientProvider client={queryClient}>

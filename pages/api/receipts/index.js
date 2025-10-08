@@ -1,11 +1,9 @@
 import { connectToDatabase } from '@/lib/db/mongodb';
+import { handleConditionalGet, updateMetaTimestamp, getLatestTimestamp } from '@/lib/utils/http';
 
-// Increase timeout and body size limits for large receipt data
 export const config = {
   api: {
-    bodyParser: {
-      sizeLimit: '50mb',
-    },
+    bodyParser: { sizeLimit: '50mb' },
     responseLimit: '50mb',
   },
 };
@@ -17,71 +15,34 @@ export default async function handler(req, res) {
     try {
       const receipts = await db.collection('receipts').find({}).toArray();
 
-      // Determine latest updatedAt across receipts for Last-Modified
-      // Also consider a meta document (meta._id === 'receipts') which is bumped
-      // on structural changes (create/delete). This ensures DELETE operations
-      // that may not change any remaining receipt's timestamps are still
-      // reflected for conditional GET clients.
-      const latestFromReceipts = receipts.reduce((acc, r) => {
-        const t = r.updatedAt ? new Date(r.updatedAt) : (r.createdAt ? new Date(r.createdAt) : null);
-        if (!t) return acc;
-        return acc && acc > t ? acc : t;
-      }, null);
+      const metaDoc = await db.collection('meta').findOne({ _id: 'receipts' });
+      const metaTimestamp = metaDoc?.updatedAt ? new Date(metaDoc.updatedAt) : null;
+      const latest = getLatestTimestamp(receipts, metaTimestamp);
 
-      // Read meta.updatedAt if present (server updates this on create/delete)
-      let metaUpdated = null;
-      try {
-        const metaDoc = await db.collection('meta').findOne({ _id: 'receipts' });
-        if (metaDoc && metaDoc.updatedAt) metaUpdated = new Date(metaDoc.updatedAt);
-      } catch (e) {
-        // Non-fatal, we'll just ignore meta if it can't be read
-      }
-
-      // Choose the most recent timestamp between receipts and meta
-      const latest = [latestFromReceipts, metaUpdated].filter(Boolean).reduce((a, b) => {
-        if (!a) return b;
-        if (!b) return a;
-        return a > b ? a : b;
-      }, null);
-
-      if (latest) {
-        const lastModified = latest.toUTCString();
-        res.setHeader('Last-Modified', lastModified);
-        const ifModifiedSince = req.headers['if-modified-since'];
-        if (ifModifiedSince) {
-          const since = new Date(ifModifiedSince);
-          if (!isNaN(since) && since >= latest) {
-            return res.status(304).end();
-          }
-        }
-      }
+      if (latest && handleConditionalGet(res, req, latest)) return;
       
-      // Add claim information to each receipt
-      const receiptsWithClaims = await Promise.all(
-        receipts.map(async (receipt) => {
-          const claims = await db.collection('claims').find({
-            receiptId: receipt._id.toString()
-          }).toArray();
-          
-          // Merge receipt items with claims status
-          const receiptItems = receipt.items?.map(item => {
-            const claim = claims.find(c => c.itemId === item.id);
-            return claim ? {
-              ...item,
-              claimedBy: claim.userId,
-              claimedAt: claim.claimedAt
-            } : item;
-          }) || [];
-          
-          return {
-            ...receipt,
-            id: receipt._id.toString(),
-            items: receiptItems,
-            discounts: receipt.discounts || [],
-            claimedItems: claims.length
-          };
-        })
-      );
+      const claims = await db.collection('claims').find({}).toArray();
+      const claimsByReceipt = claims.reduce((acc, c) => {
+        if (!acc[c.receiptId]) acc[c.receiptId] = [];
+        acc[c.receiptId].push(c);
+        return acc;
+      }, {});
+
+      const receiptsWithClaims = receipts.map(receipt => {
+        const receiptClaims = claimsByReceipt[receipt._id.toString()] || [];
+        const receiptItems = receipt.items?.map(item => {
+          const claim = receiptClaims.find(c => c.itemId === item.id);
+          return claim ? { ...item, claimedBy: claim.userId, claimedAt: claim.claimedAt } : item;
+        }) || [];
+        
+        return {
+          ...receipt,
+          id: receipt._id.toString(),
+          items: receiptItems,
+          discounts: receipt.discounts || [],
+          claimedItems: receiptClaims.length
+        };
+      });
       
       res.status(200).json(receiptsWithClaims);
     } catch (error) {
@@ -92,37 +53,31 @@ export default async function handler(req, res) {
   } else if (req.method === 'POST') {
     try {
       const body = req.body;
+      const now = new Date().toISOString();
       
       const receipt = {
         name: body.name || `Receipt ${new Date().toLocaleDateString('de-DE')}`,
-        // allow client to pass createdAt (e.g., manual form), fallback to now
         createdAt: body.createdAt ? new Date(body.createdAt) : new Date(),
-  imageUrl: body.imageUrl,
-  imageId: body.imageId || null,
+        imageUrl: body.imageUrl,
+        imageId: body.imageId || null,
         items: body.items || [],
         discounts: body.discounts || [],
-        // Only use totalAmount from request, never calculate fallback
         totalAmount: body.totalAmount || 0,
         uploadedBy: body.uploadedBy || null,
-        // persist participants if provided (used for Teilnehmerliste)
         participants: body.participants || [],
-        text: body.text || ''
+        text: body.text || '',
+        updatedAt: now
       };
 
-  // set updatedAt for change tracking
-  receipt.updatedAt = new Date().toISOString();
-  const result = await db.collection('receipts').insertOne(receipt);
+      const result = await db.collection('receipts').insertOne(receipt);
+      await updateMetaTimestamp(db, 'receipts');
       
-      const savedReceipt = {
+      res.status(200).json({
         ...receipt,
         id: result.insertedId.toString(),
         _id: result.insertedId,
         claimedItems: 0
-      };
-
-  // bump receipts meta
-  try { await db.collection('meta').updateOne({ _id: 'receipts' }, { $set: { updatedAt: new Date().toISOString() } }, { upsert: true }); } catch (e) {}
-  res.status(200).json(savedReceipt);
+      });
     } catch (error) {
       console.error('Create receipt error:', error);
       res.status(500).json({ error: 'Internal server error' });

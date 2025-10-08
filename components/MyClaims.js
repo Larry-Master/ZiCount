@@ -6,13 +6,24 @@ import ItemCard from '@/components/ItemCard';
 
 export default function MyClaims({ userId, onClaimsUpdated, refreshKey }) {
   const [claimsLocal, setClaimsLocal] = useState([]);
+  const [hasInitialized, setHasInitialized] = useState(false);
   const { unclaimItem } = useClaims();
   const { claims, loading, error, refetch } = useUserClaims(userId);
 
-  // Keep local copy for immediate UI updates
+  // Initialize local state from server data only once, then keep local optimistic updates
   useEffect(() => {
-    setClaimsLocal(claims || []);
-  }, [claims, refreshKey]);
+    if (!hasInitialized && claims && claims.length >= 0) {
+      setClaimsLocal(claims);
+      setHasInitialized(true);
+    }
+  }, [claims, hasInitialized]);
+
+  // Update from server data only when not doing local operations (background sync)
+  useEffect(() => {
+    if (hasInitialized && !loading) {
+      setClaimsLocal(claims || []);
+    }
+  }, [claims, hasInitialized, loading]);
 
   const handleUnclaim = async (item) => {
     if (!item.claimedBy || item.claimedBy !== userId) {
@@ -43,7 +54,7 @@ export default function MyClaims({ userId, onClaimsUpdated, refreshKey }) {
     }
   };
 
-  if (loading) return <div className="container">Loading your claims...</div>;
+  if (loading && claimsLocal.length === 0 && !hasInitialized) return <div className="container">Loading your claims...</div>;
   if (error) return <div className="container">Error: {error}</div>;
   if (!claimsLocal.length) return <div className="container">No claims yet</div>;
 

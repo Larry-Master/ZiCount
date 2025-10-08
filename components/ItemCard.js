@@ -2,7 +2,7 @@ import { formatCurrency, parsePrice } from '@/lib/utils/currency';
 import { usePeople } from '@/lib/hooks/usePeople';
 import { getAvatarDisplay } from '@/lib/utils/avatar';
 
-export default function ItemCard({ item, currentUserId, onClaim, onUnclaim, isMyClaimsContext = false }) {
+export default function ItemCard({ item, currentUserId, onClaim, onUnclaim, onSplit, isMyClaimsContext = false }) {
   const { getPerson } = usePeople();
   const price = typeof item.price === 'object' ? item.price.value : item.price;
   const parsedPrice = parsePrice(price);
@@ -63,9 +63,6 @@ export default function ItemCard({ item, currentUserId, onClaim, onUnclaim, isMy
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0 pr-2">
               <h4 className="text-sm font-semibold text-gray-900 truncate leading-tight">{item.name}</h4>
-              {item.confidence && (
-                <div className="mt-1 text-xs text-gray-500">Confidence: {Math.round(item.confidence * 100)}%</div>
-              )}
             </div>
 
             <div className="flex-shrink-0 text-right">
@@ -86,12 +83,12 @@ export default function ItemCard({ item, currentUserId, onClaim, onUnclaim, isMy
           </div>
         </div>
 
-        {/* Action button - full width on mobile, fixed width on desktop */}
-        <div className="w-full sm:w-auto sm:ml-3 flex-shrink-0">
+        {/* Action buttons - full width on mobile, fixed width on desktop */}
+        <div className="w-full sm:w-auto sm:ml-3 flex-shrink-0 flex gap-2">
           <button
             onClick={handleClick}
             disabled={isPending || (isMyClaimsContext && !isClaimed)}
-            className={`w-full sm:w-auto px-3 py-2 text-xs font-medium rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-offset-1 truncate ${
+            className={`flex-1 sm:flex-initial sm:w-auto px-3 py-2 text-xs font-medium rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-offset-1 truncate ${
               isClaimed 
                 ? (canUnclaim 
                   ? 'item-btn-unclaim focus:ring-red-500'
@@ -105,6 +102,21 @@ export default function ItemCard({ item, currentUserId, onClaim, onUnclaim, isMy
           >
             {getButtonText()}
           </button>
+          
+          {/* Split button - only show if not claimed and onSplit handler exists */}
+          {!isClaimed && onSplit && !isMyClaimsContext && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onSplit(item);
+              }}
+              disabled={isPending}
+              className="px-3 py-2 text-xs font-medium rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-offset-1 bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Split this item into multiple parts"
+            >
+              ⚡ Split
+            </button>
+          )}
         </div>
       </div>
     </div>
